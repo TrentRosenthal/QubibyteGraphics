@@ -495,6 +495,7 @@ registerBlock({
   fields: [{ key: 'width', label: 'Width', kind: 'number', min: 1 }, { key: 'height', label: 'Height', kind: 'number', min: 1 }, ...POS],
   ports: { in: [{ name: 'sweep', kind: 'series' }], out: [] },
   create: (p, inputs) => {
+    if (!inputs.sweep && 'sweep' in inputs) throw new Error('The wired Qubi program does not sweep a value yet. Add one to it, for example: sweepstate=0b1, a=<0.(0.1).1>, RY 0 a (one per line).');
     if (!inputs.sweep) throw new Error('This block needs a sweep. Press W to show wires, then drag from the sweep port of a Qubi program that sweeps a value, for example a=<0.(0.1).1>.');
     return place(sweepPlot(sweepSeries(inputs.sweep), { width: p.width, height: p.height, xTitle: sweepAxisTitle(inputs.sweep) }), p);
   },

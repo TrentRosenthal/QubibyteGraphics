@@ -21,7 +21,7 @@ import { buildScene } from '../src/core/scene.js';
 import { sampleFrame } from '../src/core/sampler.js';
 import { renderFrame } from '../src/render/canvas.js';
 import { renderSVG } from '../src/render/svg.js';
-import { getTheme } from '../src/themes/index.js';
+import { getTheme, themeWithBoard } from '../src/themes/index.js';
 import { FORMATS, ffmpegArgs } from '../src/export/formats.js';
 import { synthesize, encodeWav } from '../src/export/audio.js';
 import { toSRT } from '../src/export/srt.js';
@@ -135,15 +135,7 @@ function stripUndefined(o) {
  * @returns {import('../src/themes/tokens.js').Theme}
  */
 export function sceneTheme(scene) {
-  const t = getTheme(scene.theme);
-  if (!scene.board) return t;
-  if (scene.board === 'clean') return { ...t, board: null };
-  const boardTheme = getTheme(boardThemeId(scene.board));
-  return boardTheme;
-}
-
-function boardThemeId(board) {
-  return { chalkboard: 'chalkboard', whiteboard: 'whiteboard', paper: 'paper', blueprint: 'board-blueprint' }[board] ?? board;
+  return themeWithBoard(getTheme(scene.theme), scene.board);
 }
 
 /**

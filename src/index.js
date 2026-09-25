@@ -38,7 +38,7 @@ export { Random, noise1, noise2 } from './core/random.js';
 export { setPlatform, loadImage, openVideo } from './core/platform.js';
 export { sampleFrame } from './core/sampler.js';
 
-export { getTheme, registerTheme, listThemes, exportTheme, importTheme } from './themes/index.js';
+export { getTheme, registerTheme, listThemes, exportTheme, importTheme, themeWithBoard, BOARD_THEMES } from './themes/index.js';
 export { paletteFrom, themeFrom, parseDescription } from './themes/palette.js';
 export { explainQubi, describeOp, describeGroup } from './quantum/explainers.js';
 export { evaluate as evaluateQubi, diagnose as diagnoseQubi } from './qubi/index.js';

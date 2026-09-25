@@ -7,7 +7,7 @@ Status against the definition of done, kept current with each commit batch. "Don
 | Item | Status | Where |
 | --- | --- | --- |
 | Live Pages URL in the README | Written; the Pages workflow deploys the default branch on every push once Pages is enabled in the repository settings with GitHub Actions as the source | `README.md`, `.github/workflows/pages.yml` |
-| `npm test` clean | 657 tests pass; 14 browser tests pass under `npm run test:e2e` in Chromium. Unit, parser, export, and golden suites pass (87% of lines and 84% of branches covered, excluding the browser UI); lint includes an unused-export check | `tests/` |
+| `npm test` clean | 658 tests pass; 21 browser tests pass under `npm run test:e2e` in Chromium. Unit, parser, export, and golden suites pass (87% of lines and 84% of branches covered, excluding the browser UI); lint includes an unused-export check | `tests/` |
 | Narrated Grover and QFT explainers | Done | `examples/20-grover-explainer.js`, `examples/21-qft-explainer.js`, `src/quantum/explainers.js` |
 | Editor Qubi block wired to Bloch, state, and unitary views | Done: wires carry state and unitary out of a Qubi block; dragging the Bloch handle writes RY and RZ back into the program (covered by an e2e test) | `src/editor/blocks.js`, `src/editor/ui/`, `docs/renders/ui-editor-wires-*.png` |
 | Single-expression math animations | Done: derivatives, integrals, equations, matrix products, eigenvectors | `src/explainers/derivation.js`, examples 11 to 14 and 18 |

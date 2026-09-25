@@ -21,6 +21,7 @@ import {
   fadeIn, write, lagStart,
 } from '../index.js';
 import { tracePath, pathBounds } from '../core/path.js';
+import { themeWithBoard } from '../themes/index.js';
 import { createCanvas } from '../core/platform.js';
 import { StatevectorSimulator } from '../quantum/statevector.js';
 
@@ -33,7 +34,6 @@ const PACKAGE_MAP = {
 };
 
 /** Board names in the playground and the themes that draw them. */
-const BOARD_THEMES = { whiteboard: 'whiteboard', chalkboard: 'chalkboard', paper: 'paper', blueprint: 'board-blueprint' };
 
 const BUILD_KEYS = ['width', 'height', 'fps', 'seed'];
 
@@ -311,17 +311,16 @@ export class RuntimeCore {
   }
 
   /**
-   * Resolve the render theme of a scene: a board override maps to its
-   * board theme, `clean` keeps the scene theme.
+   * Resolve the render theme of a scene. The board option `default` (or
+   * none) uses the scene's own board; any other board keeps the scene
+   * theme's element colors and swaps only the board.
    * @param {any} scene
    * @returns {any}
    */
   themeFor(scene) {
     const board = this.options.board;
-    if (board && board !== 'clean' && BOARD_THEMES[board]) return getTheme(BOARD_THEMES[board]);
     const t = getTheme(scene.theme);
-    if (!board && scene.board && scene.board !== 'clean' && BOARD_THEMES[scene.board]) return getTheme(BOARD_THEMES[scene.board]);
-    return t;
+    return themeWithBoard(t, !board || board === 'default' ? scene.board : board);
   }
 
   async rebuild() {

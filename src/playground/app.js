@@ -26,6 +26,8 @@ const UI_STORE = 'qgfx.ui.v1';
 const ROOT = new URL('../../', import.meta.url);
 const MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '');
 const DEFAULT_EXAMPLE = 'examples/00-first-scene.js';
+/** Local storage key for the last mode (code or editor). */
+const MODE_STORE = 'qgfx.mode';
 const DEFAULT_QUBI = '// A Bell pair: two qubits that always agree.\nH 0\nCX [0,1]\n';
 
 const $ = (sel) => document.querySelector(sel);
@@ -43,7 +45,7 @@ class App {
       example: DEFAULT_EXAMPLE,
       name: 'first-scene',
       theme: null,
-      board: 'clean',
+      board: 'default',
       size: [1920, 1080],
     };
     this.customThemes = readJSON(THEME_STORE, []);
@@ -118,6 +120,12 @@ class App {
     if (restored === 'doc') return;
     this.gallery.setCurrent(this.state.src === 'js' && !this.fromLink ? this.state.example : null);
     await this.run();
+    // Open in the visual editor unless a code or Qubi link was opened, the
+    // page asks for a mode (?mode=code), or the last session ended in Code.
+    const asked = new URLSearchParams(location.search).get('mode');
+    const last = readJSON(MODE_STORE, null);
+    const mode = asked === 'code' || asked === 'editor' ? asked : restored === 'code' || restored === 'qubi' ? 'code' : last ?? 'editor';
+    if (mode === 'editor') await this.setMode('editor');
   }
 
   /** Restore from the permalink, then local storage, then the default example. */
@@ -354,8 +362,7 @@ class App {
     this.preview.setStatus('');
     this.preview.setInfo(info, { keepTime });
     if (!this.state.theme) $('#theme-select').value = info.theme;
-    if (this.state.board === 'clean' && info.sceneBoard && info.sceneBoard !== 'clean') $('#board-select').value = info.sceneBoard;
-    else $('#board-select').value = this.state.board;
+    $('#board-select').value = this.state.board;
     this.clearError();
   }
 
@@ -426,6 +433,7 @@ class App {
    */
   async setMode(mode, opts = {}) {
     this.state.mode = mode;
+    writeJSON(MODE_STORE, mode);
     $('#app').dataset.mode = mode;
     for (const b of document.querySelectorAll('.mode-switch [data-mode]')) b.setAttribute('aria-selected', String(b.dataset.mode === mode));
     $('#mode-code').hidden = mode !== 'code';

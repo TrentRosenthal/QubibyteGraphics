@@ -145,15 +145,14 @@ export class Stage {
   /** Topmost block whose bounds contain a world point. */
   hitBlock(p, tolerance = 0) {
     const inside = (b) => p[0] >= b.x - tolerance && p[0] <= b.x + b.w + tolerance && p[1] >= b.y - tolerance && p[1] <= b.y + b.h + tolerance;
-    // In wire mode, blocks with nothing drawn are cards on the canvas and can be picked up like any other block.
-    if (this.ed.showWires) {
-      for (let i = this.ed.doc.blocks.length - 1; i >= 0; i--) {
-        const block = this.ed.doc.blocks[i];
-        const info = this.ed.info(block.id);
-        if (info && info.bounds) continue;
-        const box = this.cardBox(block);
-        if (inside(box)) return { id: block.id, bounds: box, card: true };
-      }
+    // Blocks with nothing drawn are picked up by their wire-mode card, or
+    // outside wire mode by their placeholder, like any other block.
+    for (let i = this.ed.doc.blocks.length - 1; i >= 0; i--) {
+      const block = this.ed.doc.blocks[i];
+      const info = this.ed.info(block.id);
+      if (info && info.bounds) continue;
+      const box = this.ed.showWires ? this.cardBox(block) : this.placeholderBox(block);
+      if (box && inside(box)) return { id: block.id, bounds: box, card: true };
     }
     const infos = this.ed.orderedInfos();
     for (let i = infos.length - 1; i >= 0; i--) {
@@ -162,6 +161,22 @@ export class Stage {
       if (inside(b)) return infos[i];
     }
     return null;
+  }
+
+  /**
+   * World box of the placeholder drawn for a block that should appear on the
+   * canvas but cannot build yet (usually a quantum view with nothing wired
+   * in), or null for data blocks that never draw. Uses the block's own size
+   * when it has one.
+   * @param {any} block
+   * @returns {{x: number, y: number, w: number, h: number}|null}
+   */
+  placeholderBox(block) {
+    const p = block.props;
+    if (typeof p.x !== 'number' || typeof p.y !== 'number') return null;
+    const w = typeof p.width === 'number' ? p.width : typeof p.radius === 'number' ? 2 * p.radius : 4;
+    const h = typeof p.height === 'number' ? p.height : typeof p.radius === 'number' ? 2 * p.radius : 1.6;
+    return { x: p.x - w / 2, y: p.y - h / 2, w, h };
   }
 
   /**
@@ -359,6 +374,19 @@ export class Stage {
       if (!info.visible && !selected) parts.push(`<div class="ve-ghost" style="${css(r)}"></div>`);
       if (selected) continue;
       if (info.id === this.hover || err) parts.push(`<div class="ve-hover${err ? ' is-error' : ''}" style="${css(r)}"></div>`);
+    }
+    if (!ed.showWires) {
+      for (const block of ed.doc.blocks) {
+        const info = ed.info(block.id);
+        if (info && info.bounds) continue;
+        const box = this.placeholderBox(block);
+        if (!box) continue;
+        const selected = ed.selection.has(block.id);
+        const why = ed.blockErrors.get(block.id) ?? '';
+        const hint = /needs an? (quantum \w+|\w+)/i.exec(why);
+        const text = hint ? `Needs a ${hint[1]}: press W, then drag a wire from a Qubi program.` : why;
+        parts.push(`<div class="ve-placeholder${selected ? ' is-selected' : ''}" style="${css(this.rectOf(box))}"><span class="ve-placeholder-name">${esc(block.id)}</span><span class="ve-placeholder-text">${esc(text)}</span></div>`);
+      }
     }
     const sel = [...ed.selection].map((id) => ed.info(id)).filter((i) => i && i.bounds);
     for (const info of sel) {

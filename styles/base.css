@@ -338,9 +338,17 @@ a:hover {
   box-shadow: none;
 }
 
-.select select option {
+.select select option,
+.select select optgroup,
+select option,
+select optgroup {
   background: var(--surface-raised);
   color: var(--text);
+}
+
+select optgroup {
+  color: var(--text-muted);
+  font-weight: 600;
 }
 
 .select .icon {

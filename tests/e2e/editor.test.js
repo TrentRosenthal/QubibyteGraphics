@@ -142,30 +142,74 @@ test('a document slider drags through live overrides and commits on release', { 
   await context.close();
 });
 
-test('quantum blocks dropped on their own wire themselves to a Qubi program and draw', { skip: skipReason }, async () => {
-  const { page, context, errors } = await openEditor();
-  // Start from an empty scene: select everything and delete it.
+async function clearScene(page) {
   await page.click('.ve-frame', { position: { x: 5, y: 5 } });
   await page.keyboard.press('ControlOrMeta+a');
   await page.keyboard.press('Delete');
   await page.waitForFunction(() => document.querySelectorAll('.tl-row').length === 0);
+}
+
+const QUANTUM_TYPES = ['amplitudes', 'probabilities', 'phaseDisks', 'dirac', 'density', 'matrix', 'bloch', 'sweepPlot'];
+
+test('a quantum block dropped with no program adds none, shows a placeholder, and deletes cleanly', { skip: skipReason }, async () => {
+  const { page, context, errors } = await openEditor();
+  await clearScene(page);
   const frame = await page.locator('.ve-frame').boundingBox();
-  const types = ['amplitudes', 'probabilities', 'phaseDisks', 'dirac', 'density', 'matrix', 'bloch', 'sweepPlot'];
-  for (const [i, type] of types.entries()) {
+  for (const type of QUANTUM_TYPES) {
     const tile = page.locator(`.lib-tile[data-type=${type}]`);
     await tile.scrollIntoViewIfNeeded();
-    await tile.dragTo(page.locator('.ve-frame'), { targetPosition: { x: frame.width * (0.25 + 0.5 * (i % 2)), y: frame.height * 0.7 } });
-    await page.waitForFunction((t) => [...document.querySelectorAll('.tl-row')].some((r) => r.dataset.id && r.dataset.id.startsWith(t.replace(/[A-Z].*$/, ''))), type);
-    await page.waitForTimeout(700);
-    const err = await page.locator('.bi-error').count();
-    const message = err ? await page.locator('.bi-error').first().innerText() : '';
-    assert.equal(err, 0, `${type} shows an error after it is dropped: ${message}`);
-    // Clear the scene again so each block is tested with nothing to wire to but what it creates.
-    await page.click('.ve-frame', { position: { x: 5, y: 5 } });
-    await page.keyboard.press('ControlOrMeta+a');
+    await tile.dragTo(page.locator('.ve-frame'), { targetPosition: { x: frame.width * 0.5, y: frame.height * 0.5 } });
+    await page.waitForFunction(() => document.querySelectorAll('.tl-row').length === 1);
+    await page.waitForTimeout(400);
+    const ids = await page.$$eval('.tl-row', (rs) => rs.map((r) => r.dataset.id));
+    assert.ok(ids[0].startsWith(type), `${type}: only the dropped block is in the timeline, got ${ids}`);
+    if (type === 'bloch') {
+      // An unwired Bloch sphere still draws |0>, so it needs no placeholder; select it from its row.
+      assert.equal(await page.locator('.ve-placeholder').count(), 0);
+      await page.click(`.tl-label[data-select=${ids[0]}]`);
+    } else {
+      const box = await page.locator('.ve-placeholder').boundingBox({ timeout: 3000 });
+      assert.ok(box, `${type} shows a placeholder where it was dropped`);
+      // Select it by clicking its placeholder, then delete: the timeline row goes with it.
+      await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+      await page.waitForSelector('.ve-placeholder.is-selected');
+    }
     await page.keyboard.press('Delete');
-    await page.waitForFunction(() => document.querySelectorAll('.tl-row').length === 0);
+    await page.waitForFunction(() => document.querySelectorAll('.tl-row').length === 0 && !document.querySelector('.ve-placeholder'));
   }
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('with one program every quantum block wires to it, with two it wires to neither', { skip: skipReason }, async () => {
+  const { page, context, errors } = await openEditor();
+  await clearScene(page);
+  const frame = await page.locator('.ve-frame').boundingBox();
+  const drop = async (type, x, y) => {
+    const tile = page.locator(`.lib-tile[data-type=${type}]`);
+    await tile.scrollIntoViewIfNeeded();
+    const n = await page.locator('.tl-row').count();
+    await tile.dragTo(page.locator('.ve-frame'), { targetPosition: { x: frame.width * x, y: frame.height * y } });
+    await page.waitForFunction((k) => document.querySelectorAll('.tl-row').length === k, n + 1);
+    await page.waitForTimeout(400);
+  };
+  await drop('qubi', 0.3, 0.3);
+  for (const type of QUANTUM_TYPES) {
+    await drop(type, 0.7, 0.7);
+    if (type === 'sweepPlot') {
+      // Wired, but the starter program sweeps nothing, so it says what to add rather than asking for a wire.
+      assert.match(await page.locator('.ve-placeholder').innerText(), /does not sweep/);
+    } else {
+      assert.equal(await page.locator('.ve-placeholder').count(), 0, `${type} wired to the one program and draws`);
+    }
+    assert.equal(await page.locator('.tl-row[data-id^=qubi]').count(), 1, 'no program was added');
+    await page.keyboard.press('Delete');
+    await page.waitForFunction(() => document.querySelectorAll('.tl-row').length === 1);
+  }
+  await drop('qubi', 0.3, 0.7);
+  await drop('amplitudes', 0.7, 0.3);
+  assert.equal(await page.locator('.ve-placeholder').count(), 1, 'two programs: the block is left unwired');
+  assert.equal(await page.locator('.tl-row[data-id^=qubi]').count(), 2);
   assert.deepEqual(errors, []);
   await context.close();
 });

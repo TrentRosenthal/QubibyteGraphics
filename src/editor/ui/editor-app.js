@@ -24,8 +24,6 @@ import { AssetsPanel, assetKind } from './assets-panel.js';
 
 /** Input kinds the editor wires automatically when a block is added. */
 const AUTO_WIRED = new Set(['state', 'matrix', 'series']);
-/** Program for a sweep plot added to a scene with no sweeping program: P(|1>) as RY turns. */
-const SWEEP_PROGRAM = 'sweepstate=0b1\na=<0.(0.1).1>\nRY 0 a';
 
 const STORE = 'qgfx.editor.v1';
 const MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '');
@@ -65,7 +63,7 @@ export class VisualEditor {
   constructor(root, o) {
     this.root = root;
     this.app = o.app;
-    this.board = o.board ?? 'clean';
+    this.board = o.board ?? 'default';
     this.selection = new Set();
     this.selectedWire = null;
     this.blockErrors = new Map();
@@ -441,7 +439,7 @@ export class VisualEditor {
       p.cardY = round(at[1], 2);
     }
     this.doc.blocks.push({ id, type, props: p });
-    const wired = this.autoWire(id, at);
+    const wired = this.autoWire(id);
     this.selection = new Set([id]);
     this.setTab('inspector');
     this.commit('Add block');
@@ -450,54 +448,44 @@ export class VisualEditor {
   }
 
   /**
-   * Connect a new block's quantum inputs (state, matrix, sweep series) so it
-   * draws at once: to the most recent block with a matching output, or to a
-   * new Qubi program placed beside it when the scene has none.
+   * Connect a new block's quantum inputs (state, matrix, sweep series) when
+   * the choice is unambiguous: exactly one circuit (Qubi program block) on
+   * the canvas produces that kind of value. With none, or several, the input is left for the user to
+   * wire; nothing is ever added.
    * @param {string} id
-   * @param {number[]} [at] where the block was dropped
    * @returns {string[]} one sentence per wire made
    */
-  autoWire(id, at) {
+  autoWire(id) {
     const block = this.doc.blocks.find((b) => b.id === id);
     const notes = [];
     for (const port of this.portsOf(block).inputs) {
       if (!AUTO_WIRED.has(port.kind)) continue;
       const to = `${id}.${port.name}`;
       if (this.doc.wires.some((w) => w.to === to)) continue;
-      let from = this.findSource(port.kind, id);
-      if (!from) {
-        const [x, y] = at ?? [0, 0];
-        const source = port.kind === 'series' ? SWEEP_PROGRAM : blockDefinition('qubi').defaults.source;
-        // Stack the program above or below the new block, whichever keeps it inside the frame.
-        const qy = y > 0 ? y - 3 : y + 3;
-        const qid = this.uniqueId('qubi');
-        this.doc.blocks.push({ id: qid, type: 'qubi', props: { ...blockDefinition('qubi').defaults, source, x: round(x, 2), y: round(qy, 2) } });
-        from = `${qid}.${this.portsOf(this.doc.blocks.at(-1)).outputs.find((o) => o.kind === port.kind).name}`;
-        notes.push(`Added a Qubi program (${qid}) to feed it.`);
-      } else notes.push(`Wired its ${port.name} to ${from}.`);
-      this.doc.wires.push({ from, to });
+      const sources = this.sourcesOf(port.kind, id);
+      if (sources.length !== 1) continue;
+      this.doc.wires.push({ from: sources[0], to });
+      notes.push(`Wired its ${port.name} to ${sources[0]}.`);
     }
     return notes;
   }
 
   /**
-   * The output port of the most recently added block (other than `exclude`)
-   * that produces a value of this kind.
+   * Output ports of circuits (Qubi program blocks) that produce a value of this kind.
    * @param {string} kind
    * @param {string} exclude
-   * @returns {string|null}
+   * @returns {string[]}
    */
-  findSource(kind, exclude) {
-    for (let i = this.doc.blocks.length - 1; i >= 0; i--) {
-      const b = this.doc.blocks[i];
-      if (b.id === exclude) continue;
-      const out = this.portsOf(b).outputs.find((o) => o.kind === kind);
-      if (!out) continue;
-      // A sweep only exists when the program actually sweeps something.
-      if (kind === 'series' && !/</.test(b.props.source ?? '')) continue;
-      return `${b.id}.${out.name}`;
+  sourcesOf(kind, exclude) {
+    const out = [];
+    for (const b of this.doc.blocks) {
+      if (b.id === exclude || b.type !== 'qubi') continue;
+      for (const o of this.portsOf(b).outputs) {
+        if (o.kind !== kind) continue;
+        out.push(`${b.id}.${o.name}`);
+      }
     }
-    return null;
+    return out;
   }
 
   deleteSelection() {

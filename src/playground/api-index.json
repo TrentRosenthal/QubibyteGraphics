@@ -148,6 +148,13 @@
    "module": "src/editor/document.js"
   },
   {
+   "name": "BOARD_THEMES",
+   "kind": "const",
+   "signature": "",
+   "summary": "Board names mapped to the theme that supplies each board's surface.",
+   "module": "src/themes/index.js"
+  },
+  {
    "name": "Brace",
    "kind": "class",
    "signature": "(a, b, props = {})",
@@ -1588,6 +1595,13 @@
    "signature": "(id, description, opts = {})",
    "summary": "A complete theme object from a description, ready for registerTheme.",
    "module": "src/themes/palette.js"
+  },
+  {
+   "name": "themeWithBoard",
+   "kind": "function",
+   "signature": "(theme, board)",
+   "summary": "Put a theme on a board.",
+   "module": "src/themes/index.js"
   },
   {
    "name": "toCSS",

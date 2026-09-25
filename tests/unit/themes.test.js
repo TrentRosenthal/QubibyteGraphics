@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { paletteFrom, parseDescription, themeFrom } from '../../src/themes/palette.js';
-import { getTheme, registerTheme, listThemes, exportTheme, importTheme } from '../../src/themes/index.js';
+import { getTheme, registerTheme, listThemes, exportTheme, importTheme, themeWithBoard } from '../../src/themes/index.js';
 import { COLOR_KEYS } from '../../src/themes/tokens.js';
 import { contrast, rgbToOklch, parseColor } from '../../src/core/color.js';
 
@@ -45,4 +45,25 @@ test('everyday color nouns set the hue of a described theme', async () => {
   assert.ok(near(hueOf('warm terracotta paper'), 40), `terracotta ${hueOf('warm terracotta paper')}`);
   assert.ok(near(hueOf('forest, dark'), 150));
   assert.ok(near(hueOf('lavender pastel'), 300));
+});
+
+test('a board swaps only the surface and keeps the theme colors readable', () => {
+  const t = getTheme('qubibyte');
+  assert.equal(themeWithBoard(t, 'default'), t);
+  assert.equal(themeWithBoard(t, undefined), t);
+  const chalk = getTheme('chalkboard');
+  const on = themeWithBoard(t, 'chalkboard');
+  assert.equal(on.id, t.id);
+  assert.equal(on.board, 'chalkboard');
+  assert.equal(on.colors.background, chalk.colors.background);
+  assert.equal(on.colors.ink, chalk.colors.ink);
+  assert.notEqual(on.colors.accent, chalk.colors.accent);
+  // Light accents drawn on a whiteboard are pulled toward its ink until they read.
+  const white = themeWithBoard(chalk, 'whiteboard');
+  assert.equal(white.board, 'whiteboard');
+  for (const k of ['accent', 'accent2', 'ket0', 'ket1', 'gateHadamard']) {
+    assert.ok(contrast(white.colors[k], white.colors.background) >= 3, `${k} ${white.colors[k]}`);
+  }
+  assert.equal(themeWithBoard(chalk, 'chalkboard'), chalk);
+  assert.equal(themeWithBoard(chalk, 'clean').board, null);
 });

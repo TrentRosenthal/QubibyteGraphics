@@ -29,7 +29,7 @@ First release.
 
 ### Look
 - 19 themes and a palette helper.
-- Chalkboard, whiteboard, paper, and blueprint boards with handwriting, hatching, erasing, and page turns, all from one switch.
+- Chalkboard, whiteboard, paper, and blueprint boards with handwriting, hatching, erasing, and page turns, all from one switch. `themeWithBoard` puts any theme on any board: the theme keeps its element colors (nudged for contrast) and the board supplies the surface. Chalk writing keeps a solid core so small text reads.
 
 ### Output
 - `qgfx` CLI: MP4, HEVC, WebM with alpha, AV1, ProRes, MKV, GIF, APNG, WebP, image sequences, PDF, animated SVG, Lottie, SRT captions, and audio; chunked renders that resume.

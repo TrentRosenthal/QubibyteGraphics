@@ -187,9 +187,38 @@ function cameraOffset(view, tile) {
  * @param {'chalk'|'pencil'} medium
  * @param {string} [composite]
  */
+const softMasks = new WeakMap();
+
+/** The grain mask lifted halfway to opaque, for writing. */
+function softMask(mask) {
+  let soft = softMasks.get(mask);
+  if (!soft) {
+    soft = createCanvas(mask.width, mask.height);
+    const c = soft.getContext('2d');
+    c.drawImage(mask, 0, 0);
+    c.fillStyle = 'rgba(255,255,255,0.5)';
+    c.fillRect(0, 0, mask.width, mask.height);
+    softMasks.set(mask, soft);
+  }
+  return soft;
+}
+
 function flushLayer(ctx, frame, view, medium, composite = 'source-over') {
   const s = state(ctx, view);
+  const mask = grainMask(medium, frame.seed, view.strokeScale);
+  const [ox, oy] = cameraOffset(view, mask);
+  const grain = (c, m) => {
+    c.save();
+    c.setTransform(1, 0, 0, 1, ox, oy);
+    c.globalCompositeOperation = 'destination-in';
+    c.fillStyle = c.createPattern(m, 'repeat');
+    c.fillRect(-ox, -oy, s.w, s.h);
+    c.restore();
+  };
+  grain(s.lctx, mask);
   if (s.wrote) {
+    // Writing gets a lighter grain so small text keeps a solid core.
+    grain(s.wctx, softMask(mask));
     s.lctx.save();
     s.lctx.setTransform(1, 0, 0, 1, 0, 0);
     s.lctx.drawImage(s.wlayer, 0, 0);
@@ -198,14 +227,6 @@ function flushLayer(ctx, frame, view, medium, composite = 'source-over') {
     s.wctx.clearRect(0, 0, s.w, s.h);
     s.wrote = false;
   }
-  const mask = grainMask(medium, frame.seed, view.strokeScale);
-  const [ox, oy] = cameraOffset(view, mask);
-  s.lctx.save();
-  s.lctx.setTransform(1, 0, 0, 1, ox, oy);
-  s.lctx.globalCompositeOperation = 'destination-in';
-  s.lctx.fillStyle = s.lctx.createPattern(mask, 'repeat');
-  s.lctx.fillRect(-ox, -oy, s.w, s.h);
-  s.lctx.restore();
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.globalCompositeOperation = composite;
@@ -221,10 +242,12 @@ function flushLayer(ctx, frame, view, medium, composite = 'source-over') {
  * Deposit chalk along a stroke: a translucent body plus particles scattered
  * across the width, denser at the center, so the edge is broken and grainy.
  * Particles are seeded by arc-length index so a partial stroke is a prefix.
+ * Writing passes a denser body and a tighter scatter so small text reads.
  */
-function chalkStroke(ctx, pts, w, color, seed) {
+function chalkStroke(ctx, pts, w, color, seed, o = {}) {
   if (pts.length < 2) return;
-  ctx.fillStyle = toCSS(color, 0.5);
+  const scatter = o.scatter ?? 0.62;
+  ctx.fillStyle = toCSS(color, o.body ?? 0.5);
   drawRibbon(ctx, pts, w * 0.82);
   const rgb = `${Math.round(color.r * 255)},${Math.round(color.g * 255)},${Math.round(color.b * 255)}`;
   // Particles are grouped into a few opacity levels and filled as one path
@@ -251,7 +274,7 @@ function chalkStroke(ctx, pts, w, color, seed) {
       const width = w * (a.w + (b.w - a.w) * t);
       for (let k = 0; k < 3; k++) {
         const g = (rng.next() + rng.next() + rng.next() - 1.5) / 1.5;
-        const off = g * width * 0.62;
+        const off = g * width * scatter;
         const size = (0.7 + rng.next() * 1.3) * Math.max(1, width / 7);
         const alpha = (0.35 + 0.6 * rng.next()) * (1 - 0.55 * Math.abs(g));
         const level = Math.min(LEVELS - 1, Math.max(0, Math.round(alpha * (LEVELS - 1) / 0.95)));
@@ -271,6 +294,8 @@ function chalkStroke(ctx, pts, w, color, seed) {
   });
 }
 
+
+const CHALK_WRITING = { ...HAND_STYLES.chalk, wobble: 0.01, bow: 0.006, endJitter: 0.012, overshoot: 0.03 };
 
 const chalkboard = {
   drawBackground(ctx, frame, view) {
@@ -303,9 +328,10 @@ const chalkboard = {
       }
     }
     if (item.stroke) {
-      const hs = strokesPx(view, handStrokes(item.path, item.seed, HAND_STYLES.chalk));
-      const w = Math.max(3.5, item.strokeWidth * 1.25) * px;
       const writing = !!(item.meta && item.meta.handwriting);
+      // Writing wobbles less than linework: the same jitter would smear small letters together.
+      const hs = strokesPx(view, handStrokes(item.path, item.seed, writing ? CHALK_WRITING : HAND_STYLES.chalk));
+      const w = Math.max(writing ? 3 : 3.5, item.strokeWidth * (writing ? 1.1 : 1.25)) * px;
       if (writing) {
         // Wipe a narrow band of earlier chalk (hatching, washes) under writing so labels stay legible.
         lctx.globalCompositeOperation = 'destination-out';
@@ -318,7 +344,7 @@ const chalkboard = {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.fillStyle = toCSS(item.stroke, 0.03);
       for (const st of hs) drawRibbon(ctx, st.pts, w * 2);
-      hs.forEach((st, k) => chalkStroke(target, st.pts, w, item.stroke, item.seed * 131 + k));
+      hs.forEach((st, k) => chalkStroke(target, st.pts, w, item.stroke, item.seed * 131 + k, writing ? { body: 0.86, scatter: 0.45 } : {}));
       s.ink += strokeLength(hs.map((st) => ({ pts: st.pts })));
       trackTip(s, item, hs);
     }

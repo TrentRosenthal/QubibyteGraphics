@@ -6,7 +6,7 @@
  * @module playground/runtime
  */
 
-/* global EventTarget, URLSearchParams */
+/* global EventTarget */
 
 const WORKER_URL = new URL('./runtime-worker.js', import.meta.url);
 const SANDBOX_URL = new URL('./sandbox.html', import.meta.url);

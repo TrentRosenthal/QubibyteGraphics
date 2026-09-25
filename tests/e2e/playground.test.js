@@ -40,7 +40,7 @@ export default async function (scene) {
 
 async function readyPage(hash = '') {
   const o = await openPage(env.browser);
-  await o.page.goto(`${env.url}index.html${hash}`);
+  await o.page.goto(`${env.url}index.html?mode=code${hash}`);
   await o.page.waitForFunction(() => /Frame \d+ of [1-9]/.test(document.querySelector('.frame-readout')?.textContent || ''), null, { timeout: 30000 });
   return o;
 }
@@ -207,7 +207,7 @@ test('the embed element loads, plays, pauses, and seeks', { skip: skipReason }, 
 
 test('without OffscreenCanvas transfer, the sandboxed iframe runtime renders the scene', { skip: skipReason }, async () => {
   const { page, context, errors } = await openPage(env.browser);
-  await page.goto(`${env.url}index.html?runtime=iframe`);
+  await page.goto(`${env.url}index.html?mode=code&runtime=iframe`);
   await page.waitForFunction(() => /Frame \d+ of [1-9]/.test(document.querySelector('.frame-readout')?.textContent || ''), null, { timeout: 30000 });
   const sandbox = await page.getAttribute('iframe[sandbox]', 'sandbox');
   assert.equal(sandbox, 'allow-scripts');
@@ -251,6 +251,45 @@ test('the preview scrubber drags cleanly: time follows, no text is selected, and
   await page.mouse.move(bar.x + bar.width * 0.9, y, { steps: 5 });
   await page.waitForTimeout(200);
   assert.equal(await frameNo(), at, 'hovering after release does not seek');
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('the app opens in the editor, and a board swaps only the surface, not the theme', { skip: skipReason }, async () => {
+  const fresh = await openPage(env.browser);
+  await fresh.page.addInitScript(() => localStorage.clear());
+  await fresh.page.goto(`${env.url}index.html`);
+  await fresh.page.waitForSelector('.ve-frame canvas');
+  await fresh.page.waitForSelector('#tab-editor[aria-selected=true]');
+  assert.equal(await fresh.page.isVisible('#mode-editor'), true);
+  await fresh.context.close();
+
+  const { page, errors, context } = await readyPage();
+  assert.equal(await page.inputValue('#board-select'), 'default');
+  const theme = await page.inputValue('#theme-select');
+  const corner = async () => page.$eval('#code-frame canvas', (c) => {
+    const x = document.createElement('canvas');
+    x.width = 4;
+    x.height = 4;
+    const g = x.getContext('2d');
+    g.drawImage(c, 2, 2, 4, 4, 0, 0, 4, 4);
+    return [...g.getImageData(0, 0, 1, 1).data].slice(0, 3);
+  });
+  const before = await corner();
+  await page.selectOption('#board-select', 'chalkboard');
+  await page.waitForFunction((b) => {
+    const c = document.querySelector('#code-frame canvas');
+    const x = document.createElement('canvas');
+    x.width = 1;
+    x.height = 1;
+    x.getContext('2d').drawImage(c, 2, 2, 1, 1, 0, 0, 1, 1);
+    const d = x.getContext('2d').getImageData(0, 0, 1, 1).data;
+    return Math.abs(d[0] - b[0]) + Math.abs(d[1] - b[1]) + Math.abs(d[2] - b[2]) > 20;
+  }, before, { timeout: 30000 });
+  const after = await corner();
+  assert.ok(after[1] > after[0] && after[1] > after[2], `the chalkboard surface is green, got ${after}`);
+  assert.equal(await page.inputValue('#theme-select'), theme, 'the theme choice is kept');
+  assert.equal(await page.inputValue('#board-select'), 'chalkboard');
   assert.deepEqual(errors, []);
   await context.close();
 });

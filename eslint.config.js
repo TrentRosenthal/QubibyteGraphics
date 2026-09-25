@@ -15,7 +15,7 @@ export default [
         requestAnimationFrame: 'readonly', cancelAnimationFrame: 'readonly', performance: 'readonly',
         HTMLElement: 'readonly', HTMLCanvasElement: 'readonly', customElements: 'readonly',
         OffscreenCanvas: 'readonly', ImageData: 'readonly', Image: 'readonly', Path2D: 'readonly',
-        Blob: 'readonly', URL: 'readonly', FileReader: 'readonly', fetch: 'readonly',
+        Blob: 'readonly', URL: 'readonly', URLSearchParams: 'readonly', FileReader: 'readonly', fetch: 'readonly',
         setTimeout: 'readonly', clearTimeout: 'readonly', setInterval: 'readonly', clearInterval: 'readonly',
         TextEncoder: 'readonly', TextDecoder: 'readonly', DOMParser: 'readonly', XMLSerializer: 'readonly',
         Worker: 'readonly', MessageChannel: 'readonly', postMessage: 'readonly', self: 'readonly',
