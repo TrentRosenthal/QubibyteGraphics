@@ -12,3 +12,8 @@ Every rendered visual is graded against `docs/QUALITY.md` (criteria a to g, 1 to
 | 21-qft-explainer | 75 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | 3Blue1Brown-style phase wheels next to the Qiskit QFT figure: fractions read exactly; the two-line narration sits close to the Dirac line. |
 | 22-bell-state | 75, 100 | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Quirk and the Qiskit Bell example: magnitude bars, meters, and the classical wire are clearer than Quirk's; the reference shows measured counts, ours shows the pre-measurement state. |
 | 23-ghz-state | 100 | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Qiskit GHZ figure: same ladder; tie narration now names both outcomes. |
+| 05-riemann-sums | 75, 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | 3Blue1Brown, Essence of Calculus ch. 8: same rectangles-to-area story with a live sum; the reference morphs each rectangle into its halves, ours fades between counts. |
+| 06-polar-roses | 100 | 5 | 4 | 4 | 4 | 5 | 4 | 4 | Desmos polar rose demos: equal clarity; the reference shows the angle sweep, ours shows the equation morph. |
+| 07-phase-portrait | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | 3Blue1Brown, differential equations ch. 1 pendulum field: same field, streamlines, and spiral; the reference colors arrows by speed on a continuous scale, ours fades short arrows. |
+| 08-roots-of-unity | 100 | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Standard textbook roots-of-unity figure: the rotation by omega is animated, which the static reference cannot show. |
+| 09-taylor-series | 100 | 4 | 5 | 5 | 4 | 5 | 4 | 4 | 3Blue1Brown, Taylor series: same growing partial sums; tick labels now sit on a background halo above the curves, as in the reference. |

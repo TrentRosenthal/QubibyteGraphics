@@ -89,6 +89,7 @@ export function labelGlyphs(tex, size) {
  * @property {string} [axisColor] token (default 'muted')
  * @property {string} [gridColor] token (default 'grid')
  * @property {string} [labelColor] token (default 'muted')
+ * @property {boolean} [labelHalo] draw tick labels above plots on a background halo (default true)
  */
 
 /**
@@ -126,6 +127,7 @@ export class Axes extends Node {
     this.labelColor = opts.labelColor ?? 'muted';
     this.showX = opts.showX ?? true;
     this.showY = opts.showY ?? true;
+    this.labelHalo = opts.labelHalo ?? true;
   }
 
   /** @returns {{xMin: number, xMax: number, yMin: number, yMax: number, width: number, height: number, polar: number}} */
@@ -277,7 +279,13 @@ export class Axes extends Node {
       const g = labelGlyphs(tex, size);
       if (!g) return;
       const [ox, oy] = place(g.width, g.height, g.depth);
-      pushFill(transformPath(g.path, [1, 0, 0, 1, ox, oy]), this.labelColor, 1, meta);
+      const glyphPath = transformPath(g.path, [1, 0, 0, 1, ox, oy]);
+      // Labels sit above the plots inside the axes, on a halo of background so curves never cut through digits.
+      const bg = this.labelHalo ? c.color('background') : null;
+      if (bg && draw > 0) {
+        c.items.push({ kind: 'path', id: `${this.id}:${meta.part ?? 'label'}:halo`, nodeType: 'axesLabel', path: transformPath(glyphPath, m), fill: null, stroke: { ...bg, a: bg.a * op * Math.min(1, draw * 1.5) }, strokeWidth: 7, lineCap: 'round', lineJoin: 'round', dash: null, fillRule: 'nonzero', seed, meta: { ...meta, halo: true, aboveChildren: true }, draw: 1 });
+      }
+      pushFill(glyphPath, this.labelColor, 1, { ...meta, aboveChildren: !!bg });
     };
     const curved = s.polar > 0;
     const N = curved ? 72 : 1;
@@ -416,7 +424,7 @@ export class ComplexPlane extends Axes {
 
 /**
  * Polar grid: concentric circles and radial lines. Plot into it with
- * `polarPlot(r(theta))`.
+ * `plotPolar(r(theta))`.
  */
 export class PolarPlane extends Node {
   /** @param {{radius?: number, rMax?: number, rings?: number, spokes?: number, labels?: boolean} & Record<string, any>} [opts] */
@@ -438,6 +446,36 @@ export class PolarPlane extends Node {
   pr2p(r, theta) {
     const k = this.get('radius') / this.get('rMax');
     return applyMat(this.worldMatrix(), r * k * Math.cos(theta), r * k * Math.sin(theta));
+  }
+
+  /**
+   * Local point for Cartesian data (x, y), in units of rMax. Plots added to
+   * the plane use this, like they use an Axes.
+   * @param {number} x
+   * @param {number} y
+   * @returns {[number, number]}
+   */
+  toLocal(x, y) {
+    const k = this.get('radius') / this.get('rMax');
+    return [x * k, y * k];
+  }
+
+  /** State shaped like an Axes state, for plots. @returns {Record<string, number>} */
+  state() {
+    const r = this.get('rMax');
+    return { xMin: -r, xMax: r, yMin: -r, yMax: r, width: 2 * this.get('radius'), height: 2 * this.get('radius'), polar: 0 };
+  }
+
+  /**
+   * Plot r = f(theta) into this plane.
+   * @param {Function|string} r
+   * @param {Record<string, any>} [opts] range [t0, t1], samples, color
+   * @returns {plots.PolarGraph}
+   */
+  plotPolar(r, opts = {}) {
+    const g = new plots.PolarGraph(r, opts);
+    this.add(g);
+    return g;
   }
 
   geometry() {

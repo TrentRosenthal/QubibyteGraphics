@@ -592,7 +592,7 @@ export class StreamLines extends Group {
       this.F = (x, y) => [fu(x, y), fv(x, y)];
     } else this.F = F;
     this.density = props.density ?? 0.8;
-    this.length = props.length ?? 160;
+    this.steps = props.length ?? 160;
     this.color = props.color ?? 'accent';
     this.seedJitter = props.jitter ?? 0.35;
   }
@@ -610,7 +610,7 @@ export class StreamLines extends Group {
         const jx = (hash01(k * 2 + 1) - 0.5) * step * this.seedJitter;
         const jy = (hash01(k * 2 + 2) - 0.5) * step * this.seedJitter;
         k++;
-        const pts = streamline(this.F, [x + jx, y + jy], { h: step / 20, steps: this.length, bounds: [s.xMin, s.xMax, s.yMin, s.yMax], normalize: true });
+        const pts = streamline(this.F, [x + jx, y + jy], { h: step / 20, steps: this.steps, bounds: [s.xMin, s.xMax, s.yMin, s.yMax], normalize: true });
         if (pts.length < 4) continue;
         const line = new DataPolyline(pts, { stroke: this.color, strokeWidth: 2.5, strokeOpacity: 0.85 });
         this.add(line);

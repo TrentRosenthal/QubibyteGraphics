@@ -376,10 +376,19 @@ export class Node {
   add(...nodes) {
     for (const n of nodes.flat()) {
       if (!n) continue;
+      const fresh = !n.parent && !n.scene;
       if (n.parent) n.parent.children = n.parent.children.filter((c) => c !== n);
       n.parent = this;
       this.children.push(n);
-      if (this.scene) n._attach(this.scene);
+      if (this.scene) {
+        n._attach(this.scene);
+        // A new child added partway through a build appears from that moment, as with scene.add.
+        const sc = this.scene;
+        if (fresh && sc.building && sc.clock > 0) {
+          n._init.visible = false;
+          n.tween('visible', sc.clock, sc.clock, true, (u) => u, null, false);
+        }
+      }
     }
     return this;
   }

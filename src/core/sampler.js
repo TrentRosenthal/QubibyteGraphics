@@ -123,6 +123,7 @@ function walk(node, parentM, parentOpacity, parentTokens, items, theme, scene, t
   if (opacity <= 0) return;
   const m = node === scene.root ? parentM : multiply(parentM, compose(node.get('x'), node.get('y'), node.get('rotation'), node.get('scaleX'), node.get('scaleY')));
   const tokens = Object.keys(node.tokens).length ? { ...parentTokens, ...node.tokens } : parentTokens;
+  const selfStart = items.length;
   if (typeof node.sampleItems === 'function') {
     node.sampleItems({ matrix: m, opacity, tokens, theme, scene, t, items, color: (v) => color(v, theme, tokens) });
   } else if (node.type === 'image' || node.type === 'video') {
@@ -149,7 +150,12 @@ function walk(node, parentM, parentOpacity, parentTokens, items, theme, scene, t
   if (kids.some((k) => k.get('zIndex') !== 0)) {
     ordered = kids.map((k, i) => [k, i]).sort((a, b) => a[0].get('zIndex') - b[0].get('zIndex') || a[1] - b[1]).map((p) => p[0]);
   }
+  const selfEnd = items.length;
   for (const k of ordered) walk(k, m, opacity, tokens, items, theme, scene, t);
+  // Items a node marks aboveChildren (axis labels) draw after its children.
+  const lifted = [];
+  for (let i = selfEnd - 1; i >= selfStart; i--) if (items[i].meta && items[i].meta.aboveChildren) lifted.unshift(...items.splice(i, 1));
+  if (lifted.length) items.push(...lifted);
 }
 
 /**
