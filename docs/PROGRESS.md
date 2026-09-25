@@ -37,4 +37,4 @@ Status against the definition of done, kept current with each commit batch. "Don
 
 - The docs site and the playground land together, since the site links into the playground and reuses its API index.
 - A Bloch sphere block in the editor with a drag handle that writes RY and RZ back to the Qubi source is not built yet.
-- Video files as image sources in Node renders (decoding frames through ffmpeg) are not built yet.
+- Video files play in Node renders (`openVideo`); in the browser a VideoNode needs a frame source with a `frameAt` method.

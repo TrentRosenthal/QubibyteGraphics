@@ -706,8 +706,8 @@ export class ImageNode extends Node {
   constructor(source, props = {}) {
     super(props.type ?? 'image', props);
     this.source = source;
-    this.naturalWidth = props.naturalWidth ?? 1;
-    this.naturalHeight = props.naturalHeight ?? 1;
+    this.naturalWidth = props.naturalWidth ?? (source && source.width) ?? 1;
+    this.naturalHeight = props.naturalHeight ?? (source && source.height) ?? 1;
     const aspect = this.naturalWidth / this.naturalHeight;
     const w = props.width ?? (props.height ? props.height * aspect : 4);
     const h = props.height ?? w / aspect;

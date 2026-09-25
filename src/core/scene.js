@@ -165,6 +165,8 @@ export class Scene {
       }
       const appearsLater = this.building && this.clock > 0;
       this.container.add(n);
+      // A video plays from the moment it appears.
+      for (const v of n.family()) if (v.type === 'video' && v.meta.appearTime == null) v.meta.appearTime = appearsLater ? this.clock : 0;
       if (appearsLater) {
         n._init.visible = false;
         n.tween('visible', this.clock, this.clock, true, (u) => u, null, false);

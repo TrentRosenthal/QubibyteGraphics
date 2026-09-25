@@ -35,7 +35,7 @@ export {
 } from './core/path.js';
 export { parseColor, toHex, toCSS, mix, contrast, oklchToRgb, rgbToOklch, phaseColor } from './core/color.js';
 export { Random, noise1, noise2 } from './core/random.js';
-export { setPlatform, loadImage } from './core/platform.js';
+export { setPlatform, loadImage, openVideo } from './core/platform.js';
 export { sampleFrame } from './core/sampler.js';
 
 export { getTheme, registerTheme, listThemes, exportTheme, importTheme } from './themes/index.js';

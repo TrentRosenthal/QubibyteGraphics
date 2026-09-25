@@ -14,3 +14,12 @@ export default async function (scene) {
 ```
 
 `treatment: 'duotone'`, `'tint'`, or `'desaturate'` matches a photo to the theme.
+
+Video works the same way in rendered output: `openVideo` decodes frames with ffmpeg on demand, and a `VideoNode` plays from the moment it is added.
+
+```js
+import { VideoNode, openVideo } from 'qubibyte-graphics';
+
+const clip = await openVideo(new URL('./clip.mp4', import.meta.url).href);
+scene.add(new VideoNode(clip, { width: 6, startTime: 2 }));
+```

@@ -29,6 +29,7 @@ import { PROJECT } from '../src/config.js';
 
 setPlatform({
   createCanvas,
+  openVideo: async (src) => new VideoFrames(src instanceof URL || String(src).startsWith('file:') ? fileURLToPath(src) : String(src)),
   loadImage: (src) => {
     if (src instanceof URL) src = src.href;
     if (typeof src === 'string' && src.startsWith('file:')) return loadImage(readFileSync(fileURLToPath(src)));
@@ -49,6 +50,53 @@ export function findFFmpeg() {
     if (r.status === 0) return c;
   }
   throw new Error('FFmpeg not found. Install it (for example `apt install ffmpeg` or `brew install ffmpeg`) or set QGFX_FFMPEG to its path.');
+}
+
+/**
+ * Frames of a video file for VideoNode, decoded on demand by ffmpeg. A
+ * render asks for frames in order, so each request seeks once and decodes
+ * one frame; recent frames are cached.
+ */
+export class VideoFrames {
+  /** @param {string} file */
+  constructor(file) {
+    this.file = file;
+    const ffprobe = findFFmpeg().replace(/ffmpeg$/, 'ffprobe');
+    const r = spawnSync(ffprobe, ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height,r_frame_rate:format=duration', '-of', 'json', file], { encoding: 'utf8' });
+    if (r.status !== 0) throw new Error(`Cannot read video ${file}: ${r.stderr.trim()}`);
+    const j = JSON.parse(r.stdout);
+    const s = j.streams[0];
+    const [num, den] = String(s.r_frame_rate).split('/').map(Number);
+    // Decode at most 1920 pixels wide; a video larger than the frame gains nothing from more.
+    const k = Math.min(1, 1920 / s.width);
+    this.width = Math.max(2, Math.round((s.width * k) / 2) * 2);
+    this.height = Math.max(2, Math.round((s.height * k) / 2) * 2);
+    this.fps = den ? num / den : 30;
+    this.duration = Number(j.format.duration) || 0;
+    this.cache = new Map();
+  }
+
+  /**
+   * The frame shown at a time in seconds (clamped to the video).
+   * @param {number} t
+   * @returns {any} canvas
+   */
+  frameAt(t) {
+    const last = Math.max(0, Math.floor(this.duration * this.fps) - 1);
+    const index = Math.min(last, Math.max(0, Math.floor(t * this.fps + 1e-6)));
+    const hit = this.cache.get(index);
+    if (hit) return hit;
+    const r = spawnSync(findFFmpeg(), ['-v', 'error', '-ss', String(index / this.fps), '-i', this.file, '-frames:v', '1', '-vf', `scale=${this.width}:${this.height}`, '-f', 'rawvideo', '-pix_fmt', 'rgba', '-'], { maxBuffer: this.width * this.height * 4 + 1024 });
+    if (r.status !== 0 || r.stdout.length < this.width * this.height * 4) throw new Error(`Cannot decode frame ${index} of ${this.file}: ${String(r.stderr).trim()}`);
+    const canvas = createCanvas(this.width, this.height);
+    const g = canvas.getContext('2d');
+    const img = g.createImageData(this.width, this.height);
+    img.data.set(r.stdout.subarray(0, this.width * this.height * 4));
+    g.putImageData(img, 0, 0);
+    if (this.cache.size >= 8) this.cache.delete(this.cache.keys().next().value);
+    this.cache.set(index, canvas);
+    return canvas;
+  }
 }
 
 /**

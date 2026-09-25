@@ -26,6 +26,10 @@ const impl = {
     const blob = src instanceof Blob ? src : new Blob([src]);
     return createImageBitmap(blob);
   },
+  /** @type {(src: string) => Promise<any>} */
+  openVideo: async () => {
+    throw new Error('openVideo is available in the Node renderer; in the browser, pass a decoded frame source with a frameAt(seconds) method');
+  },
 };
 
 /**
@@ -53,4 +57,14 @@ export function createCanvas(w, h) {
  */
 export function loadImage(src) {
   return impl.loadImage(src);
+}
+
+/**
+ * Open a video file as a frame source for VideoNode: an object with width,
+ * height, duration, and a synchronous frameAt(seconds) returning a canvas.
+ * @param {string} src path or file URL
+ * @returns {Promise<{width: number, height: number, duration: number, fps: number, frameAt: (t: number) => any}>}
+ */
+export function openVideo(src) {
+  return impl.openVideo(src);
 }
