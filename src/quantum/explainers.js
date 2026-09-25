@@ -175,7 +175,8 @@ class NarrationLine {
   }
 
   async say(text, hold = 1.6) {
-    if (!text) return;
+    if (!text || text === this.lastText) return;
+    this.lastText = text;
     let t = new Text(text, { size: 0.3, color: 'muted', maxWidth: LAYOUT.narration.w, align: 'center' });
     if (t.height > 0.5) t = new Text(text, { size: 0.25, color: 'muted', maxWidth: LAYOUT.narration.w, align: 'center' });
     t.moveTo([LAYOUT.narration.x, LAYOUT.narration.y]);
@@ -235,9 +236,10 @@ async function executeColumns(scene, circuit, diagram, bars, narration, opts, on
     const colDur = group ? perGate * 0.6 : perGate;
     await scene.play(cursor.to(k, { duration: colDur }), ...anims, { duration: colDur });
     if (onColumn) await onColumn(k, sim, ops);
-    if (!group || k === cols.length - 1 || !cols[k + 1].some((i) => circuit.ops[i].group && circuit.ops[i].group.id === group.id)) {
-      const next = diracNode(sim);
-      await scene.play(crossFade(dirac, next), { duration: 0.4 });
+    // The Dirac line follows every column, briefly inside a group, so it never lags the bars.
+    const next = diracNode(sim);
+    if (next.source !== dirac.source) {
+      await scene.play(crossFade(dirac, next), { duration: group ? 0.25 : 0.4 });
       dirac = next;
     }
   }

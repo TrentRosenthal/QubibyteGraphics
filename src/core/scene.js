@@ -445,6 +445,9 @@ export class Scene {
    * @returns {this}
    */
   caption(text, duration = 2) {
+    // Captions show one at a time: a new one ends any that is still up.
+    for (const c of this.captions) if (c.end > this.clock && c.start <= this.clock) c.end = this.clock;
+    this.captions = this.captions.filter((c) => c.end > c.start);
     this.captions.push({ start: this.clock, end: this.clock + duration, text });
     this._noteTime(this.clock + duration);
     return this;

@@ -199,7 +199,8 @@ class Narration {
   }
 
   async say(text) {
-    if (!text) return;
+    if (!text || text === this.lastText) return;
+    this.lastText = text;
     const t = new Text(text, { size: 0.3, color: 'muted', maxWidth: LAYOUT.narration.w, align: 'center' });
     t.moveTo([LAYOUT.narration.x, LAYOUT.narration.y]);
     this.scene.caption(text, 1.2 + text.split(/\s+/).length * 0.28);
