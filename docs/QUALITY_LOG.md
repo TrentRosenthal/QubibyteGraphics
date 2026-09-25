@@ -33,3 +33,5 @@ Every rendered visual is graded against `docs/QUALITY.md` (criteria a to g, 1 to
 | 42-bloch-gates | 75, 100 | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Qiskit Bloch sphere plots: the trail shows each gate's rotation, which the static reference cannot; kets now typeset with KaTeX. |
 | 43-qsphere | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Qiskit plot_state_qsphere: same Hamming-weight latitudes and phase colors; labels now step away from the equator so none sits on its dot. |
 | 50-images | 50, 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Keynote image placement and a textured plane in Blender: the 3D texture keeps perspective with per-face affine pieces and no seams; the sample image is saturated by design, the dimmed background keeps text readable. |
+| 44-cross-section | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Blender cutaway renders: the cut through the torus axis shows both circular tube sections as caps; the knot shows slight faceting on its tube. |
+| 45-printable-circuit | 75, 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | 3D-printed circuit models shared by quantum educators: same wires, gates, and connectors on a base plate, generated from the Qubi program. |

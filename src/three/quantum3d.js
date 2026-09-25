@@ -15,6 +15,7 @@ import { loadLabelText } from './render.js';
 import { spherical, rotateAxis, normalize, cross, perpendicular } from './vec3.js';
 import * as M from './mat4.js';
 import * as Q from './quat.js';
+import { scheduleCircuit } from '../qubi/schedule.js';
 
 
 /** Default Bloch sphere axis labels. */
@@ -393,6 +394,36 @@ function gateColor(g) {
  * @property {Array<{column: number, wires: number[], kind: 'box'|'control'|'target'|'swap'|'measure', label?: any, color?: any}>} gates
  *   one entry per gate element; a controlled gate is several entries in one column (controls and a target or box), joined by a vertical connector
  */
+
+/**
+ * The printable-model description of an evaluated Qubi circuit: one column
+ * per operation (so connectors never join unrelated gates), controls as
+ * dots, controlled X as a target ring, SWAP as crosses, MEASURE as a meter,
+ * everything else as a labeled box.
+ * @param {import('../qubi/ir.js').Circuit} circuit
+ * @param {{scheduling?: string}} [opts] scheduling mode (default 'never')
+ * @returns {CircuitModelInput}
+ */
+export function circuitModel(circuit, opts = {}) {
+  const sched = scheduleCircuit(circuit, { mode: opts.scheduling ?? 'never' });
+  const gates = [];
+  sched.columns.forEach((col, c) => {
+    for (const i of col) {
+      const op = circuit.ops[i];
+      if (op.kind === 'measure' || op.name === 'MEASURE') {
+        for (const t of op.targets) gates.push({ column: c, wires: [t], kind: 'measure' });
+        continue;
+      }
+      if (op.kind !== 'gate') continue;
+      for (const q of op.controls) gates.push({ column: c, wires: [q], kind: 'control' });
+      const base = op.controls.length ? op.name.replace(/^C+/, '') : op.name;
+      if (base === 'SWAP') gates.push({ column: c, wires: op.targets, kind: 'swap' });
+      else if (base === 'X' && op.controls.length) gates.push({ column: c, wires: op.targets, kind: 'target' });
+      else gates.push({ column: c, wires: op.targets, kind: 'box', label: op.label ?? base });
+    }
+  });
+  return { wires: circuit.numQubits, gates };
+}
 
 /**
  * Printable 3D model of a quantum circuit: wires as cylinders, gates as

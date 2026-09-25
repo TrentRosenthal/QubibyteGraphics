@@ -142,3 +142,14 @@ test('WebGL preview shares the projector camera and shading constants', async ()
   const orbited = previewState(s3d, 0, theme, { theta: 0.5 });
   assert.notEqual(orbited.cam.eye[0], st.cam.eye[0]);
 });
+
+test('circuitModel turns a Qubi circuit into printable-model gates, one column per operation', async () => {
+  const { circuitModel } = await import('../../src/three/index.js');
+  const { evaluate } = await import('../../src/qubi/index.js');
+  const m = circuitModel(evaluate('H 0\nCX [0,1]\nSWAP [0,1]\nMEASURE 1'));
+  assert.equal(m.wires, 2);
+  const kinds = m.gates.map((g) => `${g.column}:${g.kind}:${g.wires.join(',')}`);
+  assert.deepEqual(kinds, ['0:box:0', '1:control:0', '1:target:1', '2:swap:0,1', '3:measure:1']);
+  const { mesh } = circuitMesh(m);
+  assert.ok(mesh.faces.length > 100);
+});

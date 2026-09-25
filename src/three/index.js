@@ -42,7 +42,7 @@ export {
 } from './animations3d.js';
 
 export {
-  BlochSphere, blochSphere, BlochRotate, blochRotate, BLOCH_LABELS, qSphere, barCity, amplitudeLandscape, circuitMesh,
+  BlochSphere, blochSphere, BlochRotate, blochRotate, BLOCH_LABELS, qSphere, barCity, amplitudeLandscape, circuitMesh, circuitModel,
 } from './quantum3d.js';
 
 export { parseOBJ, parseSTL, parseGLTF, parse3MF, parse3MFModel, importMesh } from './import.js';
