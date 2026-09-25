@@ -498,6 +498,10 @@ function trySubstitution(f, x, steps) {
       // e^(2x) = (e^x)^2.
       h = simplify(replaceExpPowers(f, g, U, x));
     }
+    if (!freeOf(h, x) && g.type === 'pow' && g.args[0].type === 'sym' && g.args[0].name === x && g.args[1].type === 'num') {
+      // u = x^r, so x = u^(1/r): sqrt(x) + x = 6 becomes u + u^2 = 6.
+      h = simplify(mergePowersOf(simplify(substitute(h, { [x]: pow(U, num(g.args[1].value.inv())) })), 'u'));
+    }
     if (!freeOf(h, x)) continue;
     const cs = polyCoeffs(h, 'u');
     if (!cs || cs.length < 3) continue;
@@ -520,6 +524,20 @@ function trySubstitution(f, x, steps) {
     return periodic ? { ok: true, solutions: out, general, parameter: 'k' } : { ok: true, solutions: out };
   }
   return null;
+}
+
+// (u^a)^b -> u^(ab) for the substitution variable (candidates are checked
+// against the original equation afterwards, so branch issues cannot leak).
+function mergePowersOf(e, name) {
+  const walkNode = (n) => {
+    const m = n.args ? withArgs(n, n.args.map(walkNode)) : n;
+    if (m.type === 'pow' && m.args[0].type === 'pow' && m.args[0].args[0].type === 'sym' && m.args[0].args[0].name === name
+      && m.args[1].type === 'num' && m.args[0].args[1].type === 'num') {
+      return pow(m.args[0].args[0], num(m.args[0].args[1].value.mul(m.args[1].value)));
+    }
+    return m;
+  };
+  return walkNode(e);
 }
 
 function replaceExpPowers(f, g, U, x) {

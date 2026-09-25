@@ -564,7 +564,7 @@ export function treeLayout(tree, opts = {}) {
   layout(tree.root);
   const out = {};
   const place = (v, x, depth) => {
-    out[v] = { x, y: -depth * levelGap };
+    out[v] = { x, y: depth ? -depth * levelGap : 0 };
     for (const { child, dx } of rel[v] || []) place(child, x + dx, depth + 1);
   };
   place(tree.root, 0, 0);

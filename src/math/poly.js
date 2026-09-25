@@ -244,30 +244,23 @@ export function rationalRoots(p) {
   return roots.sort((x, y) => x.cmp(y));
 }
 
-// Interpolating polynomial through (xs[i], ys[i]) by Newton divided differences.
-function interpolate(xs, ys) {
-  const n = xs.length;
-  const coef = ys.slice();
-  for (let j = 1; j < n; j++) {
-    for (let i = n - 1; i >= j; i--) coef[i] = coef[i].sub(coef[i - 1]).div(xs[i].sub(xs[i - j]));
-  }
-  let p = [coef[n - 1]];
-  for (let i = n - 2; i >= 0; i--) p = pAdd(pMul(p, [xs[i].neg(), R1]), [coef[i]]);
-  return p;
-}
-
 // Kronecker: find a non-trivial integer factor of degree d of a primitive
-// square-free integer polynomial with no rational roots, or null.
+// square-free integer polynomial with no rational roots, or null. Candidate
+// factors are interpolated with integer Lagrange numerators so each trial
+// costs a few BigInt multiplications.
 function kroneckerFactor(f, d, budget) {
-  const pts = [];
-  const vals = [];
-  for (let k = 0; pts.length < d + 1 && k < 60; k++) {
-    const x = new Rational(BigInt(k % 2 === 0 ? k / 2 : -(k + 1) / 2));
-    const v = pEval(f, x);
-    if (v.isZero()) continue;
-    pts.push(x);
-    vals.push(v.n);
+  const cands = [];
+  for (let k = 0; k < 4 * (d + 1) + 8; k++) {
+    const x = BigInt(k % 2 === 0 ? k / 2 : -(k + 1) / 2);
+    const v = pEval(f, new Rational(x));
+    if (!v.isZero()) cands.push({ x, v: v.n < 0n ? -v.n : v.n });
   }
+  // Points where |f| is small have few divisors.
+  cands.sort((p, q) => (p.v < q.v ? -1 : p.v > q.v ? 1 : 0));
+  const chosen = cands.slice(0, d + 1);
+  if (chosen.length < d + 1) return null;
+  const xs = chosen.map((c) => c.x);
+  const vals = chosen.map((c) => pEval(f, new Rational(c.x)).n);
   const raw = vals.map(divisors);
   if (raw.some((ds) => ds === null)) {
     budget.exhausted = true;
@@ -281,13 +274,48 @@ function kroneckerFactor(f, d, budget) {
     return null;
   }
   budget.left -= combos;
+  // Lagrange numerators N_i (integer coefficients) and denominators D_i.
+  const numers = [];
+  const dens = [];
+  for (let i = 0; i <= d; i++) {
+    let poly = [1n];
+    let den = 1n;
+    for (let j = 0; j <= d; j++) {
+      if (j === i) continue;
+      const next = new Array(poly.length + 1).fill(0n);
+      poly.forEach((c, k) => {
+        next[k] -= c * xs[j];
+        next[k + 1] += c;
+      });
+      poly = next;
+      den *= xs[i] - xs[j];
+    }
+    numers.push(poly);
+    dens.push(den);
+  }
+  let W = 1n;
+  for (const dn of dens) {
+    const a = dn < 0n ? -dn : dn;
+    W = (W / bigGcd(W, a)) * a;
+  }
+  const scale = dens.map((dn) => W / dn);
+  const lead = f[f.length - 1].n;
   const idx = new Array(d + 1).fill(0);
+  const acc = new Array(d + 1);
   for (;;) {
-    const ys = idx.map((k, i) => new Rational(divs[i][k]));
-    const g = interpolate(pts, ys);
-    if (pDeg(g) === d && g.every((c) => c.isInteger())) {
-      const { q, r } = pDivmod(f, g);
-      if (!r.length && q.every((c) => c.isInteger())) return pPrimitive(g).prim;
+    acc.fill(0n);
+    for (let i = 0; i <= d; i++) {
+      const y = divs[i][idx[i]] * scale[i];
+      const N = numers[i];
+      for (let k = 0; k <= d; k++) acc[k] += y * N[k];
+    }
+    if (acc[d] !== 0n && acc.every((c) => c % W === 0n)) {
+      const g = acc.map((c) => c / W);
+      if (lead % g[d] === 0n) {
+        const gp = g.map((c) => new Rational(c));
+        const { q, r } = pDivmod(f, gp);
+        if (!r.length && q.every((c) => c.isInteger())) return pPrimitive(gp).prim;
+      }
     }
     let pos = 0;
     while (pos <= d) {
@@ -308,18 +336,34 @@ function kroneckerFactor(f, d, budget) {
  *   factor of degree four or more might still be reducible
  */
 
+const factorCache = new Map();
+
 /**
  * Factor a polynomial over the rationals into irreducible primitive integer
- * polynomials with multiplicities.
+ * polynomials with multiplicities. Kronecker's search for factors of degree
+ * two and up is limited by `maxCombos` candidate factors (0 skips it, which
+ * still finds every rational root and repeated factor).
  * @param {Poly} p
+ * @param {{maxCombos?: number}} [opts]
  * @returns {RationalFactorization}
  */
-export function factorRational(p) {
+export function factorRational(p, opts = {}) {
   p = pTrim(p);
   if (!p.length) return { content: R0, factors: [], complete: true };
+  const maxCombos = opts.maxCombos ?? 400000;
+  const cacheKey = p.map(String).join(',') + '|' + maxCombos;
+  const hit = factorCache.get(cacheKey);
+  if (hit) return hit;
+  const result = factorRationalUncached(p, maxCombos);
+  if (factorCache.size > 500) factorCache.clear();
+  factorCache.set(cacheKey, result);
+  return result;
+}
+
+function factorRationalUncached(p, maxCombos) {
   const { content, prim } = pPrimitive(p);
   const out = [];
-  const budget = { left: 2000000, exhausted: false };
+  const budget = { left: maxCombos, exhausted: false };
   for (const { poly, mult } of squareFree(prim)) {
     let rest = pPrimitive(poly).prim;
     for (const r of rationalRoots(rest)) {

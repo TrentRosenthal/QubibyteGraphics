@@ -197,7 +197,7 @@ function implicitDiffRaw(u, v, ctx) {
  * Differentiate with a full step list.
  * @param {Expr|string} expr
  * @param {string|Expr} [variable='x']
- * @param {{order?: number, partial?: boolean, maxSteps?: number}} [opts]
+ * @param {{order?: number, partial?: boolean, maxSteps?: number, retried?: boolean}} [opts]
  * @returns {Derivation}
  */
 export function differentiate(expr, variable = 'x', opts = {}) {
@@ -216,10 +216,29 @@ export function differentiate(expr, variable = 'x', opts = {}) {
       steps.push(makeStep(current, 'Simplify'));
     }
   } catch (err) {
-    if (err instanceof MathError) return { ok: false, reason: err.message, steps: linkSteps(steps) };
-    throw err;
+    if (!(err instanceof MathError)) throw err;
+    // Rules applied to an unsimplified form can meet 0/0 (sqrt(0 * x));
+    // simplifying the input first removes such removable problems.
+    const simplified = trySimplify(ensureExpr(expr));
+    if (!opts.retried && simplified && key(simplified) !== key(ensureExpr(expr))) {
+      const again = differentiate(simplified, variable, { ...opts, retried: true });
+      if (again.ok) {
+        const first = makeStep(ensureExpr(expr), 'Simplify before differentiating');
+        return { ...again, steps: linkSteps([first, ...again.steps]) };
+      }
+    }
+    return { ok: false, reason: err.message, steps: linkSteps(steps) };
   }
   return { ok: true, result: current, latex: makeStep(current, '').latex, steps: linkSteps(steps) };
+}
+
+function trySimplify(e) {
+  try {
+    return simplify(e);
+  } catch (err) {
+    if (err instanceof MathError) return null;
+    throw err;
+  }
 }
 
 /**

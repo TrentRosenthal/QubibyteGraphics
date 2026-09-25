@@ -215,3 +215,41 @@ test('Laurent series and residues at poles', () => {
   assert.equal(laurent('cos(x)/x^3', 'x', 0, 1).residue.value.toString(), '-1/2');
   assert.equal(laurent('e^(1/x)', 'x', 0, 2).ok, false);
 });
+
+test('harder integrals: conjugates, repeated quadratics, deep parts, inverse substitutions', () => {
+  for (const s of ['1/(1+cos(x))', 'x^3/(x^2+1)^2', '1/(x^2+x+1)^2', 'x^6 e^x sin(x)', 'e^x cos(x)^2', 'cos(ln(x))', 'cot(x)^2', '(x+2)/(x^2+2x+2)^2', '1/(1-sin(x))']) {
+    const r = integrate(s);
+    assert.ok(r.ok, s + ': ' + r.reason);
+    closeAt(compileReal(diff(r.result), ['x']), compileReal(parse(s), ['x']), 0.2, 1.2, 1e-7);
+  }
+  assert.ok(integrate('1/(1+cos(x))').steps.some((s) => s.rule === 'Multiply by the conjugate'));
+  assert.ok(integrate('1/(x^2+x+1)^2').steps.some((s) => s.rule === 'Reduction formula'));
+  const sym = integrateDefinite('x^2', 'x', 0, 'a');
+  assert.equal(sym.latex, '\\frac{a^{3}}{3}');
+  assert.equal(integrateDefinite('k e^(-k x)', 'x', 0, 1).latex, '1 - e^{-k}');
+});
+
+test('power series engine handles removable singularities and poles', () => {
+  const coeffs = (f, a, n) => {
+    const r = laurent(f, 'x', a, n);
+    assert.ok(r.ok, f);
+    return r;
+  };
+  assert.equal(coeffs('tanh(x)', 0, 5).latex, 'x - \\frac{x^{3}}{3} + \\frac{2x^{5}}{15}');
+  assert.equal(coeffs('sinh(x) cosh(x)', 0, 3).latex, 'x + \\frac{2x^{3}}{3}');
+  assert.equal(coeffs('atan(x)/x^2', 0, 1).latex, '\\frac{1}{x} - \\frac{x}{3}');
+  assert.equal(coeffs('asin(x)', 0, 5).latex, 'x + \\frac{x^{3}}{6} + \\frac{3x^{5}}{40}');
+  assert.equal(coeffs('acos(x)', 0, 3).latex, '\\frac{\\pi}{2} - x - \\frac{x^{3}}{6}');
+  assert.equal(coeffs('cot(x)', 0, 3).latex, '\\frac{1}{x} - \\frac{x}{3} - \\frac{x^{3}}{45}');
+  assert.equal(coeffs('sec(x)', 0, 4).latex, '1 + \\frac{x^{2}}{2} + \\frac{5x^{4}}{24}');
+  assert.equal(coeffs('log(1+x, 10)', 0, 2).latex, '\\frac{x}{\\ln(10)} - \\frac{x^{2}}{2\\ln(10)}');
+  assert.equal(coeffs('2^x', 0, 2).latex, '1 + \\ln(2)x + \\frac{\\ln^{2}(2)x^{2}}{2}');
+  assert.equal(coeffs('sqrt(4 + x)', 0, 2).latex, '2 + \\frac{x}{4} - \\frac{x^{2}}{64}');
+  assert.equal(coeffs('1/(x^2 (1 - x))', 0, 1).latex, '\\frac{1}{x^{2}} + \\frac{1}{x} + 1 + x');
+  assert.equal(laurent('sqrt(x)', 'x', 0, 2).ok, false);
+  assert.equal(laurent('ln(x)', 'x', 0, 2).ok, false);
+  assert.equal(taylor('x/sin(x)', 'x', 0, 4).latex, '1 + \\frac{x^{2}}{6} + \\frac{7x^{4}}{360}');
+  const bern = taylor('x/(e^x-1)', 'x', 0, 4);
+  assert.equal(bern.latex, '1 - \\frac{x}{2} + \\frac{x^{2}}{12} - \\frac{x^{4}}{720}');
+  assert.ok(bern.steps.some((s) => s.rule === 'Combine the known series of each part'));
+});

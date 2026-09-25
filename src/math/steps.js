@@ -78,8 +78,7 @@ export function makeStep(expr, rule, extra = {}) {
 
 /**
  * Fill in `matches` for consecutive steps and drop a step that repeats the
- * previous LaTeX when it adds nothing (same rule, or a bare simplify or
- * evaluate).
+ * previous LaTeX without adding a note.
  * @param {Step[]} steps
  * @returns {Step[]}
  */
@@ -87,7 +86,7 @@ export function linkSteps(steps) {
   const out = [];
   for (const s of steps) {
     const prev = out[out.length - 1];
-    if (prev && prev.latex === s.latex && (prev.rule === s.rule || s.rule === 'Simplify' || s.rule === 'Evaluate')) continue;
+    if (prev && prev.latex === s.latex && !s.note) continue;
     if (prev) {
       const spanOf = new Map(s.spans.map((sp) => [sp.id, sp]));
       s.matches = matchTokens(prev.expr, s.expr).map((m) => {

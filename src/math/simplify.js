@@ -7,8 +7,9 @@
  * sqrt(2)/2), exact trig values at rational multiples of pi are evaluated,
  * odd and even function symmetries are applied, and a numeric coefficient
  * multiplying a single sum is distributed. sqrt(u) is stored as u^(1/2) and
- * exp(u) as e^u. Only identities that are valid for every complex input are
- * applied automatically.
+ * exp(u) as e^u. Identities are applied only when they hold for every
+ * complex value, with two exceptions that treat symbols as real variables:
+ * ln(e^u) = u, and |u| = u when u is provably non-negative for real symbols.
  * @module math/simplify
  */
 import { Rational, R0, R1, RHALF, bigIntRoot, bigGcd } from './rational.js';
@@ -124,6 +125,7 @@ function factorClass(f) {
   if (f.type === 'pow' && f.args[0].type === 'num') return 1.5;
   if (f.type === 'sym') return 2;
   if (f.type === 'pow' && f.args[0].type === 'sym') return 2;
+  if (f.type === 'pow' && f.args[0].type === 'const') return 2.5;
   return 3;
 }
 

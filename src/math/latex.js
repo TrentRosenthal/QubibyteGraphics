@@ -25,7 +25,7 @@ const FN_LATEX = {
   asin: '\\arcsin', acos: '\\arccos', atan: '\\arctan', sinh: '\\sinh', cosh: '\\cosh', tanh: '\\tanh',
   ln: '\\ln', exp: '\\exp', sign: '\\operatorname{sgn}',
 };
-const TRIG_POWER = new Set(['sin', 'cos', 'tan', 'sec', 'csc', 'cot', 'sinh', 'cosh', 'tanh']);
+const TRIG_POWER = new Set(['sin', 'cos', 'tan', 'sec', 'csc', 'cot', 'sinh', 'cosh', 'tanh', 'ln']);
 
 const START = '\ue000';
 const MID = '\ue001';
@@ -132,8 +132,8 @@ class Printer {
     if (terms.every(isConstantTerm)) {
       const numIdx = terms.findIndex((t) => t.type === 'num');
       if (numIdx > 0) terms = [terms[numIdx], ...terms.filter((_, i) => i !== numIdx)];
-      const d = e.id !== undefined ? commonDenominator({ args: terms }) : null;
-      if (d) return '\\frac{' + this.sum({ args: terms.map((t) => scaleTerm(t, d)) }) + '}{' + d + '}';
+      const d = commonDenominator({ args: terms });
+      if (d) return '\\frac{' + this.scaledSum(terms, d) + '}{' + d + '}';
     }
     // Two-term sums read better with the positive term first: 1 - x^2.
     if (terms.length === 2 && negated(terms[0]) && !negated(terms[1]) && terms[1].type !== 'sym') terms = [terms[1], terms[0]];
@@ -147,6 +147,20 @@ class Printer {
       const neg = negated(t);
       if (neg) out += ' - ' + this.wrap(t, this.termBody(neg, t));
       else out += ' + ' + this.print(t);
+    });
+    return out;
+  }
+
+  // Terms multiplied by d, printed as one numerator; each piece keeps the
+  // id of the original term so spans still point into the expression tree.
+  scaledSum(terms, d) {
+    let out = '';
+    terms.forEach((orig, i) => {
+      const t = scaleTerm(orig, d);
+      const n = negated(t);
+      if (i === 0) out = this.wrap(orig, this.body(t));
+      else if (n) out += ' - ' + this.wrap(orig, this.termBody(n, t));
+      else out += ' + ' + this.wrap(orig, this.body(t));
     });
     return out;
   }
@@ -247,8 +261,7 @@ class Printer {
   fnArg(a, forceParen) {
     const common = a.type === 'add' ? commonDenominator(a) : null;
     if (common) {
-      const inner = this.sum({ args: a.args.map((t) => scaleTerm(t, common)) });
-      return '\\left(' + this.wrap(a, '\\frac{' + inner + '}{' + common + '}') + '\\right)';
+      return '\\left(' + this.wrap(a, '\\frac{' + this.scaledSum(a.args, common) + '}{' + common + '}') + '\\right)';
     }
     const s = this.print(a);
     if (!forceParen && a.type === 'fn' && a.name === 'abs') return s;
@@ -363,9 +376,14 @@ function scaleTerm(t, d) {
 // For a term with a negative coefficient, the same term with the sign flipped.
 function negated(t) {
   if (t.type === 'num') return t.value.isNegative() ? num(t.value.neg()) : null;
-  if (t.type === 'mul' && t.args[0].type === 'num' && t.args[0].value.isNegative()) {
-    const c = t.args[0].value.neg();
-    const rest = t.args.slice(1);
+  if (t.type === 'mul' && t.args[0].type === 'mul') {
+    const inner = negated(t.args[0]);
+    return inner ? mul(inner, ...t.args.slice(1)) : null;
+  }
+  const args = t.type === 'mul' ? t.args : null;
+  if (args && args[0].type === 'num' && args[0].value.isNegative()) {
+    const c = args[0].value.neg();
+    const rest = args.slice(1);
     if (c.isOne()) return rest.length === 1 ? rest[0] : mul(...rest);
     return mul(num(c), ...rest);
   }

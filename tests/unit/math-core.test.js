@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   Rational, bestRational, bigIntRoot, parse, toLatex, toText, toLatexWithSpans, simplify, expand, key, num, sym, add,
   mul, pow, fn, matchTokens, linkSteps, makeStep, evaluate, compileReal, Complex, substituteValues, symbols, freeOf,
-  factor, SeededRandom, isNonNegative, replaceSubtree, MathError,
+  factor, SeededRandom, isNonNegative, replaceSubtree, MathError, equivalent,
 } from '../../src/math/index.js';
 
 const S = (s) => simplify(parse(s));
@@ -196,4 +196,18 @@ test('factor: over the rationals, reals and complex numbers, and patterns', () =
   for (const s of ['x^5 - x', '12x^4 - 3x^2', 'x^6 - 64', '3x^3 + 3']) {
     assert.equal(key(expand(factor(s).result)), key(expand(parse(s))), s);
   }
+});
+
+test('equivalence testing: symbolic first, then numeric probes', () => {
+  assert.deepEqual(equivalent('(x+1)^2', 'x^2 + 2x + 1'), { equal: true, method: 'symbolic' });
+  assert.equal(equivalent('1/x + 1/(x+1)', '(2x+1)/(x^2+x)').method, 'symbolic');
+  const trig = equivalent('sin(2x)', '2 sin(x) cos(x)');
+  assert.equal(trig.equal, true);
+  assert.equal(trig.method, 'numeric');
+  assert.ok(trig.points >= 10);
+  const no = equivalent('sin(x)^2', 'sin(x^2)');
+  assert.equal(no.equal, false);
+  assert.ok(no.counterexample.difference > 0);
+  assert.equal(equivalent('ln(x y)', 'ln(x) + ln(y)', { real: true }).equal, true);
+  assert.equal(equivalent('x + y', 'y + x + 0').method, 'symbolic');
 });

@@ -29,6 +29,7 @@ export {
 } from './poly.js';
 export { toRationalFunction, cancel, together, apart, factoredPoly, isRationalIn } from './ratfunc.js';
 export { evaluate, compileReal, compileComplex } from './evaluate.js';
+export { equivalent } from './equality.js';
 export { solve, solveLinearSystem, newtonSystem } from './solve.js';
 
 // Calculus.
@@ -107,7 +108,7 @@ export {
   sigFigs, decimalPlaces, roundSig, sigFigArithmetic,
 } from './units.js';
 export {
-  suvat, springOscillator, pendulum, keplerOrbit, nBody, interference, doubleSlitIntensity, standingWave,
+  suvat, springOscillator, pendulum, keplerOrbit, nBody, interference, doubleSlit, standingWave,
 } from './physics.js';
 
 // Presentation.

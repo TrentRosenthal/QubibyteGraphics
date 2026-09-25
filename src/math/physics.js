@@ -364,17 +364,29 @@ export function interference(p) {
 }
 
 /**
- * Double-slit intensity I / I0 = cos^2(pi d sin(theta) / lambda) sinc^2(pi a sin(theta) / lambda).
- * @param {number} theta angle from the center line (radians)
+ * Double-slit (Fraunhofer) pattern: I / I0 = cos^2(pi d sin(theta) / lambda)
+ * sinc^2(pi a sin(theta) / lambda), with the angles of the interference minima.
  * @param {{d: number, a?: number, wavelength: number}} p slit separation d, slit width a
- * @returns {number}
+ * @returns {{intensity: (theta: number) => number, minima: number[], latex: string}}
  */
-export function doubleSlitIntensity(theta, p) {
-  const s = Math.sin(theta);
-  const beta = (Math.PI * p.d * s) / p.wavelength;
-  const alpha = p.a ? (Math.PI * p.a * s) / p.wavelength : 0;
-  const sinc = alpha === 0 ? 1 : Math.sin(alpha) / alpha;
-  return Math.cos(beta) ** 2 * sinc * sinc;
+export function doubleSlit(p) {
+  const intensity = (theta) => {
+    const s = Math.sin(theta);
+    const beta = (Math.PI * p.d * s) / p.wavelength;
+    const alpha = p.a ? (Math.PI * p.a * s) / p.wavelength : 0;
+    const sinc = alpha === 0 ? 1 : Math.sin(alpha) / alpha;
+    return Math.cos(beta) ** 2 * sinc * sinc;
+  };
+  const minima = [];
+  for (let m = 0; minima.length < 5; m++) {
+    const s = ((m + 0.5) * p.wavelength) / p.d;
+    if (s > 1) break;
+    minima.push(Math.asin(s));
+  }
+  return {
+    intensity, minima,
+    latex: 'I(\\theta) = I_{0}\\cos^{2}\\left(\\frac{\\pi d \\sin\\theta}{\\lambda}\\right)\\operatorname{sinc}^{2}\\left(\\frac{\\pi a \\sin\\theta}{\\lambda}\\right)',
+  };
 }
 
 /**

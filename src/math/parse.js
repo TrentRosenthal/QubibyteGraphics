@@ -126,9 +126,14 @@ function tokenizeLatex(src) {
       const name = m[1];
       i += m[0].length;
       if (name === 'left' || name === 'right') {
-        // Keep the delimiter that follows; drop the sizing command.
+        // Keep the delimiter that follows; drop the sizing command. Sized
+        // bars become explicit open and close tokens so nested |...| parse.
         while (/\s/.test(src[i])) i++;
         if (src[i] === '.') i++;
+        else if (src[i] === '|') {
+          out.push(tok('op', name === 'left' ? '|L' : '|R', i));
+          i++;
+        }
         continue;
       }
       if (SKIP_CMDS.has(name)) continue;
@@ -244,7 +249,7 @@ class Parser {
     if (t.t === 'num' || t.t === 'id' || t.t === 'lbrace') return true;
     if (t.t === 'cmd') return !['rfloor', 'rceil'].includes(t.v);
     if (t.t === 'op') {
-      if (t.v === '(' || t.v === '[') return true;
+      if (t.v === '(' || t.v === '[' || t.v === '|L') return true;
       if (t.v === '|') return this.absDepth === 0;
     }
     return false;
@@ -382,6 +387,15 @@ class Parser {
       this.absDepth = saved;
       this.expectOp(t.v === '(' ? ')' : ']');
       return e;
+    }
+    if (t.t === 'op' && t.v === '|L') {
+      this.next();
+      const saved = this.absDepth;
+      this.absDepth = 0;
+      const e = this.additive();
+      this.absDepth = saved;
+      this.expectOp('|R');
+      return fn('abs', e);
     }
     if (t.t === 'op' && t.v === '|') {
       this.next();

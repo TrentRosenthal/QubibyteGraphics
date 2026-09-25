@@ -78,10 +78,12 @@ export function fourierSeriesExact(wave, N, opts = {}) {
     terms.push({ n, a, b });
   }
   const K = sym('n');
+  const odd = add(mul(num(2), K), num(-1));
+  const coeff = (c) => simplify(mul(num(c), A));
   const general = {
-    square: sumNode(mul(num(4), A, pow(mul(add(mul(num(2), K), num(-1)), pi), num(-1)), fn('sin', mul(add(mul(num(2), K), num(-1)), X))), 'n', 1, constant('inf')),
-    sawtooth: sumNode(mul(num(2), A, pow(num(-1), add(K, num(1))), pow(mul(K, pi), num(-1)), fn('sin', mul(K, X))), 'n', 1, constant('inf')),
-    triangle: sumNode(mul(num(8), A, pow(mul(pow(add(mul(num(2), K), num(-1)), num(2)), pow(pi, num(2))), num(-1)), fn('cos', mul(add(mul(num(2), K), num(-1)), X))), 'n', 1, constant('inf')),
+    square: sumNode(mul(coeff(4), fn('sin', mul(odd, X)), pow(mul(odd, pi), num(-1))), 'n', 1, constant('inf')),
+    sawtooth: sumNode(mul(coeff(2), pow(num(-1), add(K, num(1))), fn('sin', mul(K, X)), pow(mul(K, pi), num(-1))), 'n', 1, constant('inf')),
+    triangle: sumNode(mul(coeff(8), fn('cos', mul(odd, X)), pow(mul(pow(odd, num(2)), pow(pi, num(2))), num(-1))), 'n', 1, constant('inf')),
   }[wave];
   const pieces = [];
   for (const t of terms) {

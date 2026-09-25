@@ -197,6 +197,7 @@ class Search {
     this.active = new Set();
     this.partsDepth = 0;
     this.reserved = new Set();
+    this.memo = new Map();
   }
 
   freshName(f, x) {
@@ -209,13 +210,17 @@ class Search {
 }
 
 function solve(f0, x, S, depth) {
-  if (--S.budget < 0 || depth > 14) return null;
+  if (--S.budget < 0 || depth > 40) return null;
   const f = simplify(f0);
   const k = x + '|' + key(f);
   if (S.active.has(k)) return null;
+  const memoKey = k + '|' + [...S.reserved].sort().join(',');
+  if (S.memo.has(memoKey)) return S.memo.get(memoKey);
   S.active.add(k);
   try {
-    return solveInner(f, x, S, depth);
+    const r = solveInner(f, x, S, depth);
+    if (r) S.memo.set(memoKey, r);
+    return r;
   } catch (err) {
     if (err instanceof MathError) return null;
     throw err;
@@ -246,6 +251,8 @@ function solveInner(f, x, S, depth) {
     || trySubstitution(f, x, S, depth)
     || tryTrig(f, x, S, depth)
     || tryCyclic(f, x)
+    || tryConjugate(f, x, S, depth)
+    || tryReduceTrigPowers(f, x, S, depth)
     || tryLinearRadical(f, x, S, depth)
     || tryParts(f, x, S, depth)
     || tryExpand(f, x, S, depth);
@@ -287,6 +294,31 @@ function quadraticLeaf(f, x, numPoly, quad) {
   return leaf('Complete the square', f, x, F, 'Split the numerator into a multiple of the derivative of the denominator plus a constant');
 }
 
+// (B x + C) / (a x^2 + b x + c)^k, k >= 2, with 4ac - b^2 > 0: split off a
+// multiple of Q' and use the reduction formula for the integral of 1/Q^k.
+function quadraticPowerLeaf(f, x, numPoly, quad, k) {
+  const [c, b, a] = quad;
+  const disc = a.mul(c).mul(Rational.from(4)).sub(b.mul(b));
+  if (disc.sign() <= 0) return null;
+  const X = sym(x);
+  const Q = add(mul(num(a), pow(X, num(2))), mul(num(b), X), num(c));
+  const lin = add(mul(num(a.mul(Rational.from(2))), X), num(b));
+  const r = pow(num(disc), num('1/2'));
+  const J = (n) => {
+    if (n === 1) return mul(num(2), fn('atan', mul(lin, pow(r, num(-1)))), pow(r, num(-1)));
+    const m = Rational.from(n - 1);
+    const first = mul(lin, pow(mul(num(m.mul(disc)), pow(Q, num(n - 1))), num(-1)));
+    const coef = num(Rational.from(2 * (2 * n - 3)).mul(a).div(m.mul(disc)));
+    return add(first, mul(coef, J(n - 1)));
+  };
+  const B = numPoly[1] || Rational.from(0);
+  const C = numPoly[0] || Rational.from(0);
+  const qPart = B.div(a.mul(Rational.from(2)));
+  const rest = C.sub(qPart.mul(b));
+  const F = add(mul(num(qPart), pow(Q, num(1 - k)), num(Rational.from(1 - k).inv())), mul(num(rest), J(k)));
+  return leaf('Reduction formula', f, x, F, '\\int \\frac{dx}{Q^{n}} = \\frac{2ax + b}{(n-1)\\Delta Q^{n-1}} + \\frac{2(2n-3)a}{(n-1)\\Delta} \\int \\frac{dx}{Q^{n-1}}');
+}
+
 function tryRational(f, x, S, depth) {
   const rf = toRationalFunction(f, x);
   if (!rf) return null;
@@ -314,6 +346,10 @@ function tryRational(f, x, S, depth) {
       kids.push(k);
     } else if (deg === 2 && p.term.power === 1) {
       kids.push(quadraticLeaf(p.expr, x, p.term.numPoly, p.term.poly));
+    } else if (deg === 2) {
+      const leafNode = quadraticPowerLeaf(p.expr, x, p.term.numPoly, p.term.poly, p.term.power);
+      if (!leafNode) return null;
+      kids.push(leafNode);
     } else {
       return null;
     }
@@ -420,6 +456,31 @@ function powerSubstitute(q, g, U, x) {
   return failed ? null : simplify(out);
 }
 
+// When g = c x^k + d, rewrite the remaining x^(jk) as ((u - d)/c)^j.
+function binomialSubstitute(h, g, U, x) {
+  const cs = polyCoeffs(g, x);
+  if (!cs || cs.length < 3) return null;
+  const k = cs.length - 1;
+  if (!cs.slice(1, k).every(isZero) || cs.some((c) => !freeOf(c, x))) return null;
+  const xk = mul(add(U, mul(num(-1), cs[0])), pow(cs[k], num(-1)));
+  let failed = false;
+  const walkNode = (n) => {
+    if (failed) return n;
+    if (n.type === 'sym' && n.name === x) {
+      failed = true;
+      return n;
+    }
+    if (n.type === 'pow' && n.args[0].type === 'sym' && n.args[0].name === x && n.args[1].type === 'num') {
+      const m = n.args[1].value.div(Rational.from(k));
+      if (!m.isInteger()) failed = true;
+      return pow(xk, num(m));
+    }
+    return n.args ? withArgs(n, n.args.map(walkNode)) : n;
+  };
+  const out = walkNode(h);
+  return failed ? null : simplify(out);
+}
+
 function trySubstitution(f, x, S, depth) {
   for (const g of substitutionCandidates(f, x)) {
     const gp = diff(g, x);
@@ -441,6 +502,14 @@ function trySubstitution(f, x, S, depth) {
     if (!freeOf(h, x)) {
       const h3 = powerSubstitute(q, g, U, x);
       if (h3 && freeOf(h3, x)) h = h3;
+    }
+    if (!freeOf(h, x)) {
+      const h4 = binomialSubstitute(h, g, U, x);
+      if (h4 && freeOf(h4, x)) h = h4;
+    }
+    if (!freeOf(h, x) && g.type === 'fn' && g.name === 'ln' && g.args[0].type === 'sym' && g.args[0].name === x) {
+      const h5 = simplify(substitute(h, { [x]: pow(constant('e'), U) }));
+      if (freeOf(h5, x)) h = h5;
     }
     if (!freeOf(h, x)) continue;
     S.reserved.add(u);
@@ -545,6 +614,11 @@ function tryTrig(f, x, S, depth) {
       const kids = [solve(mul(pow(t, num(m - 2)), pow(fn('sec', L), num(2))), x, S, depth + 1), solve(pow(t, num(m - 2)), x, S, depth + 1)];
       if (kids.every(Boolean)) return { rule: 'Pythagorean identity', f, v: x, children: kids, combine: (pp) => add(pp[0], mul(num(-1), pp[1])), note: '\\tan^{2} u = \\sec^{2} u - 1' };
     }
+    if (n >= 2 && m === -n) {
+      const t = fn('cot', L);
+      const kids = [solve(mul(pow(t, num(n - 2)), pow(fn('csc', L), num(2))), x, S, depth + 1), solve(pow(t, num(n - 2)), x, S, depth + 1)];
+      if (kids.every(Boolean)) return { rule: 'Pythagorean identity', f, v: x, children: kids, combine: (pp) => add(pp[0], mul(num(-1), pp[1])), note: '\\cot^{2} u = \\csc^{2} u - 1' };
+    }
     if (m < 0 && n < 0) {
       const kids = [solve(mul(pow(fn('sin', L), num(m + 2)), pow(fn('cos', L), num(n))), x, S, depth + 1), solve(mul(pow(fn('sin', L), num(m)), pow(fn('cos', L), num(n + 2))), x, S, depth + 1)];
       if (kids.every(Boolean)) return { rule: 'Pythagorean identity', f, v: x, children: kids, combine: (pp) => add(...pp), note: '1 = \\sin^{2} u + \\cos^{2} u' };
@@ -584,6 +658,53 @@ function productToSum(f, x) {
   return simplify(mul(h, add(fn('cos', diffAB), fn('cos', sum))));
 }
 
+// 1 / (c +- c cos u) and 1 / (c +- c sin u): multiply by the conjugate.
+function tryConjugate(f, x, S, depth) {
+  if (f.type !== 'pow' || f.args[1].type !== 'num' || !f.args[1].value.eq(Rational.from(-1)) || f.args[0].type !== 'add' || f.args[0].args.length !== 2) return null;
+  const terms = f.args[0].args;
+  const n = terms.find((t) => t.type === 'num');
+  const trig = terms.find((t) => t !== n);
+  if (!n || !trig) return null;
+  const hasCoeff = trig.type === 'mul' && trig.args.length === 2 && trig.args[0].type === 'num';
+  const c = hasCoeff ? trig.args[0].value : Rational.from(1);
+  const core = hasCoeff ? trig.args[1] : trig;
+  if (!c.abs().eq(n.value.abs()) || core.type !== 'fn' || (core.name !== 'cos' && core.name !== 'sin') || !isLinear(core.args[0], x)) return null;
+  const sgn = c.div(n.value);
+  const other = core.name === 'cos' ? 'sin' : 'cos';
+  const rewritten = expand(mul(num(n.value.inv()), add(num(1), mul(num(sgn.neg()), core)), pow(fn(other, core.args[0]), num(-2))));
+  const child = solve(rewritten, x, S, depth + 1);
+  if (!child) return null;
+  return { rule: 'Multiply by the conjugate', f, v: x, children: [child], combine: (pp) => pp[0], note: '\\frac{1}{1 \\pm \\cos u} = \\frac{1 \\mp \\cos u}{\\sin^{2} u}' };
+}
+
+// Replace even powers of sine and cosine by double-angle forms inside
+// products with other factors (e^x cos^2 x), then expand.
+function tryReduceTrigPowers(f, x, S, depth) {
+  if (f.type !== 'mul') return null;
+  let changed = false;
+  const args = f.args.map((g) => {
+    if (g.type === 'pow' && g.args[0].type === 'fn' && (g.args[0].name === 'sin' || g.args[0].name === 'cos') && g.args[1].type === 'num'
+      && g.args[1].value.isInteger() && g.args[1].value.sign() > 0 && g.args[1].value.n % 2n === 0n && isLinear(g.args[0].args[0], x)) {
+      changed = true;
+      const u = g.args[0].args[0];
+      const sign = g.args[0].name === 'sin' ? -1 : 1;
+      const half = mul(num('1/2'), add(num(1), mul(num(sign), fn('cos', mul(num(2), u)))));
+      return pow(half, num(g.args[1].value.n / 2n));
+    }
+    return g;
+  });
+  if (!changed) return null;
+  let e;
+  try {
+    e = expand(mul(...args));
+  } catch {
+    return null;
+  }
+  const child = solve(e, x, S, depth + 1);
+  if (!child) return null;
+  return { rule: 'Power-reduction identity', f, v: x, children: [child], combine: (pp) => pp[0], note: '\\sin^{2} u = \\frac{1 - \\cos 2u}{2}, \\; \\cos^{2} u = \\frac{1 + \\cos 2u}{2}' };
+}
+
 // e^(L1) sin(L2) and e^(L1) cos(L2): parts twice returns the original integral.
 function tryCyclic(f, x) {
   if (f.type !== 'mul' || f.args.length !== 2) return null;
@@ -614,7 +735,7 @@ function liate(g, x) {
 }
 
 function tryParts(f, x, S, depth) {
-  if (S.partsDepth >= 5) return null;
+  if (S.partsDepth >= 12) return null;
   const factors = f.type === 'mul' ? f.args : [f];
   const ranked = factors.map((g, i) => ({ g, i, r: liate(g, x) })).sort((p, q) => q.r - p.r);
   const best = ranked[0];
@@ -725,7 +846,13 @@ export function integrate(expr, variable = 'x') {
   const S = new Search();
   const root = solve(f, x, S, 0);
   if (!root) return { ok: false, reason: 'No elementary antiderivative found', steps: [makeStep(start, 'Integrate')] };
-  const F = nodeResult(root);
+  let F = nodeResult(root);
+  try {
+    const Fe = expand(F);
+    if (toLatex(Fe).length < toLatex(F).length) F = Fe;
+  } catch (err) {
+    if (!(err instanceof MathError)) throw err;
+  }
   if (!verify(F, f, x)) return { ok: false, reason: 'The candidate antiderivative failed the derivative check', steps: [makeStep(start, 'Integrate')] };
   const { steps } = renderSteps(root, start, x);
   steps.push(makeStep(F, 'Simplify'));
@@ -801,6 +928,8 @@ export function integrateDefinite(expr, variable, lower, upper) {
   const f0 = ensureExpr(expr);
   const f = simplify(f0);
   const start = integral(f0, x, A, B);
+  const params = [...symbols(A), ...symbols(B), ...symbols(f)].filter((v) => v !== x);
+  if (params.length) return symbolicDefinite(f0, x, A, B, start);
   const an = infinitySign(A) ? infinitySign(A) * Infinity : compileReal(A, [])();
   const bn = infinitySign(B) ? infinitySign(B) * Infinity : compileReal(B, [])();
   const g = compileReal(f, [x]);
@@ -881,6 +1010,26 @@ export function integrateDefinite(expr, variable, lower, upper) {
   const exact = simplify(total);
   steps.push(makeStep(exact, 'Simplify'));
   return { ok: true, value: totalNum, exact, latex: toLatex(exact), converges: true, method: 'Improper integral via limits', steps: linkSteps(steps) };
+}
+
+// Definite integral with symbolic limits or parameters: F(b) - F(a) without
+// numeric checks (the caller is responsible for continuity on the interval).
+function symbolicDefinite(f0, x, A, B, start) {
+  const anti = integrate(f0, x);
+  if (!anti.ok) return { ok: false, reason: anti.reason, steps: [makeStep(start, 'Integrate')] };
+  if (infinitySign(A) || infinitySign(B)) return { ok: false, reason: 'Improper integrals need numeric limits and parameters', steps: [makeStep(start, 'Integrate')] };
+  const F = anti.result;
+  const steps = [makeStep(start, 'Definite integral'), ...anti.steps.slice(1, -1)];
+  steps.push(makeStep(bracket(F, A, B), 'Evaluate the antiderivative at the limits'));
+  const Fb = substitute(F, { [x]: B });
+  const Fa = substitute(F, { [x]: A });
+  steps.push(makeStep(add(Fb, mul(num(-1), Fa)), 'F(b) - F(a)'));
+  const exact = simplify(add(Fb, mul(num(-1), Fa)));
+  steps.push(makeStep(exact, 'Simplify'));
+  return {
+    ok: true, value: NaN, exact, latex: toLatex(exact), converges: true, method: 'Fundamental theorem of calculus', steps: linkSteps(steps),
+    reason: 'Symbolic limits: continuity of the antiderivative on the interval is assumed',
+  };
 }
 
 /**

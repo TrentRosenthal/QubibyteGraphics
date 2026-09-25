@@ -98,13 +98,14 @@ export function cancel(expr, x = 'x') {
 }
 
 /**
- * Expression of a polynomial as a product of its irreducible factors.
+ * Expression of a polynomial as a product of its factors over the rationals
+ * (rational roots, repeated factors, and small higher-degree factors).
  * @param {Poly} p
  * @param {string} x
  * @returns {Expr}
  */
 export function factoredPoly(p, x) {
-  const f = factorRational(p);
+  const f = factorRational(p, { maxCombos: 2000 });
   const parts = [];
   if (!f.content.isOne()) parts.push(num(f.content));
   for (const { poly, mult } of f.factors) {
