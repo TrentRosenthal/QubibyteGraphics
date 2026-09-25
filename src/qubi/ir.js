@@ -11,6 +11,13 @@
  * - Controlled gates list controls first, then targets, in the order the user
  *   wrote them inside brackets: `CX [c1,c2,t]` gives controls [c1, c2] and
  *   targets [t].
+ * - Any gate may carry controls, not only the C-prefixed ones: the stdlib
+ *   emits multi-controlled `RY` ops, for example.
+ * - A user matrix acts on the op's targets with targets[0] as the least
+ *   significant bit of the matrix index.
+ * - Gate matrices: RX(t) = exp(-i t X/2), RY(t) = exp(-i t Y/2),
+ *   RZ(t) = diag(e^{-it/2}, e^{it/2}), P(l) = diag(1, e^{il}),
+ *   U(t, p, l) = [[cos(t/2), -e^{il} sin(t/2)], [e^{ip} sin(t/2), e^{i(p+l)} cos(t/2)]].
  *
  * @module qubi/ir
  */
@@ -87,8 +94,8 @@ export const GATE_INFO = Object.freeze({
  * @property {CMatrix} [matrix] Unitary on the targets for user matrix gates.
  * @property {string} [label] Display label override (user gates, stdlib boxes).
  * @property {string} [color] Display color name from a user gate definition.
- * @property {Group} [group] Present when the op came from a stdlib call or user function.
- * @property {string} [register] For measurements: name of the classical variable receiving the result.
+ * @property {Group} [group] Present when the op came from a stdlib call, user function, sequence gate, or SWAPSEQ. The innermost group; follow `group.parent` outward.
+ * @property {string} [register] For measurements: `name[k]`, bit k of the classical variable `name` receiving the result (bits count from the lowest measured wire).
  * @property {IfBranch[]} [branches] For kind 'if': condition branches in order.
  * @property {Op[]} [elseOps] For kind 'if': ops when no branch matched.
  * @property {number} [loopId] Innermost enclosing LOOP/REPEAT id, if any.
@@ -108,6 +115,9 @@ export const GATE_INFO = Object.freeze({
  * @property {string} name Stdlib or function name, for example 'QFT'.
  * @property {string} callText Source text of the call, for example 'QFT(0..4)'.
  * @property {number[]} wires Wires the call touches.
+ * @property {'stdlib'|'function'|'gate'} [kind] What produced the group ('gate' for sequence gates and SWAPSEQ).
+ * @property {boolean} [blackbox] True for `blackbox`/`encapsulate` functions: draw one box.
+ * @property {Group} [parent] Enclosing group when calls nest.
  */
 
 /**
@@ -134,11 +144,13 @@ export const GATE_INFO = Object.freeze({
  * @property {number} iterations
  * @property {number} startOp
  * @property {number} endOp exclusive
+ * @property {number[]} [iterationStarts] Op index where each iteration starts.
  */
 
 /**
  * @typedef {Object} SweepAxis
- * @property {string} name Variable name, or '<inline>' for inline gate sweeps.
+ * @property {string} [key] Unique axis key used by sweep points: the variable name, or `<inline>@line:col` and `<loop>@line:col`.
+ * @property {string} name Variable name, '<inline>' for inline sweeps, or '<loop>' for `LOOP <...>` iteration-count sweeps.
  * @property {Array<number|string>} values Values in sweep order (numbers, bitstrings, or gate names).
  * @property {'value'|'gate'} kind
  */
