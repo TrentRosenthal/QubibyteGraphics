@@ -128,6 +128,13 @@ class Printer {
   sum(e) {
     let out = '';
     let terms = e.args;
+    // Constant sums read number first (1 + sqrt(2)) and over one denominator.
+    if (terms.every(isConstantTerm)) {
+      const numIdx = terms.findIndex((t) => t.type === 'num');
+      if (numIdx > 0) terms = [terms[numIdx], ...terms.filter((_, i) => i !== numIdx)];
+      const d = e.id !== undefined ? commonDenominator({ args: terms }) : null;
+      if (d) return '\\frac{' + this.sum({ args: terms.map((t) => scaleTerm(t, d)) }) + '}{' + d + '}';
+    }
     // Two-term sums read better with the positive term first: 1 - x^2.
     if (terms.length === 2 && negated(terms[0]) && !negated(terms[1]) && terms[1].type !== 'sym') terms = [terms[1], terms[0]];
     // Complex numbers read real part first: 1 - 2i.
@@ -314,28 +321,41 @@ function flattenMul(args) {
   return hadCoeff ? [num(coeff), ...out] : out;
 }
 
+function isConstantTerm(t) {
+  if (t.type === 'num' || t.type === 'const') return t.type === 'num' || t.name !== 'inf';
+  if (t.type === 'pow') return t.args[0].type === 'num' && t.args[1].type === 'num';
+  if (t.type === 'mul') return t.args.every(isConstantTerm);
+  return false;
+}
+
 function isImaginaryTerm(t) {
   const isI = (f) => f.type === 'const' && f.name === 'i';
   if (isI(t)) return true;
   return t.type === 'mul' && t.args.some(isI) && t.args.every((f) => isI(f) || f.type === 'num' || (f.type === 'pow' && f.args[0].type === 'num'));
 }
 
-// A sum whose rational coefficients share a denominator d > 1 (x/2 + 1/2).
+// Least common denominator (> 1) of the rational coefficients of a sum's
+// terms, or null when every coefficient is an integer.
 function commonDenominator(sumNode) {
-  let d = null;
+  let d = 1n;
   for (const t of sumNode.args) {
-    const c = t.type === 'num' ? t.value : t.type === 'mul' && t.args[0].type === 'num' ? t.args[0].value : new Rational(1n);
-    if (c.d === 1n) return null;
-    if (d === null) d = c.d;
-    else if (d !== c.d) return null;
+    const c = t.type === 'num' ? t.value : t.type === 'mul' && t.args[0].type === 'num' ? t.args[0].value : null;
+    if (c && c.d !== 1n) {
+      let a = d;
+      let b = c.d;
+      while (b) [a, b] = [b, a % b];
+      d = (d / a) * c.d;
+    }
   }
-  return d;
+  return d > 1n ? d : null;
 }
 
 function scaleTerm(t, d) {
-  if (t.type === 'num') return num(t.value.mul(new Rational(d)));
-  const c = t.args[0].value.mul(new Rational(d));
-  const rest = t.args.slice(1);
+  const D = new Rational(d);
+  if (t.type === 'num') return num(t.value.mul(D));
+  const hasCoeff = t.type === 'mul' && t.args[0].type === 'num';
+  const c = (hasCoeff ? t.args[0].value : new Rational(1n)).mul(D);
+  const rest = hasCoeff ? t.args.slice(1) : [t];
   if (c.isOne()) return rest.length === 1 ? rest[0] : mul(...rest);
   return mul(num(c), ...rest);
 }

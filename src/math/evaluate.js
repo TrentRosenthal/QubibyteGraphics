@@ -9,8 +9,21 @@ import { Complex } from './complex.js';
 import { gamma } from './special.js';
 import { ensureExpr } from './parse.js';
 import { MathError } from './expr.js';
+import { simplify } from './simplify.js';
 
 /** @typedef {import('./expr.js').Expr} Expr */
+
+// Simplify first so exponents such as (1/3) become exact rationals; keep the
+// raw tree when simplification reports an undefined constant.
+function prepare(expr) {
+  const e = ensureExpr(expr);
+  try {
+    return simplify(e);
+  } catch (err) {
+    if (err instanceof MathError) return e;
+    throw err;
+  }
+}
 
 const REAL_FN = {
   sin: Math.sin, cos: Math.cos, tan: Math.tan,
@@ -38,7 +51,7 @@ function realPow(b, e, oddDen) {
  * @returns {(...args: number[]) => number}
  */
 export function compileReal(expr, vars) {
-  const e = ensureExpr(expr);
+  const e = prepare(expr);
   const index = new Map(vars.map((v, i) => [v, i]));
   const build = (n) => {
     switch (n.type) {
@@ -126,7 +139,7 @@ const C1 = new Complex(1, 0);
  * @returns {(...args: (Complex|number)[]) => Complex}
  */
 export function compileComplex(expr, vars) {
-  const e = ensureExpr(expr);
+  const e = prepare(expr);
   const index = new Map(vars.map((v, i) => [v, i]));
   const build = (n) => {
     switch (n.type) {

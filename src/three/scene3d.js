@@ -104,7 +104,7 @@ export class Scene3D extends Node {
    */
   sampleItems(args) {
     const units = [];
-    const ctx = { units };
+    const ctx = { units, t: args.t };
     for (const c of this.children) if (c instanceof Object3D) c.collect(ctx, M.identity(), 1);
     renderScene(this, units, args, this.get('width'), this.get('height'), this.cameraState(), this.get('background'));
   }
@@ -145,6 +145,6 @@ sceneHooks.project = (node, p) => {
 sceneHooks.standalone = (obj, args) => {
   const units = [];
   const own = obj.get('opacity');
-  obj.collect({ units }, M.identity(), own > 0 ? 1 / own : 1);
+  obj.collect({ units, t: args.t }, M.identity(), own > 0 ? 1 / own : 1);
   renderScene(null, units, args, 8, 8, standaloneCamera.state(1), null);
 };

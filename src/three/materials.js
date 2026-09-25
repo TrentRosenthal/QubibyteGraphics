@@ -94,6 +94,13 @@ function toLab(c) {
 }
 
 /**
+ * Shading constants shared by the vector projector and the WebGL2 preview
+ * shader, so both produce the same colors.
+ * @type {{shadowL: number, litL: number, chromaBase: number, maxDiffuse: number, specWhite: number, specChroma: number, maxSpec: number, maxL: number}}
+ */
+export const SHADING = Object.freeze({ shadowL: 0.32, litL: 0.68, chromaBase: 0.82, maxDiffuse: 1.3, specWhite: 0.97, specChroma: 0.75, maxSpec: 0.85, maxL: 0.985 });
+
+/**
  * Shade a base color. Diffuse near 1 returns the base color; lower values
  * darken lightness in OKLab while keeping most chroma; specular blends toward
  * a bright, low-chroma version of the same hue.
@@ -105,18 +112,19 @@ function toLab(c) {
 export function shade(base, diffuse, specular = 0) {
   const c = parseColor(base);
   const lab = toLab(c);
-  const k = Math.max(0, Math.min(1.3, diffuse));
-  let L = lab.L * (0.32 + 0.68 * k);
-  const chroma = 0.82 + 0.18 * Math.min(1, k);
+  const S = SHADING;
+  const k = Math.max(0, Math.min(S.maxDiffuse, diffuse));
+  let L = lab.L * (S.shadowL + S.litL * k);
+  const chroma = S.chromaBase + (1 - S.chromaBase) * Math.min(1, k);
   let A = lab.a * chroma;
   let B = lab.b * chroma;
-  const s = Math.max(0, Math.min(0.85, specular));
+  const s = Math.max(0, Math.min(S.maxSpec, specular));
   if (s > 0) {
-    L += (0.97 - L) * s;
-    A *= 1 - 0.75 * s;
-    B *= 1 - 0.75 * s;
+    L += (S.specWhite - L) * s;
+    A *= 1 - S.specChroma * s;
+    B *= 1 - S.specChroma * s;
   }
-  return oklabToRgb(Math.min(0.985, L), A, B, c.a);
+  return oklabToRgb(Math.min(S.maxL, L), A, B, c.a);
 }
 
 /** A color value with an alpha multiplier, resolved at render time. */

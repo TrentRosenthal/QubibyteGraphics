@@ -144,9 +144,11 @@ export function diffuseAt(lights, n, p) {
   return d;
 }
 
+/** Soft terminator: diffuse is max(0, (n.l + WRAP) / (1 + WRAP)). */
+export const WRAP = 0.2;
+
 function wrap(c) {
-  const w = 0.2;
-  return Math.max(0, (c + w) / (1 + w));
+  return Math.max(0, (c + WRAP) / (1 + WRAP));
 }
 
 /**

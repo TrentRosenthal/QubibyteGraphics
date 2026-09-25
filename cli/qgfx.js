@@ -15,12 +15,14 @@ import { PROJECT } from '../src/config.js';
 import { FORMATS, PRESETS, formatFromFilename, parseResolution, checkFps } from '../src/export/formats.js';
 import { listThemes } from '../src/themes/index.js';
 import { renderVideo, loadSceneModule, buildFromModule, renderStill, probe } from './render.js';
+import { exportScene } from './export.js';
 
 const HELP = `${PROJECT.cli} ${PROJECT.version}: render ${PROJECT.name} scenes
 
 Commands
   render <scene.js> -o <out>     Render video, frame sequence, or animated vector output
   still <scene.js> -o <out>      Render one frame (png, jpg, webp, svg, pdf)
+                                 Animated vector: -f svg-animated or -f lottie
   info <scene.js>                Print duration, frame count, labels, and captions
   probe <video>                  Print resolution, frame count, and codec of a file
   formats | themes | presets     List what is available
@@ -144,6 +146,10 @@ async function main() {
     const scene = await buildFromModule(mod, overrides);
     const t = values.time != null ? Number(values.time) : scene.frameTime(scene.frameCount - 1);
     mkdirSync(dirname(resolve(values.output)), { recursive: true });
+    if (format === 'pdf' || format === 'svg-animated' || format === 'lottie') {
+      console.log(await exportScene(scene, format, values.output, { time: values.time != null ? t : 0, transparent: values.transparent, fps: values.fps ? Number(values.fps) : undefined }));
+      return;
+    }
     if (cmd === 'still' && spec.kind !== 'image') fail(`'still' writes png, jpeg, webp, svg, or pdf; got ${format}`);
     const fmt = format === 'jpeg' ? 'jpeg' : format;
     writeFileSync(values.output, await renderStill(scene, t, fmt, { transparent: values.transparent }));

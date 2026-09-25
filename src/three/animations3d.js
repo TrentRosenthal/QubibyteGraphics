@@ -7,7 +7,7 @@
 import { Animation, stagger } from '../core/animations.js';
 import { linear } from '../core/easing.js';
 import * as Q from './quat.js';
-import { Object3D, Group3D, Mesh3D, Lines3D, Points3D, Label3D, Arrow3D, resampleRadial } from './object3d.js';
+import { Object3D, Mesh3D, Lines3D, Points3D, Label3D, Arrow3D, resampleRadial } from './object3d.js';
 import { cubeSphere, meshBounds } from './geometry.js';
 
 /** Rotation about an arbitrary axis, interpolated as a true rotation (quaternion slerp). */
@@ -179,7 +179,7 @@ export class Explode extends Animation {
     const s = t0 + this.delay;
     const e = s + this.duration;
     const t = this.target;
-    if (t instanceof Mesh3D && !(t instanceof Group3D)) {
+    if (t instanceof Mesh3D) {
       t.tween('explodeDistance', s, s, this.distance, linear);
       t.tween('explode', s, e, this.reverse ? 0 : 1, this.ease);
       return e;

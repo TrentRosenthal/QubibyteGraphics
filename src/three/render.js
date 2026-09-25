@@ -78,6 +78,17 @@ export function labelPath(content, factory) {
   return path;
 }
 
+/**
+ * A color resolver for 3D fills: theme tokens, hex, RGBA, ColorMix,
+ * AlphaColor, and 'auto' (the softened accent).
+ * @param {(v: any) => import('../core/color.js').RGBA|null} color base theme resolver
+ * @returns {(v: any) => import('../core/color.js').RGBA}
+ */
+export function fillResolver(color) {
+  const ctx = { color, auto: softenColor(color('accent')) };
+  return (v) => resolveFill(v, ctx);
+}
+
 function resolveFill(v, ctx) {
   if (v === 'auto' || v == null) return ctx.auto;
   if (v instanceof AlphaColor) return withA(resolveFill(v.color, ctx), v.alpha);

@@ -20,6 +20,7 @@ import { triangulatePolygon } from './triangulate.js';
 PROP_KIND.quat = 'step';
 PROP_KIND.material = 'step';
 PROP_KIND.sweepAxis = 'step';
+PROP_KIND.morph = 'step';
 
 /**
  * Hooks set by the scene module to avoid a circular import: projecting a
@@ -222,13 +223,11 @@ export class Mesh3D extends Object3D {
     super(props.type ?? 'mesh3d', { fill: color ?? 'auto', stroke: props.edgeColor ?? 'ink', strokeWidth: 1.5, ...rest });
     /** @type {import('./geometry.js').MeshGeometry} */
     this.mesh = mesh;
-    /** @type {import('./geometry.js').MeshGeometry|null} */
-    this.morphTarget = null;
     this.castShadow = props.castShadow ?? true;
     this.capColor = props.capColor ?? 'accent';
     this._define('material', material ?? 'matte');
     this._define('edgeWidth', props.edgeWidth ?? null);
-    this._define('morph', 0);
+    this._define('morph', null);
     this._define('sweep', 1);
     this._define('sweepAxis', 'u');
     this._define('explode', 0);
@@ -255,7 +254,7 @@ export class Mesh3D extends Object3D {
   currentMesh(m) {
     let mesh = this.baseMesh();
     const mo = this.get('morph');
-    if (this.morphTarget && mo > 0) mesh = lerpMesh(mesh, this.morphTarget, mo);
+    if (mo && mo.from) mesh = lerpMesh(mo.from, mo.to, mo.t);
     let capFaces = 0;
     if (this.get('clip') > 0.5) {
       const r = clipMesh(mesh, worldPlaneToModel(m, [this.get('clipNX'), this.get('clipNY'), this.get('clipNZ'), this.get('clipD')]));
@@ -497,8 +496,7 @@ export class Arrow3D extends Object3D {
 
   /** @returns {{min: number[], max: number[]}} */
   localBounds() {
-    const s = [this.get('sx'), this.get('sy'), this.get('sz')];
-    const e = [this.get('ex'), this.get('ey'), this.get('ez')];
+    const [s, e] = this.endpoints();
     const r = this.get('headRadius');
     return { min: s.map((v, i) => Math.min(v, e[i]) - r), max: s.map((v, i) => Math.max(v, e[i]) + r) };
   }
@@ -512,9 +510,16 @@ export class Arrow3D extends Object3D {
     return this.set({ sx: start[0], sy: start[1], sz: start[2], ex: end[0], ey: end[1], ez: end[2] });
   }
 
+  /**
+   * Current endpoints [start, end] (subclasses may compute them).
+   * @returns {number[][]}
+   */
+  endpoints() {
+    return [[this.get('sx'), this.get('sy'), this.get('sz')], [this.get('ex'), this.get('ey'), this.get('ez')]];
+  }
+
   emit(ctx, m, opacity) {
-    const s = [this.get('sx'), this.get('sy'), this.get('sz')];
-    const e = [this.get('ex'), this.get('ey'), this.get('ez')];
+    const [s, e] = this.endpoints();
     const d = [e[0] - s[0], e[1] - s[1], e[2] - s[2]];
     const len = Math.hypot(...d);
     if (len < 1e-6) return;
