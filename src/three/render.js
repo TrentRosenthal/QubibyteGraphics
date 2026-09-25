@@ -12,7 +12,7 @@
 import * as M from './mat4.js';
 import { faceNormals, meshEdges, meshBounds } from './geometry.js';
 import { POLY, SEG, PT, planeOf, eyeSide, orderScene, splitPrim } from './order.js';
-import { material as makeMaterial, presetMaterial, shade, softenColor, AlphaColor } from './materials.js';
+import { material as makeMaterial, presetMaterial, shade, softenColor, AlphaColor, liftDark } from './materials.js';
 import { diffuseAt, specularAt } from './lighting.js';
 import { hull2D } from './object3d.js';
 import { ColorMix } from '../core/node.js';
@@ -488,7 +488,8 @@ function buildMeshUnit(unit, input, ctx, cam, eps, viewDir) {
       fill = ctx.bg;
       meta = { three: true, role: 'face', noBoard: true, occluder: true };
     } else {
-      const base = faceColor(f);
+      const raw = faceColor(f);
+      const base = mat.shading === 'none' || isCap ? raw : liftDark(raw);
       if (mat.shading === 'none' || isCap) fill = isCap ? shadeCached(base, 1, 0) : base;
       else {
         const d = diffuseAt(input.lights, n, c) * (isFront || !mesh.closed ? 1 : 0.9);

@@ -80,6 +80,19 @@ export function softenColor(accent, chroma = 0.72) {
   return { ...oklchToRgb(L, C * chroma, H), a: accent.a };
 }
 
+/**
+ * A shaded surface needs room to darken: a base color darker than OKLCH
+ * lightness 0.45 (black ink in a monochrome theme) is lifted to it, keeping
+ * hue and chroma, so the lit and shadow sides stay distinct.
+ * @param {{r: number, g: number, b: number, a: number}} c
+ * @returns {{r: number, g: number, b: number, a: number}}
+ */
+export function liftDark(c) {
+  const { L, C, H } = rgbToOklch(c);
+  if (L >= 0.45) return c;
+  return { ...oklchToRgb(0.45, C, H), a: c.a };
+}
+
 const labCache = new Map();
 
 function toLab(c) {

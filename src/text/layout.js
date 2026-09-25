@@ -16,7 +16,7 @@
  */
 
 import { transformPath, mergePaths } from '../core/path.js';
-import { getFont } from './fonts.js';
+import { getFont, hasFont } from './fonts.js';
 
 /**
  * @typedef {import('../core/path.js').Path} Path
@@ -289,6 +289,22 @@ function greedy(items, lineWidth) {
 }
 
 /**
+ * Fonts tried for characters the main font lacks: Inter, then the KaTeX
+ * faces that carry Greek letters and math symbols. Only loaded fonts are used.
+ * @param {Font} font
+ * @returns {Font[]}
+ */
+function defaultFallbacks(font) {
+  const out = [];
+  for (const [family, style] of [['Inter', 'regular'], ['KaTeX_Main', 'regular'], ['KaTeX_Math', 'italic'], ['KaTeX_AMS', 'regular']]) {
+    if (!hasFont(family, style)) continue;
+    const f = getFont(family, style);
+    if (f !== font) out.push(f);
+  }
+  return out;
+}
+
+/**
  * Lay out text into positioned glyph outlines.
  * @param {string} str The text. `\n` starts a new paragraph.
  * @param {TextOptions} [opts]
@@ -296,7 +312,7 @@ function greedy(items, lineWidth) {
  */
 export function layoutText(str, opts = {}) {
   const font = resolveFont(opts);
-  const fallbacks = opts.fallbacks || [];
+  const fallbacks = opts.fallbacks || defaultFallbacks(font);
   const size = opts.size == null ? 1 : opts.size;
   const lineHeight = opts.lineHeight == null ? 1.2 : opts.lineHeight;
   const maxWidth = opts.maxWidth == null ? Infinity : opts.maxWidth;

@@ -470,7 +470,7 @@ export const BUILTIN_THEMES = [
       faint: '#c3c8cc',
       grid: '#c9d6e3',
       accent: '#2f5aa8',
-      accent2: '#f0d33c',
+      accent2: '#b7791f',
       positive: '#3b7d4a',
       negative: '#b8412f',
       ket0: '#2f5aa8',

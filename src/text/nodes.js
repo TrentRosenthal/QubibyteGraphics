@@ -40,14 +40,18 @@ export function resolveSize(size, fallback) {
   return v;
 }
 
-const strokeCache = new Map();
+// Per node (weakly held, so node ids that repeat across scenes never share
+// strokes), then per glyph, theme style, and seed.
+const strokeCache = new WeakMap();
 
-function cachedStrokes(key, make) {
-  if (!strokeCache.has(key)) {
-    if (strokeCache.size > 6000) strokeCache.clear();
-    strokeCache.set(key, make());
+function cachedStrokes(owner, key, make) {
+  let m = strokeCache.get(owner);
+  if (!m) {
+    m = new Map();
+    strokeCache.set(owner, m);
   }
-  return strokeCache.get(key);
+  if (!m.has(key)) m.set(key, make());
+  return m.get(key);
 }
 
 /**
@@ -231,8 +235,8 @@ export class TextBase extends Group {
    * @returns {Array<Array<[number, number]>>|null}
    */
   handStrokesFor(glyph, theme) {
-    const key = `${this.id}|${glyph.index}|${theme.board ?? ''}|${this.strokeFont(theme) ?? ''}|${ctx.seed}`;
-    return cachedStrokes(key, () => {
+    const key = `${glyph.index}|${theme.board ?? ''}|${this.strokeFont(theme) ?? ''}|${ctx.seed}`;
+    return cachedStrokes(this, key, () => {
       const raw = this._rawStrokes(glyph, theme);
       if (!raw) return null;
       dabDots(raw, this.size * 0.22);

@@ -48,3 +48,29 @@ Every rendered visual is graded against `docs/QUALITY.md` (criteria a to g, 1 to
 | 54-markov-chain | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Setosa's Markov chain explainer: the distribution settles to the stationary mix from a rainy start; curved arrows now sweep their stated angle (a sign error had drawn near-full circles). |
 | 19-typography | 100 | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Kinetic type demos (Manim TransformMatchingShapes): anagram letters fly to their new places; the weight samples sit slightly unevenly spaced. |
 | 51-benford | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Benford's law figures in statistics texts: the leading digits of 2^1 to 2^1000, counted exactly, sit on log10(1 + 1/d); the caption starts a hair right of the percentage above it. |
+
+## Themes
+
+Each built-in theme renders the five reference scenes (Taylor series, roots of unity, derivative, Bell pair, Platonic solids) on one contact sheet in `docs/renders/themes/<theme>.png` (`node tools/render-themes.js`). Grades are for the sheet as a whole.
+
+| Theme | a | b | c | d | e | f | g | Notes and fixes from this pass |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| qubibyte | 4 | 5 | 4 | 4 | 5 | 4 | 4 | House theme; the reference look for the gallery. |
+| clean-light | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Matches a textbook page. |
+| clean-dark | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Neutral dark with teal and amber. |
+| pastel | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Low contrast by design; body text stays above 4.5:1. |
+| neon | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Glow stays on strokes only; text is not blurred. |
+| mono-ink | 4 | 5 | 4 | 4 | 5 | 4 | 4 | 3D faces with a near-black base are lifted to mid gray so shading shows form (they rendered solid black before). |
+| blueprint | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Clean vector blueprint; 3D solids draw as line work with dashed hidden edges. |
+| scientific-paper | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Serif throughout, like a journal figure. |
+| navy-explainer | 4 | 5 | 4 | 4 | 5 | 4 | 4 | The 3Blue1Brown-style reference theme. |
+| retro-terminal | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Stroke-font text; a cache keyed by node id leaked text between scenes and is now keyed by node object. |
+| sepia-notebook | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Text now falls back to KaTeX_Math for Greek letters the serif lacks (omega had dropped out). |
+| corporate-slide | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Keynote-like blue and amber. |
+| high-contrast | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Pure black with yellow and cyan; every label above 7:1. |
+| chalkboard | 4 | 4 | 4 | 5 | 5 | 4 | 4 | Chalk grain, hatching, and tray; handwriting from one switch. |
+| chalkboard-slate | 4 | 4 | 4 | 5 | 5 | 4 | 4 | Same board on slate black. |
+| whiteboard | 4 | 4 | 4 | 5 | 5 | 4 | 4 | Marker ink with a soft halo; writing wipes hatching beneath it. |
+| whiteboard-gray | 4 | 4 | 4 | 5 | 5 | 4 | 4 | Whiteboard on a gray surface. |
+| paper | 4 | 4 | 4 | 5 | 5 | 4 | 4 | Ruled notebook with pencil; accent2 deepened to amber so small text in it reads. |
+| board-blueprint | 4 | 4 | 4 | 5 | 5 | 4 | 4 | Drafting lines with corner overshoot on construction lines only. |
