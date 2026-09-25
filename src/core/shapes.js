@@ -354,7 +354,9 @@ export class Arrow extends Group {
     const h = Math.sqrt(Math.max(0, r * r - (chord / 2) ** 2));
     const nx = -dy / chord;
     const ny = dx / chord;
-    const sgn = bend > 0 ? -1 : 1;
+    // The center sits to the left of the chord for a counterclockwise (positive) bend, so the
+    // sweep from start to end is |bend| and the arc bulges to the right of the direction of travel.
+    const sgn = bend > 0 ? 1 : -1;
     const cx = mx + sgn * nx * h;
     const cy = my + sgn * ny * h;
     const a0 = Math.atan2(y1 - cy, x1 - cx);

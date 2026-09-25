@@ -126,3 +126,15 @@ test('flattenPath approximates a circle within tolerance', () => {
   const [poly] = flattenPath(circlePath(0, 0, 10), 0.01);
   for (const [x, y] of poly.pts) close(Math.hypot(x, y), 10, 0.02);
 });
+
+test('a bent arrow sweeps exactly its bend angle, bulging right of travel for a positive bend', async () => {
+  const { Arrow, pathLength, pathBounds } = await import('../../src/index.js');
+  for (const bend of [0.4, -0.4, Math.PI / 2]) {
+    const c = new Arrow([-1, 0], [1, 0], { bend }).centerline();
+    const r = 1 / Math.sin(Math.abs(bend) / 2);
+    assert.ok(Math.abs(pathLength(c) - r * Math.abs(bend)) < 1e-3, `bend ${bend}`);
+    const b = pathBounds(c);
+    if (bend > 0) assert.ok(b.y < -0.05 && b.y + b.h < 0.01, 'positive bend bulges below a rightward chord');
+    else assert.ok(b.y > -0.01 && b.y + b.h > 0.05, 'negative bend bulges above');
+  }
+});

@@ -45,3 +45,4 @@ Every rendered visual is graded against `docs/QUALITY.md` (criteria a to g, 1 to
 | 53-insertion-sort | 50 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Sorting visualizers (visualgo): bars slide as pairs swap with a live swap count; the count's serif face differs from the title face. |
 | 55-pendulum | 50 | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Physics lecture demos: the bob and the trace are driven by one RK4 solution, so the angle on the left always matches the pen on the right. |
 | 56-conformal-map | 100 | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Needham, Visual Complex Analysis: the grid morphs into orthogonal parabolas at equal x and y scale; parametric curves now clip to their axes. |
+| 54-markov-chain | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Setosa's Markov chain explainer: the distribution settles to the stationary mix from a rainy start; curved arrows now sweep their stated angle (a sign error had drawn near-full circles). |
