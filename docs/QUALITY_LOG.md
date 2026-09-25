@@ -39,3 +39,5 @@ Every rendered visual is graded against `docs/QUALITY.md` (criteria a to g, 1 to
 | 25-bernstein-vazirani | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Qiskit textbook Bernstein-Vazirani: the single bar at the secret is the whole point; sixteen labels sit a little small. |
 | 26-phase-estimation | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Qiskit textbook QPE: controlled phases then the inverse QFT inside one group box; the result bar reads 011 on the counting register. |
 | 31-blueprint-construction | 100 | 4 | 5 | 4 | 5 | 5 | 4 | 4 | Drafting-style construction sheets (Byrne's Euclid for the idea, blueprint for the look): construction lines overshoot at corners, lettering no longer does, and periods draw as dots. |
+| 01-shapes | 50, 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Manim's Transform demos: point alignment keeps each morph free of jumps; the reference also rotates to the nearest correspondence, ours starts from the top point. |
+| 32-paper-notes | 75, 100 | 4 | 4 | 4 | 5 | 5 | 4 | 4 | Handwritten study notes on ruled paper: secants close on the tangent while the algebra is written beside them; commas keep their tails in the hand font now. |

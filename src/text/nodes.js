@@ -289,7 +289,14 @@ function dabDots(strokes, limit) {
       x1 = Math.max(x1, x);
       y1 = Math.max(y1, y);
     }
-    if (Math.hypot(x1 - x0, y1 - y0) < limit) {
+    const diag = Math.hypot(x1 - x0, y1 - y0);
+    let len = 0;
+    for (let k = 1; k < s.length; k++) len += Math.hypot(s[k][0] - s[k - 1][0], s[k][1] - s[k - 1][1]);
+    const first = s[0];
+    const last = s[s.length - 1];
+    const gap = Math.hypot(last[0] - first[0], last[1] - first[1]);
+    // A dot is a small closed ring or a tiny mark; an open stroke with some reach (a comma's tail) stays a stroke.
+    if (diag < limit && (gap < diag * 0.5 || len < limit * 0.4)) {
       const cx = (x0 + x1) / 2;
       const cy = (y0 + y1) / 2;
       const r = limit * 0.18;
