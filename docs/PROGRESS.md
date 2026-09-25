@@ -7,7 +7,7 @@ Status against the definition of done, kept current with each commit batch. "Don
 | Item | Status | Where |
 | --- | --- | --- |
 | Live Pages URL in the README | Written; goes live on the first push to `main` (the Pages workflow deploys from `main`) | `README.md`, `.github/workflows/pages.yml` |
-| `npm test` clean | Unit, parser, export, and golden suites pass; lint includes an unused-export check | `tests/` |
+| `npm test` clean | Unit, parser, export, and golden suites pass (87% of lines and 84% of branches covered, excluding the browser UI); lint includes an unused-export check | `tests/` |
 | Narrated Grover and QFT explainers | Done | `examples/20-grover-explainer.js`, `examples/21-qft-explainer.js`, `src/quantum/explainers.js` |
 | Editor Qubi block wired to Bloch, state, and unitary views | In progress: the Qubi block outputs circuit, state, unitary, probabilities, and sweeps; the editor UI is being integrated | `src/editor/blocks.js`, `src/editor/ui/` |
 | Single-expression math animations | Done: derivatives, integrals, equations, matrix products, eigenvectors | `src/explainers/derivation.js`, examples 11 to 14 and 18 |
