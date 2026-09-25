@@ -10,7 +10,7 @@ export const PROJECT = Object.freeze({
   globalName: 'QubibyteGraphics',
   cli: 'qgfx',
   version: '0.1.0',
-  brandColor: '#2f6fed',
+  brandColor: '#5b8def',
   repository: 'https://github.com/TrentRosenthal/QubibyteGraphics',
   pagesUrl: 'https://trentrosenthal.github.io/QubibyteGraphics/',
 });

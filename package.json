@@ -25,12 +25,12 @@
     "LICENSE"
   ],
   "scripts": {
-    "test": "node --test tests/",
-    "test:unit": "node --test tests/unit/",
-    "test:parser": "node --test tests/parser/",
-    "test:golden": "node --test tests/golden/",
-    "test:export": "node --test tests/export/",
-    "coverage": "c8 --reporter=text --reporter=text-summary node --test tests/",
+    "test": "node --test \"tests/**/*.test.js\"",
+    "test:unit": "node --test \"tests/unit/**/*.test.js\"",
+    "test:parser": "node --test \"tests/parser/**/*.test.js\"",
+    "test:golden": "node --test \"tests/golden/**/*.test.js\"",
+    "test:export": "node --test \"tests/export/**/*.test.js\"",
+    "coverage": "c8 --reporter=text-summary --reporter=text node --test \"tests/**/*.test.js\"",
     "lint": "eslint . && node tools/lint-slop.js && node tools/lint-vocab.js",
     "lint:slop": "node tools/lint-slop.js",
     "lint:vocab": "node tools/lint-vocab.js",
