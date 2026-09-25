@@ -343,3 +343,30 @@ test('a torus knot self-occludes correctly', () => {
   const out = orderScene(prims, cam, { items: [prims] });
   assert.ok(checkOrder(out, cam, 20000) > 100);
 });
+
+test('an image plane draws clipped, affinely mapped image items that land on the projected face', async () => {
+  const { ImagePlane3D } = await import('../../src/three/index.js');
+  const fake = { width: 400, height: 200 };
+  let view;
+  const scene = await buildScene((sc) => {
+    view = new Scene3D({ width: 8, height: 6, camera: { theta: -Math.PI / 2, phi: Math.PI / 2, distance: 10, fov: 30 } });
+    const p = new ImagePlane3D(fake, { width: 4, divisions: 2 });
+    p.set('rotX', Math.PI / 2);
+    view.add(p);
+    sc.add(view);
+  });
+  const f = sampleFrame(scene, 0, theme);
+  const imgs = f.items.filter((i) => i.kind === 'image');
+  assert.equal(imgs.length, 4, 'one image item per face');
+  for (const it of imgs) {
+    assert.ok(it.clip && it.clip.subpaths.length === 1);
+    assert.equal(it.source, fake);
+  }
+  // The image's top-left corner (local -0.5, 0.5) maps near the projected top-left of the plane.
+  const tl = scene.evaluateAt(0, () => view.project([-2, 0, 1]));
+  const hits = imgs.map((it) => {
+    const m = it.matrix;
+    return [m[0] * -0.5 + m[2] * 0.5 + m[4], m[1] * -0.5 + m[3] * 0.5 + m[5]];
+  });
+  assert.ok(hits.some(([x, y]) => Math.hypot(x - tl[0], y - tl[1]) < 1e-6), JSON.stringify({ hits, tl }));
+});

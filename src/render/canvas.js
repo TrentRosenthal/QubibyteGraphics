@@ -334,6 +334,13 @@ export function drawImageItem(ctx, item, view, assets, frame) {
   if (item.treatment && item.treatment !== 'none') src = treatImage(src, item.treatment, frame.theme);
   const [a, b, c, d, e, f] = view.matrix;
   ctx.setTransform(a, b, c, d, e, f);
+  // A clip path (world coordinates) limits the image, as for textured 3D faces.
+  if (item.clip) {
+    ctx.save();
+    ctx.beginPath();
+    tracePath(ctx, item.clip);
+    ctx.clip();
+  }
   const m = item.matrix;
   ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
   ctx.scale(1, -1);
@@ -352,4 +359,5 @@ export function drawImageItem(ctx, item, view, assets, frame) {
     ctx.drawImage(src, -w / 2, -h / 2, w, h);
   }
   ctx.globalAlpha = 1;
+  if (item.clip) ctx.restore();
 }

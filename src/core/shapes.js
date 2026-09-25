@@ -5,7 +5,7 @@
  * @module core/shapes
  */
 
-import { Node, Group, PathNode } from './node.js';
+import { Node, Group, PathNode, ctx } from './node.js';
 import { registerNodeClasses } from './animations.js';
 import {
   PathBuilder, circlePath, ellipsePath, polyPath, rectPath, parseSVGPath, emptyPath, pathBounds, transformPath,
@@ -766,4 +766,23 @@ export function backdrop(node, opts = {}) {
   if (!b) throw new Error('backdrop needs a node with geometry');
   const pad = opts.pad ?? 0.18;
   return new Rect({ width: b.w + 2 * pad, height: b.h + 2 * pad, radius: opts.radius ?? 0.08, x: b.x + b.w / 2, y: b.y + b.h / 2, fill: opts.color ?? 'background', fillOpacity: opts.opacity ?? 0.88, stroke: null, zIndex: -1, meta: { solidFill: true, noBoard: true } });
+}
+
+/**
+ * A picture filling the frame behind everything else: the image covers the
+ * frame (cropping to keep its aspect), and an optional wash of the theme
+ * background dims it so content on top stays legible.
+ * @param {any} source decoded image or asset id
+ * @param {{dim?: number, treatment?: string, scene?: any}} [opts] dim (0 to 1, default 0.55), treatment ('none' | 'tint' | 'duotone' | 'desaturate')
+ * @returns {Group}
+ */
+export function imageBackground(source, opts = {}) {
+  const scene = opts.scene ?? ctx.building;
+  const W = scene ? scene.frameWidth : 16;
+  const H = scene ? scene.frameHeight : 9;
+  const img = new ImageNode(source, { width: W, height: H, fit: 'cover', treatment: opts.treatment ?? 'none', naturalWidth: source && source.width, naturalHeight: source && source.height });
+  const parts = [img];
+  const dim = opts.dim ?? 0.55;
+  if (dim > 0) parts.push(new Rect({ width: W, height: H, fill: 'background', fillOpacity: dim, stroke: null, meta: { solidFill: true, noBoard: true } }));
+  return new Group(parts, { type: 'imageBackground', zIndex: -100 });
 }

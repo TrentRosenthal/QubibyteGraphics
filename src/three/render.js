@@ -273,7 +273,8 @@ export function renderUnits(input, items) {
         if (p) {
           const pts = [];
           for (let k = 0; k < p.length; k += 3) pts.push(proj(p[k], p[k + 1], p[k + 2]));
-          items.push(pathItem(s.id, s.nodeType, polygonPath(pts), withA(s.fill, opacity), s.seam ? withA(s.fill, opacity) : null, s.seam ? (s.meta.occluder ? 0.5 : 0.8) : 0, s.meta));
+          if (s.texture) items.push(...texturedFace(s, pts, proj, opacity));
+          else items.push(pathItem(s.id, s.nodeType, polygonPath(pts), withA(s.fill, opacity), s.seam ? withA(s.fill, opacity) : null, s.seam ? (s.meta.occluder ? 0.5 : 0.8) : 0, s.meta));
         }
       }
       const edges = attach.get(i);
@@ -504,6 +505,19 @@ function buildMeshUnit(unit, input, ctx, cam, eps, viewDir) {
     }
     const fa = withA(fill, alpha * unit.opacity);
     s = { fill: fa, seam: fa.a >= 0.99, id: unit.id, nodeType: unit.obj ? unit.obj.type : 'mesh3d', meta };
+    if (unit.texture && mesh.uvs && !isCap) {
+      // The face's first three corners pin an affine map from image space to the screen.
+      const vs = mesh.faces[f];
+      const tri = [];
+      const uv = [];
+      for (let k = 0; k < 3; k++) {
+        const vi = vs[k];
+        tri.push([W[vi * 3], W[vi * 3 + 1], W[vi * 3 + 2]]);
+        uv.push([mesh.uvs[vi * 2], mesh.uvs[vi * 2 + 1]]);
+      }
+      const light = mat.shading === 'none' ? 1 : Math.max(0, Math.min(1, diffuseAt(input.lights, n, c)));
+      s.texture = { source: unit.texture, tri, uv, shade: (1 - light) * (unit.textureShade ?? 0.55), opacity: unit.opacity };
+    }
     U.faceStyles[f] = s;
     return s;
   };
@@ -766,6 +780,63 @@ function emitShadows(infos, input, ctx, proj, clipW, items) {
       items.push(pathItem(U.id + ':shadow', 'shadow3d', polygonPath(pts2), withA(col, a * strength * fade * input.opacity * U.unit.opacity), null, 0, { three: true, role: 'shadow', noBoard: true }));
     }
   }
+}
+
+/**
+ * Image item for one textured face piece: the image is mapped by the affine
+ * transform that takes the face's pinned corners to their screen positions
+ * and clipped to the piece (grown a hair so neighbors meet without seams),
+ * followed by a translucent shade for lighting.
+ * @param {any} s face style with a texture
+ * @param {number[][]} pts projected polygon of the piece
+ * @param {(x: number, y: number, z: number) => number[]} proj
+ * @param {number} opacity
+ * @returns {any[]}
+ */
+function texturedFace(s, pts, proj, opacity) {
+  const t = s.texture;
+  const P = t.tri.map((q) => proj(q[0], q[1], q[2]));
+  // Image local frame used by image items: centered unit square, y up.
+  const L = t.uv.map(([u, v]) => [u - 0.5, 0.5 - v]);
+  const A = affineFrom(L, P);
+  if (!A) return [];
+  let cx = 0;
+  let cy = 0;
+  for (const q of pts) {
+    cx += q[0];
+    cy += q[1];
+  }
+  cx /= pts.length;
+  cy /= pts.length;
+  const grown = pts.map(([x, y]) => {
+    const dx = x - cx;
+    const dy = y - cy;
+    const d = Math.hypot(dx, dy) || 1;
+    return [x + (dx / d) * 0.006, y + (dy / d) * 0.006];
+  });
+  const out = [{ kind: 'image', id: s.id, source: t.source, matrix: A, width: 1, height: 1, opacity: opacity * t.opacity, treatment: 'none', fit: 'fill', time: 0, clip: polygonPath(grown), meta: { three: true, role: 'texture' } }];
+  if (t.shade > 0.01) out.push(pathItem(s.id + ':shade', s.nodeType, polygonPath(pts), { r: 0, g: 0, b: 0, a: t.shade * opacity * t.opacity }, null, 0, { three: true, role: 'textureShade', noBoard: true }));
+  return out;
+}
+
+/**
+ * Affine matrix [a, b, c, d, e, f] taking three source points to three targets.
+ * @param {number[][]} src
+ * @param {number[][]} dst
+ * @returns {number[]|null}
+ */
+function affineFrom(src, dst) {
+  const [[x0, y0], [x1, y1], [x2, y2]] = src;
+  const det = x0 * (y1 - y2) - y0 * (x1 - x2) + (x1 * y2 - x2 * y1);
+  if (Math.abs(det) < 1e-12) return null;
+  const solve = (r0, r1, r2) => [
+    (r0 * (y1 - y2) - y0 * (r1 - r2) + (r1 * y2 - r2 * y1)) / det,
+    (x0 * (r1 - r2) - r0 * (x1 - x2) + (x1 * r2 - x2 * r1)) / det,
+    (x0 * (y1 * r2 - y2 * r1) - y0 * (x1 * r2 - x2 * r1) + r0 * (x1 * y2 - x2 * y1)) / det,
+  ];
+  const [a, c, e] = solve(dst[0][0], dst[1][0], dst[2][0]);
+  const [b, d, f] = solve(dst[0][1], dst[1][1], dst[2][1]);
+  return [a, b, c, d, e, f];
 }
 
 function pathItem(id, nodeType, path, fill, stroke, width, meta, dash = null) {

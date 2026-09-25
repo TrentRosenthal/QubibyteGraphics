@@ -51,16 +51,11 @@ export function frameToPDF(frame, opts = {}) {
       xobjects.push({ name, ...img });
       const m = op.matrix;
       // The unit square in PDF image space is y up; flip it into our y-down unit square first.
-      out.push(`q /${gs(op.opacity, op.opacity)} gs ${[m[0], m[1], m[2], m[3], m[4], m[5]].map(n4).join(' ')} cm 1 0 0 -1 0 1 cm /${name} Do Q`);
+      const clip = op.clip ? `${pathOps(op.clip)} W n ` : '';
+      out.push(`q ${clip}/${gs(op.opacity, op.opacity)} gs ${[m[0], m[1], m[2], m[3], m[4], m[5]].map(n4).join(' ')} cm 1 0 0 -1 0 1 cm /${name} Do Q`);
       continue;
     }
-    const segs = [];
-    for (const s of op.path.subpaths) {
-      const p = s.points;
-      segs.push(`${n4(p[0])} ${n4(p[1])} m`);
-      for (let i = 2; i < p.length; i += 6) segs.push(`${n4(p[i])} ${n4(p[i + 1])} ${n4(p[i + 2])} ${n4(p[i + 3])} ${n4(p[i + 4])} ${n4(p[i + 5])} c`);
-      if (s.closed) segs.push('h');
-    }
+    const segs = op.path.subpaths.length ? [pathOps(op.path)] : [];
     if (!segs.length) continue;
     const fill = op.fill;
     const stroke = op.stroke && op.width > 0 ? op.stroke : null;
@@ -82,6 +77,22 @@ export function frameToPDF(frame, opts = {}) {
   }
   const content = out.join('\n');
   return { bytes: assemble(W, H, content, [...gstates.values()], xobjects), rasterized };
+}
+
+/**
+ * PDF path construction operators for a path in page space.
+ * @param {import('../core/path.js').Path} path
+ * @returns {string}
+ */
+function pathOps(path) {
+  const segs = [];
+  for (const s of path.subpaths) {
+    const p = s.points;
+    segs.push(`${n4(p[0])} ${n4(p[1])} m`);
+    for (let i = 2; i < p.length; i += 6) segs.push(`${n4(p[i])} ${n4(p[i + 1])} ${n4(p[i + 2])} ${n4(p[i + 3])} ${n4(p[i + 4])} ${n4(p[i + 5])} c`);
+    if (s.closed) segs.push('h');
+  }
+  return segs.join(' ');
 }
 
 function assemble(W, H, content, gstates, xobjects) {

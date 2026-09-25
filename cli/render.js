@@ -27,7 +27,14 @@ import { synthesize, encodeWav } from '../src/export/audio.js';
 import { toSRT } from '../src/export/srt.js';
 import { PROJECT } from '../src/config.js';
 
-setPlatform({ createCanvas, loadImage: (src) => loadImage(typeof src === 'string' && !/^(https?:|data:)/.test(src) ? readFileSync(src) : src) });
+setPlatform({
+  createCanvas,
+  loadImage: (src) => {
+    if (src instanceof URL) src = src.href;
+    if (typeof src === 'string' && src.startsWith('file:')) return loadImage(readFileSync(fileURLToPath(src)));
+    return loadImage(typeof src === 'string' && !/^(https?:|data:)/.test(src) ? readFileSync(src) : src);
+  },
+});
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 

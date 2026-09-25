@@ -13,7 +13,7 @@ import { polyPath, emptyPath } from '../core/path.js';
 import * as M from './mat4.js';
 import * as Q from './quat.js';
 import {
-  makeMesh, meshBounds, faceNormals, faceCentroids, meshEdges, extrudePath, cylinder, cone, parametricSurface, translateMesh,
+  makeMesh, meshBounds, faceNormals, faceCentroids, meshEdges, extrudePath, cylinder, cone, parametricSurface, translateMesh, plane,
 } from './geometry.js';
 import { triangulatePolygon } from './triangulate.js';
 
@@ -225,6 +225,9 @@ export class Mesh3D extends Object3D {
     this.mesh = mesh;
     this.castShadow = props.castShadow ?? true;
     this.capColor = props.capColor ?? 'accent';
+    /** Image drawn across faces that carry UVs (mesh.uvs), or null. */
+    this.texture = props.texture ?? null;
+    this.textureShade = props.textureShade ?? 0.55;
     this._define('material', material ?? 'matte');
     this._define('edgeWidth', props.edgeWidth ?? null);
     this._define('morph', null);
@@ -297,6 +300,8 @@ export class Mesh3D extends Object3D {
       draw: this.get('draw'),
       drawStart: this.get('drawStart'),
       castShadow: this.castShadow,
+      texture: this.texture,
+      textureShade: this.textureShade,
       capFaces,
       capColor: this.capColor,
       deformed: mesh !== this.mesh,
@@ -305,6 +310,34 @@ export class Mesh3D extends Object3D {
 }
 
 /** Parametric surface that can be swept in along u or v. */
+/**
+ * A flat image in 3D: a subdivided rectangle in its local xy plane carrying
+ * UVs, so the projector draws the image across it with perspective.
+ */
+export class ImagePlane3D extends Mesh3D {
+  /**
+   * @param {any} source decoded image (or an asset id the renderer resolves)
+   * @param {Record<string, any>} [props] width (default 4), height (default from the image aspect, or 3), divisions (per side, default 10), textureShade (how much lighting darkens it, 0 to 1, default 0.35), plus Mesh3D props
+   */
+  constructor(source, props = {}) {
+    const aspect = source && source.width && source.height ? source.width / source.height : 4 / 3;
+    const w = props.width ?? 4;
+    const h = props.height ?? w / aspect;
+    const n = props.divisions ?? 10;
+    const mesh = plane(w, h, n, n);
+    // Image u runs left to right with x; image v runs top to bottom, against y.
+    const uvs = new Float64Array((mesh.positions.length / 3) * 2);
+    for (let i = 0; i < mesh.positions.length / 3; i++) {
+      uvs[i * 2] = mesh.positions[i * 3] / w + 0.5;
+      uvs[i * 2 + 1] = 0.5 - mesh.positions[i * 3 + 1] / h;
+    }
+    mesh.uvs = uvs;
+    super(mesh, { castShadow: false, material: 'flat', textureShade: 0.35, ...props, texture: source, type: props.type ?? 'imagePlane3d' });
+    this.planeWidth = w;
+    this.planeHeight = h;
+  }
+}
+
 export class Surface3D extends Mesh3D {
   /**
    * @param {(u: number, v: number) => number[]} f

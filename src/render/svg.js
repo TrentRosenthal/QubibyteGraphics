@@ -69,12 +69,17 @@ export function renderSVG(frame, opts = {}) {
     else parts.push(`<rect width="100%" height="100%" fill="${esc(toHex({ ...hexOf(theme.colors.background), a: 1 }))}"/>`);
   }
   parts.push(`<g transform="matrix(${[a, b, c, d, e, f].map((v) => +v.toFixed(6)).join(' ')})">`);
+  let clipCount = 0;
   for (const item of frame.items) {
     if (item.kind === 'image') {
       const href = opts.imageHref ? opts.imageHref(item) : null;
       if (!href) continue;
       const m = item.matrix;
-      parts.push(`<g transform="matrix(${m.map((v) => +v.toFixed(6)).join(' ')}) scale(1 -1)" opacity="${+item.opacity.toFixed(4)}"><image href="${esc(href)}" x="${-item.width / 2}" y="${-item.height / 2}" width="${item.width}" height="${item.height}" preserveAspectRatio="none"/></g>`);
+      const img = `<g transform="matrix(${m.map((v) => +v.toFixed(6)).join(' ')}) scale(1 -1)" opacity="${+item.opacity.toFixed(4)}"><image href="${esc(href)}" x="${-item.width / 2}" y="${-item.height / 2}" width="${item.width}" height="${item.height}" preserveAspectRatio="none"/></g>`;
+      if (item.clip) {
+        const cid = `clip${clipCount++}`;
+        parts.push(`<clipPath id="${cid}"><path d="${toSVGPath(item.clip, 4)}"/></clipPath><g clip-path="url(#${cid})">${img}</g>`);
+      } else parts.push(img);
     } else if (board && !item.meta.noBoard) {
       parts.push(board.item(item, frame, view));
     } else {

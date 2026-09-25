@@ -56,7 +56,7 @@ export function frameToVector(frame) {
       const h = item.height;
       // Unit square (0..1 with y down) to the image's local frame (centered, y up), then to world, then to pixels.
       const local = [w, 0, 0, -h, -w / 2, h / 2];
-      ops.push({ kind: 'image', id: item.id, matrix: mul(M, mul(m, local)), source: item.source, opacity: item.opacity, treatment: item.treatment });
+      ops.push({ kind: 'image', id: item.id, matrix: mul(M, mul(m, local)), source: item.source, opacity: item.opacity, treatment: item.treatment, clip: item.clip ? transformPath(item.clip, M) : null });
       continue;
     }
     const scale = view.strokeScale;

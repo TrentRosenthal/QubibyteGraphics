@@ -12,7 +12,7 @@ export * as quat from './quat.js';
 export { Camera3D } from './camera.js';
 export { Scene3D } from './scene3d.js';
 export {
-  Object3D, Group3D, Mesh3D, Surface3D, Lines3D, Points3D, Label3D, Arrow3D, text3D,
+  Object3D, Group3D, Mesh3D, Surface3D, ImagePlane3D, Lines3D, Points3D, Label3D, Arrow3D, text3D,
   clipMesh, explodeMesh, unfoldMesh, netTree, resampleRadial, lerpMesh, hull2D, scene3dOf,
 } from './object3d.js';
 export { Axes3D, sphericalGrid, cylindricalGrid, planeGrid, streamline } from './axes3d.js';

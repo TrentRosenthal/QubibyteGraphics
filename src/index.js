@@ -13,7 +13,7 @@ export { Node, Group, PathNode, ValueTracker, direction } from './core/node.js';
 export {
   Shape, Dot, Circle, Ellipse, Arc, Sector, Rect, Polygon, Polyline, RegularPolygon, Star, Line,
   Arrow, DoubleArrow, CurvedArrow, ARROW_HEADS, Brace, braceFor, SVGPathShape, Bezier, bezierPath, Spline,
-  catmullRomPath, bSplinePath, ImageNode, VideoNode, Layer, backdrop,
+  catmullRomPath, bSplinePath, ImageNode, VideoNode, Layer, backdrop, imageBackground,
 } from './core/shapes.js';
 export { TransformPlane, ApplyMatrix, applyMatrix, matrixPath, polar2 } from './explainers/linear.js';
 export { Epicycles, epicycleCoefficients } from './explainers/fourier.js';
@@ -35,7 +35,7 @@ export {
 } from './core/path.js';
 export { parseColor, toHex, toCSS, mix, contrast, oklchToRgb, rgbToOklch, phaseColor } from './core/color.js';
 export { Random, noise1, noise2 } from './core/random.js';
-export { setPlatform } from './core/platform.js';
+export { setPlatform, loadImage } from './core/platform.js';
 export { sampleFrame } from './core/sampler.js';
 
 export { getTheme, registerTheme, listThemes, exportTheme, importTheme } from './themes/index.js';
