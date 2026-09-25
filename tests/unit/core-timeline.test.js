@@ -245,3 +245,25 @@ test('animateWith runs during the animation and bakes the final state', async ()
   close(r(0.5), 1.5, 1e-9);
   close(r(1.5), 2, 1e-9);
 });
+
+test('scene.include runs a sub-scene inside one transformed group on the same timeline', async () => {
+  const Q = await import('../../src/index.js');
+  let inner;
+  let box;
+  const sub = async (s) => {
+    inner = s.add(new Q.Circle({ radius: 1, x: 2 }));
+    await s.play(inner.animate.set('x', 4), { duration: 1 });
+  };
+  const scene = await Q.buildScene(async (s) => {
+    await s.wait(0.5);
+    box = await s.include(sub, { x: -1, scale: 0.5 });
+    s.add(new Q.Dot());
+  });
+  assert.equal(inner.parent, box);
+  assert.equal(box.parent, scene.root);
+  assert.equal(scene.root.children.at(-1).type, 'dot', 'adds after include go back to the root');
+  assert.ok(Math.abs(scene.duration - 1.5) < 1e-9);
+  const [x] = scene.evaluateAt(1.5, () => inner.center());
+  assert.ok(Math.abs(x - (-1 + 0.5 * 4)) < 1e-9, `center x ${x}`);
+  assert.equal(scene.evaluateAt(0.25, () => inner.get('visible')) && scene.evaluateAt(0.25, () => box.get('visible')), false, 'the included group appears when it is included');
+});

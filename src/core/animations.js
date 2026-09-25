@@ -902,7 +902,7 @@ class FadeInLeaves {
       ghost._init.shape = transformPath(leaf._cur.shape || leaf.geometry(), m);
       ghost._cur.shape = ghost._init.shape;
       ghost._init.visible = false;
-      scene.root.add(ghost);
+      scene.container.add(ghost);
       ghost.tween('visible', this.a, this.a, true, linear);
       ghost.tween('opacity', this.a, this.b, leaf._cur.opacity, this.ease, null, 0);
       ghost.tween('visible', this.b, this.b, false, linear);
@@ -1075,7 +1075,7 @@ export function wiggle(node, opts) {
 class HelperAnimation extends Animation {
   addHelper(scene, node, t) {
     node._init.visible = false;
-    scene.root.add(node);
+    scene.container.add(node);
     node.tween('visible', t, t, true, linear);
   }
 }

@@ -49,6 +49,7 @@ Every rendered visual is graded against `docs/QUALITY.md` (criteria a to g, 1 to
 | 19-typography | 100 | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Kinetic type demos (Manim TransformMatchingShapes): anagram letters fly to their new places; the weight samples sit slightly unevenly spaced. |
 | 51-benford | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Benford's law figures in statistics texts: the leading digits of 2^1 to 2^1000, counted exactly, sit on log10(1 + 1/d); the caption starts a hair right of the percentage above it. |
 | 00-first-scene | 75, 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | The playground's opening scene: formula, graph, and circuit share one timeline; the small caption text sits near the lower size limit at 1080p. |
+| 57-composition | 75 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Picture-in-picture layouts in explainer videos: two gallery scenes play side by side, each scaled in its own group; the panels leave the lower quarter of the frame empty. |
 
 ## Themes
 

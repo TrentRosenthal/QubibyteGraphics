@@ -101,6 +101,8 @@ export class Scene {
     this.frameHeight = this.height * this.unit;
     this.root = new Group([], { id: 'root' });
     this.root._attach(this);
+    /** Group that `add` puts new nodes into: the root, or an included scene's group. */
+    this.container = this.root;
     this.camera = new Camera();
     this.camera._attach(this);
     this.clock = 0;
@@ -157,12 +159,12 @@ export class Scene {
   add(node, ...more) {
     for (const n of [node, ...more].flat()) {
       if (!n) continue;
-      if (n.parent === this.root && n.scene === this) {
+      if (n.parent === this.container && n.scene === this) {
         n.set('visible', true);
         continue;
       }
       const appearsLater = this.building && this.clock > 0;
-      this.root.add(n);
+      this.container.add(n);
       if (appearsLater) {
         n._init.visible = false;
         n.tween('visible', this.clock, this.clock, true, (u) => u, null, false);
@@ -171,6 +173,40 @@ export class Scene {
       }
     }
     return node;
+  }
+
+  /**
+   * Compose scenes: run another scene's build function on this timeline,
+   * with everything it adds placed in one group that can be moved, scaled,
+   * or animated as a unit. Its animations play from the current clock; the
+   * clock advances past them.
+   *
+   *   const inset = await scene.include(taylorScene, { x: 4, y: -2, scale: 0.4 });
+   *
+   * @param {(scene: Scene) => any} build a scene function (the default export of a scene module)
+   * @param {Record<string, any>} [props] Group props for the container (x, y, scale, opacity, ...)
+   * @returns {Promise<Group>} the container
+   */
+  async include(build, props = {}) {
+    const { x, y, scale, rotation, ...rest } = props;
+    const group = new Group([], { type: 'include', ...rest });
+    this.add(group);
+    const outer = this.container;
+    this.container = group;
+    try {
+      // The sub-scene builds with its container at the identity, so world
+      // coordinates it computes while building (axes points, bounds) are
+      // container coordinates; the placement applies afterwards, from time 0.
+      await build(this);
+    } finally {
+      this.container = outer;
+    }
+    const placement = { x, y, scale, rotation };
+    const saved = this.clock;
+    this.clock = 0;
+    for (const [k, v] of Object.entries(placement)) if (v !== undefined) group.set(k, v);
+    this.clock = saved;
+    return group;
   }
 
   /**
