@@ -41,3 +41,7 @@ Every rendered visual is graded against `docs/QUALITY.md` (criteria a to g, 1 to
 | 31-blueprint-construction | 100 | 4 | 5 | 4 | 5 | 5 | 4 | 4 | Drafting-style construction sheets (Byrne's Euclid for the idea, blueprint for the look): construction lines overshoot at corners, lettering no longer does, and periods draw as dots. |
 | 01-shapes | 50, 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Manim's Transform demos: point alignment keeps each morph free of jumps; the reference also rotates to the nearest correspondence, ours starts from the top point. |
 | 32-paper-notes | 75, 100 | 4 | 4 | 4 | 5 | 5 | 4 | 4 | Handwritten study notes on ruled paper: secants close on the tangent while the algebra is written beside them; commas keep their tails in the hand font now. |
+| 52-dijkstra | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Textbook Dijkstra figures (CLRS 24.6): the settled set, running distances, and final path appear in order from the engine's recorded steps; edges stop at node rims. |
+| 53-insertion-sort | 50 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Sorting visualizers (visualgo): bars slide as pairs swap with a live swap count; the count's serif face differs from the title face. |
+| 55-pendulum | 50 | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Physics lecture demos: the bob and the trace are driven by one RK4 solution, so the angle on the left always matches the pen on the right. |
+| 56-conformal-map | 100 | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Needham, Visual Complex Analysis: the grid morphs into orthogonal parabolas at equal x and y scale; parametric curves now clip to their axes. |

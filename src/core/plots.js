@@ -239,12 +239,17 @@ export class ParametricCurve extends PlotNode {
     const ax = this.axes();
     const s = ax.state();
     const [t0, t1] = this.range;
-    const pts = [];
+    // Points outside the axes range break the curve, so it never spills past the axes.
+    const runs = [[]];
+    const inside = (x, y) => x >= s.xMin - 1e-9 && x <= s.xMax + 1e-9 && y >= s.yMin - 1e-9 && y <= s.yMax + 1e-9;
     for (let i = 0; i <= this.samples; i++) {
       const [x, y] = this.f(t0 + ((t1 - t0) * i) / this.samples);
-      if (Number.isFinite(x) && Number.isFinite(y)) pts.push(ax.toLocal(x, y, s));
+      if (Number.isFinite(x) && Number.isFinite(y) && inside(x, y)) runs[runs.length - 1].push(ax.toLocal(x, y, s));
+      else if (runs[runs.length - 1].length) runs.push([]);
     }
-    return catmullRomPath(pts, false, 0.5);
+    const paths = runs.filter((r) => r.length > 1).map((r) => catmullRomPath(r, false, 0.5));
+    if (!paths.length) return emptyPath();
+    return paths.length === 1 ? paths[0] : mergePaths(...paths);
   }
 }
 
