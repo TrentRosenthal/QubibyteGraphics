@@ -2,9 +2,10 @@
  * The vector projector: turns collected 3D render units into depth-ordered
  * 2D PathItems. Faces are lit per face in OKLab, ordered exactly (see
  * order.js), and drawn with a hairline seam stroke in their own color so
- * neighboring faces never show anti-aliasing cracks. Edge lines are drawn
- * right after the later of their two faces, so they are hidden exactly when
- * their faces are.
+ * neighboring faces never show anti-aliasing cracks. Edge lines are ordinary
+ * segment primitives lying in their faces' planes, so the ordering draws them
+ * right after their faces and hides them exactly when those faces are hidden;
+ * dashed hidden edges (blueprint style) are drawn after their whole object.
  * @module three/render
  */
 
@@ -56,7 +57,7 @@ function normalizePath(r) {
  * @param {((text: string) => any)|null} factory
  * @returns {import('../core/path.js').Path|null}
  */
-export function labelPath(content, factory) {
+function labelPath(content, factory) {
   const direct = normalizePath(content);
   if (direct) return direct;
   if (typeof content !== 'string' || !content) return null;
@@ -180,7 +181,8 @@ export function renderUnits(input, items) {
       meshInfos.push(U);
       if (U.facePrims.length) {
         for (const x of U.facePrims) prims.push(x);
-        groupItems.push(U.facePrims);
+        for (const x of U.edgeSegs) prims.push(x);
+        groupItems.push(U.facePrims.concat(U.edgeSegs));
       }
       for (const x of U.wireSegs) {
         const pieces = chop(x, chopLen);
@@ -263,7 +265,7 @@ export function renderUnits(input, items) {
         if (p) {
           const pts = [];
           for (let k = 0; k < p.length; k += 3) pts.push(proj(p[k], p[k + 1], p[k + 2]));
-          items.push(pathItem(s.id, s.nodeType, polygonPath(pts), withA(s.fill, opacity), s.seam ? withA(s.fill, opacity) : null, s.seam ? 0.9 : 0, s.meta));
+          items.push(pathItem(s.id, s.nodeType, polygonPath(pts), withA(s.fill, opacity), s.seam ? withA(s.fill, opacity) : null, s.seam ? (s.meta.occluder ? 0.5 : 0.8) : 0, s.meta));
         }
       }
       const edges = attach.get(i);
@@ -453,9 +455,10 @@ function buildMeshUnit(unit, input, ctx, cam, eps, viewDir) {
     worldPos: W, edges: meshEdges(mesh), center, inR: Math.max(0, inR), outR, M: Mw, polyCount: 0, facePrims: [], wireSegs: [],
     faceStyles: new Array(nf), facesDrawn, opaque,
   };
-  const baseColor = resolveFill(unit.fill, ctx);
+  const baseColor = unit.capFaces && (unit.fill === 'auto' || unit.fill == null) ? softenColor(ctx.color('accent'), 0.42) : resolveFill(unit.fill, ctx);
   const capColor = unit.capFaces ? resolveFill(unit.capColor ?? 'accent', ctx) : null;
-  const edgeCol = input.color(mat.edgeColor ?? unit.edgeColor ?? 'ink') || ctx.ink;
+  const explicitFill = unit.fill != null && unit.fill !== 'auto';
+  const edgeCol = (mat.kind === 'ink' || mat.kind === 'wireframe') && explicitFill && !mat.edgeColor ? baseColor : input.color(mat.edgeColor ?? unit.edgeColor ?? 'ink') || ctx.ink;
   const faceColor = (f) => {
     if (capColor && f >= nf - unit.capFaces) return capColor;
     if (mesh.faceColors && mesh.faceColors[f] != null) return resolveFill(mesh.faceColors[f], ctx);
@@ -477,11 +480,11 @@ function buildMeshUnit(unit, input, ctx, cam, eps, viewDir) {
       meta = { three: true, role: 'face', noBoard: true, occluder: true };
     } else {
       const base = faceColor(f);
-      if (mat.shading === 'none' && !isCap) fill = base;
+      if (mat.shading === 'none' || isCap) fill = isCap ? shadeCached(base, 1, 0) : base;
       else {
         const d = diffuseAt(input.lights, n, c) * (isFront || !mesh.closed ? 1 : 0.9);
         const v = viewDir(c);
-        const sp = mat.specular > 0 && !isCap ? mat.specular * specularAt(input.lights, n, c, v, mat.shininess) : 0;
+        const sp = mat.specular > 0 ? mat.specular * specularAt(input.lights, n, c, v, mat.shininess) : 0;
         fill = { ...shadeCached(base, isFront ? d : d * 0.86, sp), a: base.a };
       }
       if (mat.rim) {
@@ -518,10 +521,13 @@ function buildMeshUnit(unit, input, ctx, cam, eps, viewDir) {
     }
     U.polyCount = U.facePrims.length;
   }
-  U.edgeList = selectEdges(U, mesh, mat, unit, input, edgeCol);
-  if (!facesDrawn) {
-    for (const e of U.edgeList) U.wireSegs.push({ k: SEG, p: e.p, u: null, f: -1, pl: null, whole: true, s: e.style });
-    U.edgeList = [];
+  const edges = selectEdges(U, mesh, mat, unit, input, edgeCol);
+  U.edgeList = [];
+  U.edgeSegs = [];
+  for (const e of edges) {
+    if (!facesDrawn) U.wireSegs.push({ k: SEG, p: e.p, u: null, f: -1, pl: null, whole: true, s: e.style });
+    else if (e.hidden && U.cull) U.edgeList.push(e);
+    else U.edgeSegs.push({ k: SEG, p: e.p, u: U, f: -1, pl: null, whole: true, s: e.style });
   }
   return U;
 }
@@ -545,8 +551,10 @@ function selectEdges(U, mesh, mat, unit, input, edgeCol) {
   const out = [];
   const cosFeature = Math.cos((mat.featureAngle * Math.PI) / 180);
   const N = faceNormals(mesh);
-  const baseA = mat.edgeOpacity * unit.edgeOpacity * unit.opacity;
-  const silA = mat.silhouetteOpacity * unit.edgeOpacity * unit.opacity;
+  const boost = mat.faces ? 1 - Math.max(0, Math.min(1, unit.fillOpacity)) : 0;
+  const lift = (a) => a + (Math.max(a, 0.85) - a) * boost;
+  const baseA = lift(mat.edgeOpacity) * unit.edgeOpacity * unit.opacity;
+  const silA = lift(mat.silhouetteOpacity) * unit.edgeOpacity * unit.opacity;
   const width = unit.edgeWidth ?? mat.edgeWidth;
   const classes = mesh.edgeClass;
   const styles = input.edgeStyles || {};
@@ -585,13 +593,13 @@ function selectEdges(U, mesh, mat, unit, input, edgeCol) {
     if (!visible && !U.facesDrawn) {
       if (mat.backEdges === 'hide') continue;
       alpha *= 0.35;
-      if (mat.backEdges === 'dash') dash = [6, 6];
+      if (mat.backEdges === 'dash') dash = [0.09, 0.07];
     } else if (!visible) {
       if (U.cull && mat.backEdges === 'hide') continue;
       if (!U.cull) alpha *= mat.backEdges === 'dim' ? 0.55 : 1;
       else {
         alpha *= 0.3;
-        if (mat.backEdges === 'dash') dash = [6, 6];
+        if (mat.backEdges === 'dash') dash = [0.09, 0.07];
       }
     }
     if (alpha <= 0.002) continue;
@@ -615,25 +623,17 @@ function attachEdges(infos, ordered) {
     if (x.k !== POLY || !x.u) return;
     let arr = last.get(x.u);
     if (!arr) {
-      arr = { byFace: new Map(), max: -1 };
+      arr = { max: -1 };
       last.set(x.u, arr);
     }
-    arr.byFace.set(x.f, i);
     if (i > arr.max) arr.max = i;
   });
   for (const U of infos) {
     const L = last.get(U);
     if (!L) continue;
     for (const e of U.edgeList) {
-      const i0 = L.byFace.get(e.f0) ?? -1;
-      const i1 = e.f1 >= 0 ? L.byFace.get(e.f1) ?? -1 : -1;
-      let at = Math.max(i0, i1);
-      if (at < 0) {
-        if (!e.hidden) continue;
-        at = L.max;
-      }
-      if (!map.has(at)) map.set(at, []);
-      map.get(at).push(e);
+      if (!map.has(L.max)) map.set(L.max, []);
+      map.get(L.max).push(e);
     }
   }
   return map;
@@ -660,7 +660,7 @@ function lineSubpath(a, b) {
  * @param {number[][]} pts
  * @returns {import('../core/path.js').Path}
  */
-export function polygonPath(pts) {
+function polygonPath(pts) {
   const n = pts.length;
   const out = new Array(2 + 6 * n);
   out[0] = pts[0][0];
@@ -729,8 +729,9 @@ function emitShadows(infos, input, ctx, proj, clipW, items) {
   const opt = typeof input.shadow === 'object' ? input.shadow : {};
   const z = opt.z ?? zmin;
   const strength = opt.opacity ?? 1;
-  const col = input.theme.dark ? mix(ctx.bg, '#000000', 0.7) : mix(ctx.ink, ctx.bg, 0.2);
-  const layers = [[1.0, 0.1], [1.08, 0.07], [1.18, 0.05], [1.3, 0.035]];
+  const col = input.theme.dark ? mix(ctx.bg, '#000000', 0.6) : mix(ctx.ink, ctx.bg, 0.35);
+  const layers = [];
+  for (let i = 0; i < 7; i++) layers.push([0.9 + i * 0.05, input.theme.dark ? 0.05 : 0.022]);
   for (const U of casters) {
     const W = U.worldPos;
     const pts = [];

@@ -9,7 +9,7 @@ import { ColorMix } from '../core/node.js';
 import { phaseColor } from '../core/color.js';
 import { Animation } from '../core/animations.js';
 import { Group3D, Mesh3D, Lines3D, Label3D, Arrow3D, Points3D, text3D } from './object3d.js';
-import { uvSphere, box, roundedBox, cylinder, cone, torus, mergeMeshes, translateMesh, transformMesh, meshBounds, makeMesh } from './geometry.js';
+import { uvSphere, box, roundedBox, cylinder, cone, torus, tube, mergeMeshes, translateMesh, transformMesh, meshBounds, makeMesh } from './geometry.js';
 import { sphericalGrid } from './axes3d.js';
 import { loadLabelText } from './render.js';
 import { spherical, rotateAxis, normalize, cross, perpendicular } from './vec3.js';
@@ -426,8 +426,9 @@ export function circuitMesh(circuit, opts = {}) {
   }
   for (const [c, gates] of byColumn) {
     const x = colX(c);
-    const ys = gates.flatMap((g) => g.wires.map(wireY));
-    if (gates.length > 1 || gates.some((g) => g.wires.length > 1 && g.kind !== 'box')) {
+    const ys = gates.filter((g) => g.kind !== 'measure').flatMap((g) => g.wires.map(wireY));
+    const linked = gates.some((g) => g.kind === 'control' || g.kind === 'target') || gates.some((g) => g.kind === 'swap' && g.wires.length > 1);
+    if (linked) {
       const top = Math.max(...ys);
       const bot = Math.min(...ys);
       if (top - bot > 1e-9) add(cylinder(wr * 0.9, top - bot, 12), M.multiply(M.translation(x, (top + bot) / 2, zc), alongY), 'gateControlled', `connector-${c}`);
@@ -442,9 +443,12 @@ export function circuitMesh(circuit, opts = {}) {
         const cz = zc - wr + gh / 2;
         add(body, M.translation(x, (yTop + yBot) / 2, cz), color, `gate-${c}`);
         if (g.kind === 'measure') {
-          const ring = torus(gs * 0.24, wr * 0.55, 20, 8);
-          const half = makeMesh(ring.positions, ring.faces.filter((_, i) => i % 20 < 10));
-          add(half, M.translation(x, (yTop + yBot) / 2 - gs * 0.1, cz + gh / 2), 'ink', `meter-${c}`);
+          const arc = [];
+          for (let i = 0; i <= 16; i++) {
+            const a = Math.PI * (0.15 + (0.7 * i) / 16);
+            arc.push([Math.cos(a) * gs * 0.26, Math.sin(a) * gs * 0.26 - gs * 0.1, 0]);
+          }
+          add(tube(arc, { radius: wr * 0.5, radialSegments: 8, caps: true }), M.translation(x, (yTop + yBot) / 2, cz + gh / 2), 'ink', `meter-${c}`);
         } else if (g.label != null && opts.labelFactory) {
           const path = safeLabel(opts.labelFactory, g.label);
           if (path && path.subpaths.length) {

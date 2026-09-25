@@ -13,7 +13,7 @@
 
 import { flattenPath } from '../core/path.js';
 import { triangulatePolygon } from './triangulate.js';
-import { transformPoint, transformDirection } from './mat4.js';
+import { transformPoint } from './mat4.js';
 
 /**
  * @typedef {Object} MeshGeometry
@@ -1205,24 +1205,6 @@ export function groupContours(loops) {
 }
 
 /**
- * A 3D arrow along +z from the origin: a cylinder shaft and a cone head,
- * returned as two convex parts.
- * @param {number} length
- * @param {{shaftRadius?: number, headRadius?: number, headLength?: number, segments?: number}} [opts]
- * @returns {{shaft: MeshGeometry|null, head: MeshGeometry}}
- */
-export function arrowParts(length, opts = {}) {
-  const hr = opts.headRadius ?? 0.07;
-  const hl = Math.min(opts.headLength ?? 0.22, length * 0.6);
-  const sr = opts.shaftRadius ?? 0.022;
-  const seg = opts.segments ?? 20;
-  const shaftLen = Math.max(0, length - hl);
-  const shaft = shaftLen > 1e-6 ? translateMesh(cylinder(sr, shaftLen, seg), 0, 0, shaftLen / 2) : null;
-  const head = translateMesh(cone(hr, hl, seg), 0, 0, shaftLen + hl / 2);
-  return { shaft, head };
-}
-
-/**
  * Translate a mesh.
  * @param {MeshGeometry} mesh @param {number} x @param {number} y @param {number} z
  * @returns {MeshGeometry}
@@ -1255,45 +1237,50 @@ export function levelSets(f, domain, levels, opts = {}) {
   const V = [];
   for (let j = 0; j <= ny; j++) for (let i = 0; i <= nx; i++) V.push(f(x0 + ((x1 - x0) * i) / nx, y0 + ((y1 - y0) * j) / ny));
   const polylines = [];
-  const zOf = (x, y, lev) => (opts.z === 'surface' ? lev : opts.z ?? 0);
+  const zOf = (lev) => (opts.z === 'surface' ? lev : opts.z ?? 0);
+  const idx = (i, j) => j * (nx + 1) + i;
   for (const lev of levels) {
+    const points = new Map();
+    const cross = (a, b) => {
+      const key = a < b ? a * 1e7 + b : b * 1e7 + a;
+      if (!points.has(key)) {
+        const [lo, hi] = a < b ? [a, b] : [b, a];
+        const t = (lev - V[lo]) / (V[hi] - V[lo]);
+        const il = lo % (nx + 1);
+        const jl = Math.floor(lo / (nx + 1));
+        const ih = hi % (nx + 1);
+        const jh = Math.floor(hi / (nx + 1));
+        points.set(key, [x0 + ((x1 - x0) * (il + (ih - il) * t)) / nx, y0 + ((y1 - y0) * (jl + (jh - jl) * t)) / ny, zOf(lev)]);
+      }
+      return key;
+    };
     const segs = [];
     for (let j = 0; j < ny; j++) {
       for (let i = 0; i < nx; i++) {
-        const c = [[i, j], [i + 1, j], [i + 1, j + 1], [i, j + 1]];
-        const val = c.map(([a, b]) => V[b * (nx + 1) + a]);
-        const pts = [];
+        const c = [idx(i, j), idx(i + 1, j), idx(i + 1, j + 1), idx(i, j + 1)];
+        const hits = [];
         for (let k = 0; k < 4; k++) {
-          const va = val[k];
-          const vb = val[(k + 1) % 4];
-          if ((va < lev) !== (vb < lev)) {
-            const t = (lev - va) / (vb - va);
-            const [ia, ja] = c[k];
-            const [ib, jb] = c[(k + 1) % 4];
-            const x = x0 + ((x1 - x0) * (ia + (ib - ia) * t)) / nx;
-            const y = y0 + ((y1 - y0) * (ja + (jb - ja) * t)) / ny;
-            pts.push([x, y, zOf(x, y, lev)]);
-          }
+          const a = c[k];
+          const b = c[(k + 1) % 4];
+          if ((V[a] < lev) !== (V[b] < lev)) hits.push(cross(a, b));
         }
-        if (pts.length === 2) segs.push(pts);
-        else if (pts.length === 4) {
-          const center = (val[0] + val[1] + val[2] + val[3]) / 4;
-          if ((center < lev) === (val[0] < lev)) segs.push([pts[0], pts[3]], [pts[1], pts[2]]);
-          else segs.push([pts[0], pts[1]], [pts[2], pts[3]]);
+        if (hits.length === 2) segs.push(hits);
+        else if (hits.length === 4) {
+          const center = (V[c[0]] + V[c[1]] + V[c[2]] + V[c[3]]) / 4;
+          if ((center < lev) === (V[c[0]] < lev)) segs.push([hits[0], hits[3]], [hits[1], hits[2]]);
+          else segs.push([hits[0], hits[1]], [hits[2], hits[3]]);
         }
       }
     }
-    for (const s of chainSegments(segs)) polylines.push(s);
+    for (const chain of chainSegments(segs)) polylines.push({ points: chain.keys.map((k) => points.get(k)), closed: chain.closed });
   }
   return { polylines };
 }
 
 function chainSegments(segs) {
-  const key = (p) => `${Math.round(p[0] * 1e7)},${Math.round(p[1] * 1e7)},${Math.round(p[2] * 1e7)}`;
   const adj = new Map();
   segs.forEach((s, i) => {
-    for (const p of s) {
-      const k = key(p);
+    for (const k of s) {
       if (!adj.has(k)) adj.set(k, []);
       adj.get(k).push(i);
     }
@@ -1303,57 +1290,23 @@ function chainSegments(segs) {
   for (let i = 0; i < segs.length; i++) {
     if (used[i]) continue;
     used[i] = 1;
-    const pts = [segs[i][0], segs[i][1]];
+    const keys = [segs[i][0], segs[i][1]];
     for (const dir of [1, 0]) {
       for (;;) {
-        const end = dir ? pts[pts.length - 1] : pts[0];
-        const next = (adj.get(key(end)) || []).find((j) => !used[j]);
+        const end = dir ? keys[keys.length - 1] : keys[0];
+        const next = (adj.get(end) || []).find((j) => !used[j]);
         if (next === undefined) break;
         used[next] = 1;
-        const s = segs[next];
-        const other = key(s[0]) === key(end) ? s[1] : s[0];
-        if (dir) pts.push(other);
-        else pts.unshift(other);
+        const other = segs[next][0] === end ? segs[next][1] : segs[next][0];
+        if (dir) keys.push(other);
+        else keys.unshift(other);
       }
     }
-    const closed = pts.length > 3 && key(pts[0]) === key(pts[pts.length - 1]);
-    if (closed) pts.pop();
-    out.push({ points: pts, closed });
+    const closed = keys.length > 3 && keys[0] === keys[keys.length - 1];
+    if (closed) keys.pop();
+    out.push({ keys, closed });
   }
   return out;
-}
-
-/**
- * Transform line geometry by a 4x4 matrix.
- * @param {LineGeometry} lines @param {import('./mat4.js').Mat4} m
- * @returns {LineGeometry}
- */
-export function transformLines(lines, m) {
-  return { polylines: lines.polylines.map((pl) => ({ points: pl.points.map((p) => transformPoint(m, p)), closed: pl.closed })) };
-}
-
-/**
- * Normal matrix helper: transform a normal by the inverse transpose of the
- * upper 3x3 of m (given its inverse).
- * @param {import('./mat4.js').Mat4} inv inverse of the model matrix
- * @param {number[]} n
- * @returns {number[]}
- */
-export function transformNormal(inv, n) {
-  const t = [inv[0] * n[0] + inv[1] * n[1] + inv[2] * n[2], inv[4] * n[0] + inv[5] * n[1] + inv[6] * n[2], inv[8] * n[0] + inv[9] * n[1] + inv[10] * n[2]];
-  const L = Math.hypot(...t) || 1;
-  return [t[0] / L, t[1] / L, t[2] / L];
-}
-
-/**
- * Direction of a vector after a matrix, normalized.
- * @param {import('./mat4.js').Mat4} m @param {number[]} v
- * @returns {number[]}
- */
-export function transformUnit(m, v) {
-  const t = transformDirection(m, v);
-  const L = Math.hypot(...t) || 1;
-  return [t[0] / L, t[1] / L, t[2] / L];
 }
 
 function cross3(a, b) {

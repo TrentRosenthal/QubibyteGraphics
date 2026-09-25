@@ -158,7 +158,7 @@ function centroid(p) {
  * @param {{eye: number[], forward: number[]}} cam
  * @returns {number}
  */
-export function depthOf(x, cam) {
+function depthOf(x, cam) {
   const c = centroid(x.p);
   return (c[0] - cam.eye[0]) * cam.forward[0] + (c[1] - cam.eye[1]) * cam.forward[1] + (c[2] - cam.eye[2]) * cam.forward[2];
 }
@@ -178,7 +178,7 @@ function sortFarFirst(list, cam) {
  * @param {number} eps
  * @returns {any} tree root
  */
-export function buildBSP(list, eps) {
+function buildBSP(list, eps) {
   const root = {};
   const stack = [[root, list]];
   while (stack.length) {
@@ -264,7 +264,7 @@ function chooseSplitter(items, polyCount, eps) {
  * @param {(node: any, side: number) => Prim[]|null} [nodeItems] override for a node's own items
  * @param {(node: any, which: 'front'|'back') => Prim[]|null} [emptyChild] items for an empty child slot
  */
-export function traverseBSP(root, eyeH, cam, out, nodeItems, emptyChild) {
+function traverseBSP(root, eyeH, cam, out, nodeItems, emptyChild) {
   const stack = [root];
   while (stack.length) {
     const x = stack.pop();
@@ -406,14 +406,14 @@ function partitionConvex(K, others, cam, eps) {
  * @param {number} eps
  * @returns {Prim[]}
  */
-export function orderGroup(list, cam, eps) {
+function orderGroup(list, cam, eps) {
   if (list.length <= 1) return list;
   const counts = new Map();
   let polys = 0;
   for (const x of list) {
     if (x.k !== POLY) continue;
     polys++;
-    if (x.whole) counts.set(x.u, (counts.get(x.u) || 0) + 1);
+    if (x.whole && x.u) counts.set(x.u, (counts.get(x.u) || 0) + 1);
   }
   if (!polys) return sortFarFirst(list, cam);
   let K = null;
@@ -499,12 +499,12 @@ function axesOf(pts, out) {
 
 function screenOverlap(a, b) {
   if (!a.ok || !b.ok) return true;
-  if (a.x1 <= b.x0 || b.x1 <= a.x0 || a.y1 <= b.y0 || b.y1 <= a.y0) return false;
-  if (a.pts.length === 2 || b.pts.length === 2) return true;
+  const tol = a.pts.length > 4 && b.pts.length > 4 ? 1e-7 : -1e-7;
+  if (a.x1 <= b.x0 + tol || b.x1 <= a.x0 + tol || a.y1 <= b.y0 + tol || b.y1 <= a.y0 + tol) return false;
+  if (a.pts.length === 2 && b.pts.length === 2) return true;
   const axes = [];
   axesOf(a.pts, axes);
   axesOf(b.pts, axes);
-  const tol = 1e-7;
   for (let k = 0; k < axes.length; k += 2) {
     const ax = axes[k];
     const ay = axes[k + 1];
@@ -525,6 +525,54 @@ function screenOverlap(a, b) {
     if (amax <= bmin + tol || bmax <= amin + tol) return false;
   }
   return true;
+}
+
+/**
+ * The part of segment S whose projection lies inside polygon P's projection
+ * (Cyrus-Beck clipping in homogeneous clip coordinates, which is linear in
+ * the 3D segment parameter and so exact under perspective).
+ * @returns {Prim|null}
+ */
+function segmentInside(S, ps, cam) {
+  const m = cam.viewProj;
+  const p = S.p;
+  const clip = (i) => [
+    m[0] * p[i] + m[4] * p[i + 1] + m[8] * p[i + 2] + m[12],
+    m[1] * p[i] + m[5] * p[i + 1] + m[9] * p[i + 2] + m[13],
+    m[3] * p[i] + m[7] * p[i + 1] + m[11] * p[i + 2] + m[15],
+  ];
+  const a = clip(0);
+  const b = clip(3);
+  const q = ps.pts;
+  const n = q.length / 2;
+  let area = 0;
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    area += q[i * 2] * q[j * 2 + 1] - q[j * 2] * q[i * 2 + 1];
+  }
+  if (Math.abs(area) < 1e-14) return null;
+  const sg = area > 0 ? 1 : -1;
+  let t0 = 0;
+  let t1 = 1;
+  const tolC = 1e-7 * Math.max(Math.abs(a[2]), Math.abs(b[2]));
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    const ex = q[j * 2] - q[i * 2];
+    const ey = q[j * 2 + 1] - q[i * 2 + 1];
+    const nx = -ey * sg;
+    const ny = ex * sg;
+    const c = nx * q[i * 2] + ny * q[i * 2 + 1];
+    const L = Math.hypot(nx, ny) || 1;
+    const ga = (nx * a[0] + ny * a[1] - c * a[2]) / L + tolC;
+    const gb = (nx * b[0] + ny * b[1] - c * b[2]) / L + tolC;
+    if (ga < 0 && gb < 0) return null;
+    if (ga < 0) t0 = Math.max(t0, ga / (ga - gb));
+    else if (gb < 0) t1 = Math.min(t1, ga / (ga - gb));
+    if (t1 - t0 < 1e-9) return null;
+  }
+  if (t0 <= 0 && t1 >= 1) return S;
+  const at = (t) => [p[0] + (p[3] - p[0]) * t, p[1] + (p[4] - p[1]) * t, p[2] + (p[5] - p[2]) * t];
+  return { k: SEG, p: [...at(t0), ...at(t1)], u: S.u, f: -1, pl: null, whole: false, s: S.s };
 }
 
 /**
@@ -564,6 +612,18 @@ function relation(A, B, sa, sb, ia, ib, cam, eps) {
     if (sb.dmax < sa.dmin - eps) return -1;
   }
   if (!screenOverlap(sa, sb)) return 0;
+  if (sa.ok && sb.ok && ((A.k === SEG && B.k === POLY) || (A.k === POLY && B.k === SEG))) {
+    const segFirst = A.k === SEG;
+    const S = segFirst ? A : B;
+    const Pl = segFirst ? B : A;
+    const part = segmentInside(S, segFirst ? sb : sa, cam);
+    if (!part) return 0;
+    const r = against(Pl, part, cam.eyeH, eps, cam.bias ?? 0);
+    if (r === 'behind') return segFirst ? -1 : 1;
+    if (r === 'front' || r === 'on') return segFirst ? 1 : -1;
+    if (r === null) return 0;
+    return 2;
+  }
   const e = cam.eyeH;
   const bias = cam.bias ?? 0;
   let r = A.k === POLY ? against(A, B, e, eps, bias) : null;
@@ -813,7 +873,7 @@ function boxOf(list) {
 }
 
 function overlaps(a, b, eps) {
-  for (let k = 0; k < 3; k++) if (a.min[k] >= b.max[k] - eps || b.min[k] >= a.max[k] - eps) return false;
+  for (let k = 0; k < 3; k++) if (a.min[k] > b.max[k] + eps || b.min[k] > a.max[k] + eps) return false;
   return true;
 }
 
@@ -826,7 +886,7 @@ function clusterBoxes(boxes, eps) {
     const bi = boxes[i];
     for (let j = active.length - 1; j >= 0; j--) {
       const bj = boxes[active[j]];
-      if (bj.max[0] <= bi.min[0] + eps) {
+      if (bj.max[0] < bi.min[0] - eps) {
         active.splice(j, 1);
         continue;
       }

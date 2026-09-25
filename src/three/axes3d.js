@@ -144,11 +144,12 @@ export class Axes3D extends Group3D {
    * Plot z = f(x, y) over a domain (data coordinates).
    * @param {(x: number, y: number) => number} f
    * @param {{x?: number[], y?: number[], nx?: number, ny?: number}} [domain]
-   * @param {Record<string, any>} [props] Mesh3D props (color, material, ...)
+   * @param {Record<string, any>} [props] Mesh3D props (color, material, ...); without a color the surface is shaded by height from a deep to a light tone of the accent, or along `gradient: [low, high]` (false disables it)
    * @returns {Surface3D}
    */
   plotSurface(f, domain = {}, props = {}) {
     const s = new Surface3D((x, y) => this.c2p(x, y, f(x, y)), { u: domain.x ?? [this.xr.min, this.xr.max], v: domain.y ?? [this.yr.min, this.yr.max], nu: domain.nx ?? 36, nv: domain.ny ?? 36 }, { castShadow: false, ...props });
+    if (props.color == null && props.gradient !== false) heightColors(s.mesh, props.gradient);
     this.add(s);
     return s;
   }
@@ -270,7 +271,7 @@ export class Axes3D extends Group3D {
   /**
    * A slice plane through a scalar field, drawn as colored grid cells.
    * @param {(x: number, y: number, z: number) => number} field
-   * @param {{axis?: 'x'|'y'|'z', at?: number, n?: number, range?: number[], colors?: any[]}} [opts] colors: low to high color stops (default muted to accent to accent2)
+   * @param {{axis?: 'x'|'y'|'z', at?: number, n?: number, range?: number[], colors?: any[]}} [opts] colors: low to high color stops (default a faint accent tint, the accent, then accent2)
    * @param {Record<string, any>} [props]
    * @returns {Mesh3D}
    */
@@ -318,7 +319,7 @@ export class Axes3D extends Group3D {
     const n = opts.n ?? 24;
     const at = opts.at ?? 0;
     const vr = opts.range ?? sampleRange(field, this);
-    const stops = opts.colors ?? ['muted', 'accent', 'accent2'];
+    const stops = opts.colors ?? [new ColorMix('accent', 'background', 0.78), 'accent', 'accent2'];
     const point = (u, v) => {
       const p = [0, 0, 0];
       p[a] = at;
@@ -338,6 +339,20 @@ export class Axes3D extends Group3D {
     }
     return makeMesh(g.positions, g.faces, { faceColors: colors });
   }
+}
+
+/**
+ * Color faces by height (z of the face center) between two colors.
+ * @param {import('./geometry.js').MeshGeometry} mesh
+ * @param {any[]} [stops] [low, high]
+ */
+function heightColors(mesh, stops) {
+  const [lo, hi] = stops ?? [new ColorMix('accent', 'background', 0.42), new ColorMix('accent', 'ink', 0.3)];
+  const P = mesh.positions;
+  const zs = mesh.faces.map((f) => f.reduce((a, v) => a + P[v * 3 + 2], 0) / f.length);
+  const z0 = Math.min(...zs);
+  const z1 = Math.max(...zs);
+  mesh.faceColors = zs.map((z) => new ColorMix(lo, hi, z1 > z0 ? (z - z0) / (z1 - z0) : 0.5));
 }
 
 function sampleRange(field, axes) {

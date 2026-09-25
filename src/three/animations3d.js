@@ -75,7 +75,12 @@ export function matchMeshes(a, b, resolution = 12) {
   return { from: resampleRadial(a, t), to: resampleRadial(b, t) };
 }
 
-/** Morph a mesh into another shape through a shared sphere parameterization. */
+/**
+ * Morph a mesh into another shape through a shared sphere parameterization.
+ * Both shapes must be star-shaped about their bounding-box centers (every ray
+ * from the center meets the surface once), which holds for primitives,
+ * polyhedra, and most closed models.
+ */
 export class MeshMorph extends Animation {
   /**
    * @param {Mesh3D} mesh

@@ -137,3 +137,75 @@ An op occupies the vertical span from its lowest to its highest wire, controls i
 ## Qubi: `toQubiSource` output
 
 The emitter writes `#settings` for the sizes and CodeAngleUnit, gate blocks for user matrices, then one statement per op: piradians when the value is exact to 12 digits, otherwise a `rad` suffix, and never exponent notation. Ops without a Qubi spelling become exact equivalents: controlled RX/RY/RZ become R(theta/2), CZ or CX, R(-theta/2), CZ or CX; controlled S/T/SDG/TDG become CP; controlled H, U, ISWAP, SQRTSWAP, and controlled user gates become a user matrix gate over targets then controls. `if` ops have no flat form and are rejected. The importers' provisional emitter (`src/quantum/import/emit.js`) can switch to this one: the forms it guessed (bracket registers for SWAP, `RX(0.25) 0`, `deg`/`rad` suffixes, gate blocks) are all accepted by the parser.
+
+## 3D: z is up, and the camera uses theta and phi like the Bloch sphere
+
+World space is right-handed with z up, so `z = f(x, y)` plots and the Bloch sphere (|0> at +z) need no conversions. The orbit camera's theta is the azimuth from +x toward +y and phi the polar angle from +z, the same convention as a Bloch state. Euler rotations apply x, then y, then z about fixed axes; an extra `quat` property on every Object3D carries arbitrary-axis rotations, which `rotate3D` interpolates by slerp (and by composing axis-angle steps beyond half a turn, where slerp would take the short way).
+
+## 3D: exact painter's order in three layers instead of a BSP of everything
+
+A single per-frame BSP over a sphere is a chain of n planes (quadratic time), and over a curved surface it shatters faces into thousands of fragments. Ordering is instead layered: (1) primitives are grouped by overlapping world bounding boxes (lines as short pieces) and disjoint groups are sorted by their separating axis-aligned plane, which is exact; (2) inside a group, a whole convex solid splits the rest into behind (inside its silhouette cone, past it), inside, and in front, drawn as behind, its back faces, inside, its front faces, front; (3) what remains is ordered by an occlusion graph of screen-overlapping pairs (depth ranges and Newell's plane tests, with segments clipped to a face's screen footprint in homogeneous coordinates), topologically sorted, and only strongly connected components (true intersections and cycles) are split by a BSP. A sphere with axes samples in about 6 ms. Lines lying in a face's plane sort after it, with a small polygon offset so lines drawn on curved surfaces never flicker.
+
+## 3D: edges are ordinary primitives, faces get a hairline seam stroke
+
+Edge lines (feature edges above 30 degrees, silhouettes, boundaries, and classed grid edges) are segment primitives in their faces' planes, so ordering hides them exactly when their faces are hidden; attaching them after the later adjacent face broke when a face was split across a convex partition. Opaque faces are stroked in their own color at 0.8 px at 1080p so neighboring faces never show anti-aliasing cracks; occluder faces in ink styles use 0.5 px so they nibble less of the lines around them.
+
+## 3D: light presets follow the board, and shading happens in OKLab
+
+Themes all default to `light: 'studio'`, so an explicit non-studio token wins, and otherwise board themes map to 'blackboard' and blueprint themes to 'blueprint'. Studio lights live in camera space (key upper left, fill, rim, hemisphere, ambient) so figures stay well lit as the camera orbits. Shading scales OKLab lightness and keeps most chroma; the same constants (`SHADING`, `WRAP`) generate the WebGL2 preview shader, so the preview matches the projector. Board presets turn solids into ink drawings: faces fill with the background (marked `noBoard`, so board renderers draw them as clean erasers) and edges are bright; blueprint adds dashed hidden edges. A mesh without a color gets the accent at 72% chroma; a clipped mesh's body drops to 42% so the accent section cap stands out.
+
+## 3D: marching cubes table is generated, not typed
+
+The 256-case triangle table is built at load time from the cube's faces: on each face the inside corners are cut off one by one (so ambiguous faces resolve identically from both neighboring cells), the cut segments chain into loops across faces, and loops are fanned into triangles. This makes the surface watertight by construction and avoids transcribing a 4096-entry table. Corner and edge numbering follow Bourke's table so the edge table matches the usual layout.
+
+## 3D: mesh morphs go through a cube-sphere template
+
+`morphMesh` resamples source and target by casting rays from their centers along the vertex directions of a cube sphere, which gives both the same topology; the morph blends vertex positions. A cube lands exactly on the template's grid, so cube to sphere is smooth. This requires star-shaped meshes (true of primitives, polyhedra, and most imported models used for morphs); the limitation is documented on the function.
+
+## 3D: circuit model input format
+
+`circuitMesh` takes `{ wires, gates: [{ column, wires, kind: 'box'|'control'|'target'|'swap'|'measure', label }] }`, one entry per gate element, so a controlled gate is several entries in one column. Columns holding a control or target (or a multi-wire swap) get a vertical connector; independent measurements in one column do not. It returns a merged mesh (closed, face colors as theme tokens that `export3MF` resolves with a theme) and a Group3D of the same parts for display.
+
+## Math: raw expression builders, explicit simplify, and stable node ids
+
+Expression nodes are immutable plain objects with a per-node `id`. The builders (`add`, `mul`, `pow`, ...) do no simplification; `simplify` produces the canonical form. Keeping the two apart lets a derivation show `\frac{d}{dx}[x^{2}] + \frac{d}{dx}[3x]` or `2 \cdot 3x` before they collapse. Token-matching hints between consecutive steps pair maximal structurally equal subtrees (larger first, each node used once), so they work whether a subtree was reused as the same object or rebuilt. `toLatexWithSpans` reports the LaTeX character range of every node id so the renderer can find the glyphs of a matched subtree.
+
+## Math: canonical form
+
+Division is `a * b^-1`, subtraction is `a + (-1) b`, `sqrt(u)` is `u^(1/2)` and `exp(u)` is `e^u`. Sums and products are flattened, like terms and like powers collected with exact BigInt rationals, radicals reduced and rationalized (`1/sqrt(2)` becomes `sqrt(2)/2`), and a numeric coefficient times a single sum is distributed (`2(x+1)` becomes `2x + 2`). A sum that is a factor of a larger product, or the base of a power, has its rational content and leading sign pulled out (`(3y^2 - 6x)^-1` becomes `(1/3)(y^2 - 2x)^-1`), which makes cancellation in quotients visible. Identities are applied only when they hold for all complex values, except two that treat symbols as real variables: `ln(e^u) = u` and `|u| = u` for provably non-negative `u`.
+
+## Math: printing conventions
+
+Sum terms are ordered by descending total degree, then graded lexicographic order on variable names, with numbers last; a two-term sum whose first term is negative prints positive term first (`1 - x^{2}`), a constant sum prints its number first over one denominator (`\frac{1 + \sqrt{5}}{2}`), and complex numbers print real part first. Products print as fractions with the sign outside, `\cdot` only before a digit, trig and log powers as `\sin^{2}(x)`, and `\left( \right)` only around fractions, sums, integrals and limits. The plain-text form parses back to the same expression (checked by fuzzing).
+
+## Math: plain-text parsing conventions
+
+Implicit multiplication has the same precedence as `*`, so `1/2x` is `x/2` (the common calculator reading). A run of letters is split into the longest known words (functions, constants, Greek names) and then single letters, so `xsin x` is `x * sin(x)` and `xy` is `x * y`. `e`, `i` and `pi` are constants (a sum over `i` rebinds it as the index). `log(x)` is base 10, `log(x, b)` is base `b`, `ln` is natural. A function written without parentheses takes the following product of powers (`sin 2x` is `sin(2x)`), and `-x^2` is `-(x^2)`.
+
+## Math: integration is a proof search rendered as rewrites
+
+`integrate` first searches for a proof tree with backtracking (constant, linearity, table with linear inner arguments, rational functions via partial fractions and completing the square, reduction formulas, u-substitution with inner-first candidates, trig powers and products, conjugates, the cyclic `e^{ax} sin(bx)` form, integration by parts by LIATE, expansion), memoizing solved integrands. The tree is then rendered as whole-expression steps, one rule applied to one pending integral per step, with back-substitution steps for u-substitutions. Every antiderivative is differentiated and compared with the integrand at sample points before it is returned; failures return `{ok: false, reason: 'No elementary antiderivative found'}`, meaning none was found by these methods, not a proof that none exists. Definite integrals check the exact value against Gauss-Kronrod quadrature, split at real roots of polynomial denominators and use limits for improper integrals, and fall back to quadrature (flagged `numericOnly`) when no antiderivative is found.
+
+## Math: limits evaluate by composition and are always checked numerically
+
+A limit is computed bottom-up in the extended reals (finite, signed or unsigned infinity, bounded oscillation, indeterminate); an indeterminate node gets a technique (factor and cancel, standard limits, L'Hopital, leading terms at infinity, rewriting products as quotients, `u^v = e^{v ln u}`, combining fractions, conjugates). Every symbolic answer is compared with samples approaching the point; when they disagree or no technique applies, the result is a numeric estimate marked `exact: false`, and the exploratory steps are dropped so the step list never shows a path that did not lead to the answer. Limits containing other parameters skip the numeric check.
+
+## Math: series from derivatives, with a power series engine as fallback
+
+Taylor series use successive derivatives evaluated at the point, because those steps are what a viewer expects to see. Where a derivative is undefined at the point (removable singularities such as `x/sin(x)`) the coefficients come from truncated power series arithmetic with exact expression coefficients, which also produces Laurent series directly (pole order from the valuation, residue as the `(x-a)^{-1}` coefficient). General terms are reported only for recognised families and are verified against the computed coefficients.
+
+## Math: exact linear algebra with a scalar tower
+
+Matrix entries are Rational, Surd (`a + b sqrt(d)` with square-free `d`, negative `d` giving exact complex values), float, or Complex, and arithmetic promotes along that order. Rational matrices therefore get exact eigenvalues whenever the characteristic polynomial (Faddeev-LeVerrier) factors over the rationals into linear and quadratic pieces, with exact eigenvectors from the null space over the surd field; other roots are numeric. Float matrices use Jacobi rotations when symmetric and a complex shifted QR on the Hessenberg form otherwise, with inverse iteration for eigenvectors. SVD is one-sided Jacobi. Exact elimination pivots on the first non-zero entry so the row operations match hand work; LU and float elimination use the largest pivot.
+
+## Math: numeric answers are labelled
+
+Every place that can only answer numerically says so: `solve` solutions carry `exact: false` and a `\approx` LaTeX form for Aberth or Brent roots, `integrateDefinite` sets `numericOnly`, `limit` sets `exact: false`, `formatValue` returns `exact: false` when a form is an approximation, and `equivalent` reports whether its verdict is symbolic or from numeric probes. `solve` returns complex solutions by default; `{real: true}` keeps the real ones. Trig equations return the general solution with integer parameter `k` plus the `k = 0` members.
+
+## Math: self-contained seeded RNG
+
+Statistical sampling, CLT demos, force layouts and equality probes use `SeededRandom` in `src/math/random.js` (xoshiro128** seeded through splitmix32, 53-bit uniform doubles). It is separate from the core scene RNG so running a statistics demo never shifts the random sequence a scene depends on, and it keeps `src/math` free of dependencies on other packages.
+
+## Math: units and significant figures
+
+Units parse with SI prefixes after an exact-name lookup (so `T` is tesla and `Tm` is terametre). `degC` and `degF` carry offsets and are meant for conversion; products of offset units use the scale only. Trailing zeros without a decimal point are not significant (`1200` has 2, `1200.` has 4), the most common textbook rule.
