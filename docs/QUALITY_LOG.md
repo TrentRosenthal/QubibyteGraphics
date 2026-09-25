@@ -46,3 +46,5 @@ Every rendered visual is graded against `docs/QUALITY.md` (criteria a to g, 1 to
 | 55-pendulum | 50 | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Physics lecture demos: the bob and the trace are driven by one RK4 solution, so the angle on the left always matches the pen on the right. |
 | 56-conformal-map | 100 | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Needham, Visual Complex Analysis: the grid morphs into orthogonal parabolas at equal x and y scale; parametric curves now clip to their axes. |
 | 54-markov-chain | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Setosa's Markov chain explainer: the distribution settles to the stationary mix from a rainy start; curved arrows now sweep their stated angle (a sign error had drawn near-full circles). |
+| 19-typography | 100 | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Kinetic type demos (Manim TransformMatchingShapes): anagram letters fly to their new places; the weight samples sit slightly unevenly spaced. |
+| 51-benford | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Benford's law figures in statistics texts: the leading digits of 2^1 to 2^1000, counted exactly, sit on log10(1 + 1/d); the caption starts a hair right of the percentage above it. |
