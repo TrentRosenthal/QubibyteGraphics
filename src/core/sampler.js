@@ -65,10 +65,13 @@ import { hashSeed } from './random.js';
  * @returns {Frame}
  */
 export function sampleFrame(scene, t, theme) {
-  const prev = { sampling: ctx.sampling, t: ctx.t, frame: ctx.frame };
+  const prev = { sampling: ctx.sampling, t: ctx.t, frame: ctx.frame, theme: ctx.theme, seed: ctx.seed };
+  const sceneSeed = typeof scene.seed === 'number' ? scene.seed : hashSeed(scene.seed);
   ctx.sampling = true;
   ctx.t = t;
   ctx.frame = new Map();
+  ctx.theme = theme;
+  ctx.seed = sceneSeed;
   try {
     for (const u of scene.updaters) {
       if (t >= u.t0 && t < u.t1) u.fn(t, 1 / scene.fps);
@@ -84,13 +87,15 @@ export function sampleFrame(scene, t, theme) {
       camera: { x: cam.get('x'), y: cam.get('y'), zoom: cam.get('zoom'), rotation: cam.get('rotation') },
       items,
       theme,
-      seed: typeof scene.seed === 'number' ? scene.seed : hashSeed(scene.seed),
+      seed: sceneSeed,
       captions: scene.captions.filter((c) => t >= c.start && t < c.end),
     };
   } finally {
     ctx.sampling = prev.sampling;
     ctx.t = prev.t;
     ctx.frame = prev.frame;
+    ctx.theme = prev.theme;
+    ctx.seed = prev.seed;
   }
 }
 
@@ -136,30 +141,7 @@ function walk(node, parentM, parentOpacity, parentTokens, items, theme, scene, t
       tokens,
     });
   } else {
-    const g = node.resolvedGeometry();
-    if (g && g.subpaths.length) {
-      const fill = withAlpha(color(node.get('fill'), theme, tokens), node.get('fillOpacity') * opacity);
-      const stroke = withAlpha(color(node.get('stroke'), theme, tokens), node.get('strokeOpacity') * opacity);
-      const sw = node.get('strokeWidth');
-      if (fill || (stroke && sw > 0)) {
-        items.push({
-          kind: 'path',
-          id: node.id,
-          nodeType: node.type,
-          path: transformPath(g, m),
-          fill,
-          stroke: sw > 0 ? stroke : null,
-          strokeWidth: sw,
-          lineCap: node.get('lineCap'),
-          lineJoin: node.get('lineJoin'),
-          dash: node.get('dash'),
-          fillRule: node.meta.fillRule ?? 'nonzero',
-          seed: hashSeed(node.meta.seedKey ?? node.id),
-          meta: node.meta,
-          draw: node.get('draw'),
-        });
-      }
-    }
+    pushPathItem(node, node.resolvedGeometry(), { matrix: m, opacity, color: (v) => color(v, theme, tokens), items, seed: scene.seed });
   }
   const kids = node.children;
   if (!kids.length) return;
@@ -168,4 +150,36 @@ function walk(node, parentM, parentOpacity, parentTokens, items, theme, scene, t
     ordered = kids.map((k, i) => [k, i]).sort((a, b) => a[0].get('zIndex') - b[0].get('zIndex') || a[1] - b[1]).map((p) => p[0]);
   }
   for (const k of ordered) walk(k, m, opacity, tokens, items, theme, scene, t);
+}
+
+/**
+ * Push the standard path item for a node's local geometry. Custom
+ * `sampleItems` implementations call this for their default case.
+ * @param {import('./node.js').Node} node
+ * @param {import('./path.js').Path|null} g local geometry
+ * @param {{matrix: number[], opacity: number, color: (v: any) => any, items: any[], seed: any}} c
+ * @param {Record<string, any>} [overrides] fields to override on the item
+ */
+export function pushPathItem(node, g, c, overrides = {}) {
+  if (!g || !g.subpaths.length) return;
+  const fill = withAlpha(c.color(overrides.fillColor ?? node.get('fill')), node.get('fillOpacity') * c.opacity);
+  const stroke = withAlpha(c.color(overrides.strokeColor ?? node.get('stroke')), node.get('strokeOpacity') * c.opacity);
+  const sw = overrides.strokeWidth ?? node.get('strokeWidth');
+  if (!fill && !(stroke && sw > 0)) return;
+  c.items.push({
+    kind: 'path',
+    id: node.id,
+    nodeType: node.type,
+    path: transformPath(g, c.matrix),
+    fill: overrides.noFill ? null : fill,
+    stroke: sw > 0 ? stroke : null,
+    strokeWidth: sw,
+    lineCap: node.get('lineCap'),
+    lineJoin: node.get('lineJoin'),
+    dash: node.get('dash'),
+    fillRule: node.meta.fillRule ?? 'nonzero',
+    seed: hashSeed(`${c.seed}|${node.meta.seedKey ?? node.id}`),
+    meta: overrides.meta ?? node.meta,
+    draw: overrides.draw ?? node.get('draw'),
+  });
 }

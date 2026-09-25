@@ -485,6 +485,28 @@ export class Scene {
   }
 }
 
+const preloads = [];
+
+/**
+ * Register an async task that must finish before any scene builds (fonts,
+ * stroke fonts). Tasks run once; later builds reuse the result.
+ * @param {() => Promise<any>} fn
+ */
+export function registerPreload(fn) {
+  preloads.push({ fn, promise: null });
+}
+
+/**
+ * Run registered preload tasks.
+ * @returns {Promise<void>}
+ */
+export async function preload() {
+  for (const p of preloads) {
+    if (!p.promise) p.promise = p.fn();
+    await p.promise;
+  }
+}
+
 /**
  * Build a scene by running an async build function.
  * @param {(scene: Scene) => any} buildFn
@@ -492,6 +514,7 @@ export class Scene {
  * @returns {Promise<Scene>}
  */
 export async function buildScene(buildFn, opts = {}) {
+  await preload();
   const scene = new Scene(opts);
   scene.building = true;
   try {

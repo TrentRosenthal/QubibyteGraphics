@@ -39,6 +39,15 @@ export { getTheme, registerTheme, listThemes, exportTheme, importTheme } from '.
 export { renderFrame, registerBoard, viewFor } from './render/canvas.js';
 export { renderSVG } from './render/svg.js';
 export * from './board/index.js';
+export { Text, Tex, DecimalNumber, Glyph, countTo, TransformMatchingTex, transformMatchingTex, loadDefaultFonts, registerFont, layoutText, textToPath, texToPaths, strokeText } from './text/index.js';
+export { Axes, NumberLine, ComplexPlane, PolarPlane, setLabelFactory, angleTex } from './core/coords.js';
+export { niceTicks, logTicks, formatTick } from './core/ticks.js';
+export {
+  FunctionGraph, ParametricCurve, PolarGraph, ImplicitCurve, Contours, VectorField, StreamLines, DataPolyline, AreaUnder,
+  RiemannRects, TangentLine, BarChart, Bar, histogram, Scatter, DataDot, LineChart, Heatmap, marchingSquares, streamline,
+  sampleFunction, setExpressionCompiler, toFunction,
+} from './core/plots.js';
+export { registerPreload, preload } from './core/scene.js';
 
 export { FORMATS, PRESETS, RESOLUTIONS, parseResolution } from './export/formats.js';
 export { toSRT } from './export/srt.js';

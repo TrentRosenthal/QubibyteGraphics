@@ -27,6 +27,10 @@ export const ctx = {
   frame: null,
   /** @type {Map<Node, Map<string, any>>|null} */
   capture: null,
+  /** Theme being rendered while sampling (null while building). @type {any} */
+  theme: null,
+  /** Seed of the scene being sampled. */
+  seed: 0,
 };
 
 const ID_COUNTERS = new Map();

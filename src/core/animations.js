@@ -798,7 +798,7 @@ export class TransformMatching extends Animation {
   /**
    * @param {Node} source
    * @param {Node} target
-   * @param {Record<string, any>} [opts] key: (leaf) => string, pairs: explicit [i, j] index pairs
+   * @param {Record<string, any>} [opts] key: (leaf) => string, pairs: explicit [i, j] index pairs, sourceLeaves and targetLeaves: explicit leaf orders for the pairs
    */
   constructor(source, target, opts = {}) {
     super(opts);
@@ -806,14 +806,16 @@ export class TransformMatching extends Animation {
     this.target = target;
     this.keyFn = opts.key ?? ((n) => n.meta.key ?? null);
     this.pairs = opts.pairs ?? null;
+    this.sourceLeaves = opts.sourceLeaves ?? null;
+    this.targetLeaves = opts.targetLeaves ?? null;
     this.defaultDuration = 1.4;
   }
 
   schedule(scene, t0) {
     const s = t0 + this.delay;
     const e = s + this.duration;
-    const A = this.source.leaves();
-    const B = this.target.leaves();
+    const A = this.sourceLeaves ?? this.source.leaves();
+    const B = this.targetLeaves ?? this.target.leaves();
     const pairs = this.pairs ?? matchByKeys(A.map(this.keyFn), B.map(this.keyFn));
     const usedA = new Set(pairs.map((p) => p[0]));
     const usedB = new Set(pairs.map((p) => p[1]));

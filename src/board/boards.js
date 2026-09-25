@@ -72,19 +72,27 @@ export function drawRibbon(ctx, pts, width, o = {}) {
     left.push([pts[i].x - dy * w, pts[i].y + dx * w]);
     right.push([pts[i].x + dy * w, pts[i].y - dx * w]);
   }
+  // Body polygon, then round caps as full circles wound the same way as the
+  // body, so overlapping caps on short strokes never cancel under nonzero fill.
+  let area = 0;
+  const poly = left.concat(right.slice().reverse());
+  for (let i = 0; i < poly.length; i++) {
+    const [x0, y0] = poly[i];
+    const [x1, y1] = poly[(i + 1) % poly.length];
+    area += x0 * y1 - x1 * y0;
+  }
+  const ccw = area < 0;
   ctx.beginPath();
-  ctx.moveTo(left[0][0], left[0][1]);
-  for (let i = 1; i < n; i++) ctx.lineTo(left[i][0], left[i][1]);
-  if (o.caps !== false) {
-    const a = Math.atan2(pts[n - 1].y - pts[n - 2].y, pts[n - 1].x - pts[n - 2].x);
-    ctx.arc(pts[n - 1].x, pts[n - 1].y, widths[n - 1], a + Math.PI / 2, a - Math.PI / 2, true);
-  }
-  for (let i = n - 1; i >= 0; i--) ctx.lineTo(right[i][0], right[i][1]);
-  if (o.caps !== false) {
-    const a = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
-    ctx.arc(pts[0].x, pts[0].y, widths[0], a - Math.PI / 2, a + Math.PI / 2, true);
-  }
+  ctx.moveTo(poly[0][0], poly[0][1]);
+  for (let i = 1; i < poly.length; i++) ctx.lineTo(poly[i][0], poly[i][1]);
   ctx.closePath();
+  if (o.caps !== false) {
+    for (const i of [0, n - 1]) {
+      ctx.moveTo(pts[i].x + widths[i], pts[i].y);
+      ctx.arc(pts[i].x, pts[i].y, widths[i], 0, Math.PI * 2, ccw);
+      ctx.closePath();
+    }
+  }
   ctx.fill('nonzero');
 }
 
@@ -270,8 +278,8 @@ const chalkboard = {
       const hs = strokesPx(view, handStrokes(item.path, item.seed, HAND_STYLES.chalk));
       const w = Math.max(3.5, item.strokeWidth * 1.25) * px;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.fillStyle = toCSS(item.stroke, 0.045);
-      for (const st of hs) drawRibbon(ctx, st.pts, w * 2.8);
+      ctx.fillStyle = toCSS(item.stroke, 0.03);
+      for (const st of hs) drawRibbon(ctx, st.pts, w * 2);
       hs.forEach((st, k) => chalkStroke(lctx, st.pts, w, item.stroke, item.seed * 131 + k));
       s.ink += strokeLength(hs.map((st) => ({ pts: st.pts })));
       trackTip(s, item, hs);

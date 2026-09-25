@@ -18,3 +18,5 @@ export { layoutText, textToPath } from './layout.js';
 export { texToPaths, texPart, colorByToken, matchTokens, tokenize } from './tex.js';
 export { HERSHEY_FONTS, parseJHF, buildFont, loadHershey, loadHersheyFonts, strokeText } from './hershey.js';
 export { rasterizePath, thin, skeletonize, outlineStrokes } from './skeleton.js';
+export { Glyph, TextBase, Text, Tex, DecimalNumber, countTo, TransformMatchingTex, transformMatchingTex, dwellStrokes, resolveSize, texLabelGlyphs } from './nodes.js';
+import './setup.js';

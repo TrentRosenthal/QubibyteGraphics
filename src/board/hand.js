@@ -24,6 +24,7 @@ import { noise1 } from '../core/random.js';
  * @property {number} [wobble=0.012] Amplitude of low-frequency wobble in world units.
  * @property {number} [wobbleScale=1.3] Wavelength of the wobble in world units.
  * @property {number} [bow=0.008] Sideways bow as a fraction of stroke length.
+ * @property {number} [maxBow=0.045] Upper bound on the bow in world units, so long axes stay on their data line.
  * @property {number} [overshoot=0.06] Extra travel past the start of a closed loop, as a fraction of its perimeter.
  * @property {number} [endJitter=0.02] Random extension or shortening of open stroke ends, world units.
  * @property {number} [pressure=0.25] Pressure variation amplitude.
@@ -73,7 +74,7 @@ export function handStrokes(path, seed, style = {}, tol = 0.004) {
     const [x0, y0] = pts[0];
     const [x1, y1] = pts[pts.length - 1];
     const chord = Math.hypot(x1 - x0, y1 - y0);
-    const bowAmp = bow * chord * (hash01(sub + 11) * 2 - 1);
+    const bowAmp = Math.min(bow * chord, style.maxBow ?? 0.045) * (hash01(sub + 11) * 2 - 1);
     const startExt = endJitter * (hash01(sub + 17) * 1.4 - 0.4);
     const endExt = endJitter * (hash01(sub + 23) * 1.4 - 0.4);
     const res = [];
