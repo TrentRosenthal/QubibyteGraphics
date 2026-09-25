@@ -48,6 +48,7 @@ Every rendered visual is graded against `docs/QUALITY.md` (criteria a to g, 1 to
 | 54-markov-chain | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Setosa's Markov chain explainer: the distribution settles to the stationary mix from a rainy start; curved arrows now sweep their stated angle (a sign error had drawn near-full circles). |
 | 19-typography | 100 | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Kinetic type demos (Manim TransformMatchingShapes): anagram letters fly to their new places; the weight samples sit slightly unevenly spaced. |
 | 51-benford | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Benford's law figures in statistics texts: the leading digits of 2^1 to 2^1000, counted exactly, sit on log10(1 + 1/d); the caption starts a hair right of the percentage above it. |
+| 00-first-scene | 75, 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | The playground's opening scene: formula, graph, and circuit share one timeline; the small caption text sits near the lower size limit at 1080p. |
 
 ## Themes
 

@@ -3,7 +3,7 @@
  * Copies everything the GitHub Pages site needs into out/pages.
  * The playground is index.html at the root; docs live under docs/site.
  */
-import { cpSync, mkdirSync, rmSync, existsSync } from 'node:fs';
+import { cpSync, mkdirSync, rmSync, existsSync, writeFileSync } from 'node:fs';
 
 const out = 'out/pages';
 rmSync(out, { recursive: true, force: true });
@@ -15,5 +15,5 @@ for (const e of entries) {
   cpSync(e, `${out}/${e}`, { recursive: true });
 }
 cpSync('src/embed/qubibyte-scene.js', `${out}/qubibyte-scene.js`);
-mkdirSync(`${out}/.nojekyll`, { recursive: false });
+writeFileSync(`${out}/.nojekyll`, '');
 console.log('Staged ' + out);
