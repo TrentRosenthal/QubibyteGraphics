@@ -35,3 +35,6 @@ Every rendered visual is graded against `docs/QUALITY.md` (criteria a to g, 1 to
 | 50-images | 50, 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Keynote image placement and a textured plane in Blender: the 3D texture keeps perspective with per-face affine pieces and no seams; the sample image is saturated by design, the dimmed background keeps text readable. |
 | 44-cross-section | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Blender cutaway renders: the cut through the torus axis shows both circular tube sections as caps; the knot shows slight faceting on its tube. |
 | 45-printable-circuit | 75, 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | 3D-printed circuit models shared by quantum educators: same wires, gates, and connectors on a base plate, generated from the Qubi program. |
+| 24-teleportation | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Qiskit textbook teleportation: deferred-measurement corrections, the group box now starts after the state preparation, and the closing line states the teleported probability. |
+| 25-bernstein-vazirani | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Qiskit textbook Bernstein-Vazirani: the single bar at the secret is the whole point; sixteen labels sit a little small. |
+| 26-phase-estimation | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Qiskit textbook QPE: controlled phases then the inverse QFT inside one group box; the result bar reads 011 on the counting register. |

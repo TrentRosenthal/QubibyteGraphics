@@ -117,7 +117,7 @@ export function turnFraction(t, den) {
 /**
  * Build an explainer scene function for a Qubi program.
  * @param {string} source Qubi program
- * @param {Record<string, any>} [opts] title, seed, maxQubitsForBars (6), perGateDuration (0.7)
+ * @param {Record<string, any>} [opts] title, seed, maxQubitsForBars (6), perGateDuration (0.7), closing (final narration line, or a function of the simulator and probabilities returning it)
  * @returns {(scene: import('../core/scene.js').Scene) => Promise<void>}
  */
 export function explainQubi(source, opts = {}) {
@@ -294,7 +294,9 @@ async function genericStory(scene, circuit, diagram, narration, opts) {
   for (let i = 0; i < probs.length; i++) if (Math.abs(probs[i] - probs[best]) < 1e-9) top.push(i);
   const bits = (i) => i.toString(2).padStart(n, '0');
   const pct = (p) => `${+(p * 100).toFixed(1)} percent`;
-  if (top.length === 1) await narration.say(`The most likely outcome is ${bits(best)}, with probability ${pct(probs[best])}.`);
+  const closing = typeof opts.closing === 'function' ? opts.closing(sim, probs) : opts.closing;
+  if (closing) await narration.say(closing);
+  else if (top.length === 1) await narration.say(`The most likely outcome is ${bits(best)}, with probability ${pct(probs[best])}.`);
   else if (top.length <= 4) await narration.say(`Outcomes ${top.slice(0, -1).map(bits).join(', ')} and ${bits(top[top.length - 1])} are equally likely, ${pct(probs[best])} each.`);
   else await narration.say(`${top.length} outcomes are equally likely, ${pct(probs[best])} each.`);
   if (bars) await scene.play(...top.slice(0, 4).map((i) => indicate(bars.bars[i], { scale: 1.08 })));

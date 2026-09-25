@@ -89,3 +89,12 @@ test('the mode defaults to the Scheduling setting, and unknown modes throw', () 
   assert.equal(schedule(ev('H 0')).mode, 'same_line');
   assert.throws(() => schedule(c, { mode: 'sideways' }), /Unknown scheduling mode sideways/);
 });
+
+test('an op outside a group never shares a column with the group on its wires', () => {
+  const s = schedule(ev('RY 0 0.3\nTeleport()'), { mode: 'same_line' });
+  const g = s.groups[0];
+  assert.equal(s.opColumn[0], 0);
+  assert.ok(g.startCol >= 1, `group starts at ${g.startCol}`);
+  const after = schedule(ev('Bell(0,1)\nH 1'), { mode: 'always' });
+  assert.ok(after.opColumn[2] >= after.groups[0].endCol, 'a later op on a group wire follows the group');
+});

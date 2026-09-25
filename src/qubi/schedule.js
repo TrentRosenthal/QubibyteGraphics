@@ -110,13 +110,28 @@ export function scheduleCircuit(circuit, opts = {}) {
   const opColumn = [];
   const countAt = [];
   let floor = 0;
+  // A group (stdlib call, function, sequence gate) is drawn as a box over
+  // its whole wire range, so no op outside it may share a column with it on
+  // those wires. coverKey/coverCol record, per wire, which group (or none)
+  // last claimed a column there, counting a group's full range.
+  const outermost = (op) => {
+    let g = op.group;
+    while (g && g.parent) g = g.parent;
+    return g ?? null;
+  };
+  const coverKey = new Array(nq).fill(undefined);
+  const coverCol = new Int32Array(nq).fill(-1);
   for (let k = 0; k < ops.length; k++) {
     if (barriers.has(k)) floor = columns.length;
+    const grp = outermost(ops[k]);
+    const key = grp ? grp.id : null;
+    const [clo, chi] = grp && grp.wires.length ? [Math.min(...grp.wires), Math.max(...grp.wires)] : spanOf(ops[k], nq);
     countAt.push(columns.length);
     const op = ops[k];
     const [lo, hi] = spanOf(op, nq);
     let busy = -1;
     for (let w = lo; w <= hi; w++) busy = Math.max(busy, lastCol[w]);
+    for (let w = clo; w <= chi && w < nq; w++) if (coverKey[w] !== undefined && coverKey[w] !== key) busy = Math.max(busy, coverCol[w]);
     if (op.kind === 'if') busy = Math.max(busy, lastMeasureCol, lastIfCol);
     if (op.kind === 'measure') busy = Math.max(busy, lastIfCol);
     const earliest = Math.max(floor, busy + 1);
@@ -151,6 +166,10 @@ export function scheduleCircuit(circuit, opts = {}) {
     columns[col].push(k);
     opColumn.push(col);
     for (let w = lo; w <= hi; w++) lastCol[w] = Math.max(lastCol[w], col);
+    for (let w = clo; w <= chi && w < nq; w++) {
+      if (coverKey[w] !== key || col > coverCol[w]) coverCol[w] = coverKey[w] === key ? Math.max(coverCol[w], col) : col;
+      coverKey[w] = key;
+    }
     if (op.kind === 'measure') lastMeasureCol = Math.max(lastMeasureCol, col);
     if (op.kind === 'if') lastIfCol = Math.max(lastIfCol, col);
   }

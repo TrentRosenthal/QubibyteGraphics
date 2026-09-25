@@ -374,8 +374,10 @@ export function diracLatex(state, opts = {}) {
   for (let i = 0; i < pieces.length; i += perLine) lines.push(pieces.slice(i, i + perLine).join(' '));
   const head = `\\lvert ${name}\\rangle = `;
   if (lines.length === 1) return same ? `${head}${prefix}\\left(${lines[0]}\\right)` : `${head}${lines[0]}`;
-  if (same) return `\\begin{aligned} ${head}${prefix}\\big(& ${lines.join(' \\\\ & ')} \\big) \\end{aligned}`;
-  return `\\begin{aligned} ${head}& ${lines.join(' \\\\ & ')} \\end{aligned}`;
+  // Align on the equals sign (&=) so it keeps relation spacing; continuation lines indent past it.
+  const ket = `\\lvert ${name}\\rangle`;
+  if (same) return `\\begin{aligned} ${ket} &= ${prefix}\\big( ${lines.join(' \\\\ &\\qquad ')} \\big) \\end{aligned}`;
+  return `\\begin{aligned} ${ket} &= ${lines.join(' \\\\ &\\quad ')} \\end{aligned}`;
 }
 
 /**
