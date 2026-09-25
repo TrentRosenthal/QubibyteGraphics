@@ -16,11 +16,10 @@ import { spherical, rotateAxis, normalize, cross, perpendicular } from './vec3.j
 import * as M from './mat4.js';
 import * as Q from './quat.js';
 
-const KET = '⟩';
 
 /** Default Bloch sphere axis labels. */
 export const BLOCH_LABELS = {
-  zPlus: `|0${KET}`, zMinus: `|1${KET}`, xPlus: `|+${KET}`, xMinus: `|−${KET}`, yPlus: `|+i${KET}`, yMinus: `|−i${KET}`,
+  zPlus: '\\lvert 0\\rangle', zMinus: '\\lvert 1\\rangle', xPlus: '\\lvert +\\rangle', xMinus: '\\lvert -\\rangle', yPlus: '\\lvert +i\\rangle', yMinus: '\\lvert -i\\rangle',
 };
 
 /** State arrow whose tip follows the parent Bloch sphere's theta and phi. */

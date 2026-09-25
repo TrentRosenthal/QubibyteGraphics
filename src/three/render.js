@@ -18,7 +18,7 @@ import { hull2D } from './object3d.js';
 import { ColorMix } from '../core/node.js';
 import { mix, parseColor } from '../core/color.js';
 import { hashSeed } from '../core/random.js';
-import { pathBounds } from '../core/path.js';
+import { pathBounds, mergePaths } from '../core/path.js';
 
 let textModule = null;
 let textLoading = null;
@@ -71,7 +71,11 @@ function labelPath(content, factory) {
   let path = null;
   try {
     if (factory) path = normalizePath(factory(content));
-    else if (textModule && typeof textModule.textToPath === 'function') path = normalizePath(textModule.textToPath(content, { size: 1 }));
+    else if (textModule && /[\\^_{}]/.test(content) && typeof textModule.texToPaths === 'function') {
+      // TeX labels (kets, subscripts) typeset with KaTeX; one em tall, baseline at y = 0.
+      const r = textModule.texToPaths(content, { size: 1, display: false });
+      path = r.paths.length ? mergePaths(...r.paths.map((q) => q.path)) : null;
+    } else if (textModule && typeof textModule.textToPath === 'function') path = normalizePath(textModule.textToPath(content, { size: 1 }));
   } catch {
     path = null;
   }

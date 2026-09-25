@@ -28,3 +28,6 @@ Every rendered visual is graded against `docs/QUALITY.md` (criteria a to g, 1 to
 | 13-matrix-product | 25, 100 | 4 | 5 | 5 | 4 | 5 | 4 | 4 | Khan Academy matrix multiplication walkthrough: same row and column highlighting with the dot product written out below. |
 | 14-eigenvectors-solved | 100 | 4 | 4 | 5 | 4 | 5 | 4 | 4 | 3Blue1Brown eigenvectors chapter plus the algebra beside it; the plane now clips its transformed grid to its own box. |
 | 18-quadratic | 100 | 4 | 4 | 5 | 4 | 5 | 4 | 4 | Textbook quadratic formula solution; each line is written, not chained with equals signs, since each is an equation. |
+| 40-platonic-solids | 75 | 5 | 5 | 4 | 4 | 5 | 4 | 4 | Wikipedia Platonic solid renders: exact depth order, key/fill/rim light, and contact shadows match a raytraced look without a raytracer. |
+| 41-surface-plot | 50, 75 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Manim ThreeDScene surface demos: height-shaded surface and orbiting camera; axis lines that pass behind the surface stay faintly visible. |
+| 42-bloch-gates | 75, 100 | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Qiskit Bloch sphere plots: the trail shows each gate's rotation, which the static reference cannot; kets now typeset with KaTeX. |

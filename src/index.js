@@ -43,6 +43,7 @@ export { paletteFrom, themeFrom, parseDescription } from './themes/palette.js';
 export { explainQubi, describeOp, describeGroup } from './quantum/explainers.js';
 export { evaluate as evaluateQubi, diagnose as diagnoseQubi } from './qubi/index.js';
 export * as quantumViews from './quantum/views/index.js';
+export * as quantum from './quantum/index.js';
 export { CodeBlock, highlightQubi } from './text/code.js';
 export { buildDocument, newDocument, normalizeDocument, evaluateGraph, stringifyDocument, documentToModule, moduleToDocument, ANIMATIONS as DOCUMENT_ANIMATIONS } from './editor/document.js';
 export { BLOCKS, registerBlock, blockDefinition, blockLibrary } from './editor/blocks.js';
