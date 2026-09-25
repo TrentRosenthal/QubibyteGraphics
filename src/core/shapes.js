@@ -752,3 +752,18 @@ export function pointsBounds(pts) {
 }
 
 registerNodeClasses({ PathNode, Circle, Rect });
+
+/**
+ * A backing panel behind a node so labels stay readable over busy content
+ * (grids, plots). Returns the panel; add it before the node or give it a
+ * lower zIndex.
+ * @param {Node} node
+ * @param {{pad?: number, color?: string, opacity?: number, radius?: number}} [opts]
+ * @returns {Rect}
+ */
+export function backdrop(node, opts = {}) {
+  const b = node.bounds();
+  if (!b) throw new Error('backdrop needs a node with geometry');
+  const pad = opts.pad ?? 0.18;
+  return new Rect({ width: b.w + 2 * pad, height: b.h + 2 * pad, radius: opts.radius ?? 0.08, x: b.x + b.w / 2, y: b.y + b.h / 2, fill: opts.color ?? 'background', fillOpacity: opts.opacity ?? 0.88, stroke: null, zIndex: -1, meta: { solidFill: true, noBoard: true } });
+}

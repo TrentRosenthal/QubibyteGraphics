@@ -13,8 +13,10 @@ export { Node, Group, PathNode, ValueTracker, direction } from './core/node.js';
 export {
   Shape, Dot, Circle, Ellipse, Arc, Sector, Rect, Polygon, Polyline, RegularPolygon, Star, Line,
   Arrow, DoubleArrow, CurvedArrow, ARROW_HEADS, Brace, braceFor, SVGPathShape, Bezier, bezierPath, Spline,
-  catmullRomPath, bSplinePath, ImageNode, VideoNode, Layer,
+  catmullRomPath, bSplinePath, ImageNode, VideoNode, Layer, backdrop,
 } from './core/shapes.js';
+export { TransformPlane, ApplyMatrix, applyMatrix, matrixPath, polar2 } from './explainers/linear.js';
+export { Epicycles, epicycleCoefficients } from './explainers/fourier.js';
 export {
   Animation, AnimationGroup, Succession, Wait, PropertyAnimation, stagger, lagStart, succession, parallel,
   Create, create, write, Uncreate, uncreate, unwrite, FadeIn, fadeIn, FadeOut, fadeOut,
@@ -38,6 +40,7 @@ export { sampleFrame } from './core/sampler.js';
 export { getTheme, registerTheme, listThemes, exportTheme, importTheme } from './themes/index.js';
 export { paletteFrom, themeFrom, parseDescription } from './themes/palette.js';
 export { explainQubi, describeOp, describeGroup } from './quantum/explainers.js';
+export { evaluate as evaluateQubi, diagnose as diagnoseQubi } from './qubi/index.js';
 export * as quantumViews from './quantum/views/index.js';
 export { CodeBlock, highlightQubi } from './text/code.js';
 export { buildDocument, newDocument, normalizeDocument, evaluateGraph, stringifyDocument, documentToModule, moduleToDocument, ANIMATIONS as DOCUMENT_ANIMATIONS } from './editor/document.js';

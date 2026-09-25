@@ -31,6 +31,8 @@ export const ctx = {
   theme: null,
   /** Seed of the scene being sampled. */
   seed: 0,
+  /** Scene currently being built, for layout helpers on nodes not yet added. @type {any} */
+  building: null,
 };
 
 const ID_COUNTERS = new Map();
@@ -609,10 +611,11 @@ export class Node {
    * @returns {this}
    */
   toEdge(edge, margin = 0.5) {
-    if (!this.scene) throw new Error('toEdge needs the node to be in a scene');
+    const scene = this.scene ?? ctx.building;
+    if (!scene) throw new Error('toEdge needs a scene: call it inside a scene build or after adding the node');
     const [dx, dy] = direction(edge);
-    const hw = this.scene.frameWidth / 2 - margin;
-    const hh = this.scene.frameHeight / 2 - margin;
+    const hw = scene.frameWidth / 2 - margin;
+    const hh = scene.frameHeight / 2 - margin;
     const a = this.anchor([dx, dy]);
     return this.shift(dx !== 0 ? dx * hw - a[0] : 0, dy !== 0 ? dy * hh - a[1] : 0);
   }

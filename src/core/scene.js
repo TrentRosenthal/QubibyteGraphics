@@ -517,10 +517,13 @@ export async function buildScene(buildFn, opts = {}) {
   await preload();
   const scene = new Scene(opts);
   scene.building = true;
+  const outer = ctx.building;
+  ctx.building = scene;
   try {
     await buildFn(scene);
   } finally {
     scene.building = false;
+    ctx.building = outer;
   }
   return scene;
 }
