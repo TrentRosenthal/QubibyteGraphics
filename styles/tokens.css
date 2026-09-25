@@ -1,0 +1,268 @@
+/*
+ * Design tokens for the playground, the visual editor, the embed element,
+ * and the docs. Every other stylesheet reads these custom properties and
+ * never hard-codes a color, size, radius, or duration.
+ *
+ * The brand color comes from PROJECT.brandColor in src/config.js; the app
+ * writes it to --brand at startup. The value here is the same color, used
+ * until the script runs.
+ */
+
+@font-face {
+  font-family: 'Inter';
+  src: url('../vendor/fonts/inter/Inter-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Inter';
+  src: url('../vendor/fonts/inter/Inter-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Inter';
+  src: url('../vendor/fonts/inter/Inter-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Inter';
+  src: url('../vendor/fonts/inter/Inter-Italic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'QG Mono';
+  src: url('../vendor/fonts/katex/KaTeX_Typewriter-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root,
+:host {
+  /* Brand */
+  --brand: #5b8def;
+
+  /* Type */
+  --font-ui: 'Inter', system-ui, sans-serif;
+  --font-code: 'QG Mono', ui-monospace, monospace;
+  --text-2xs: 10px;
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-md: 13px;
+  --text-lg: 15px;
+  --text-xl: 18px;
+  --leading-tight: 1.25;
+  --leading-ui: 1.45;
+  --leading-code: 1.6;
+  --code-size: 13px;
+  --code-line: 20px;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --tracking-label: 0.02em;
+
+  /* Spacing (4 px grid) */
+  --space-0: 2px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Component sizes */
+  --control-h: 28px;
+  --control-h-sm: 24px;
+  --topbar-h: 48px;
+  --panel-header-h: 40px;
+  --icon: 16px;
+  --panel-w: 296px;
+  --code-pane-w: 38%;
+  --code-pane-min: 360px;
+  --timeline-h: 208px;
+  --track-h: 28px;
+  --track-label-w: 168px;
+  --scrub-h: 28px;
+  --thumb-ratio: 16 / 9;
+  --popover-w: 360px;
+  --library-w: 248px;
+  --hairline: 1px;
+
+  /* Radii */
+  --radius-xs: 3px;
+  --radius-sm: 5px;
+  --radius-md: 7px;
+  --radius-lg: 10px;
+  --radius-full: 999px;
+
+  /* Motion */
+  --dur-instant: 60ms;
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --dur-slow: 280ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  /* Layers */
+  --z-canvas: 1;
+  --z-overlay: 10;
+  --z-panel: 20;
+  --z-popover: 40;
+  --z-toast: 60;
+
+  /* Dark neutrals (default) */
+  --bg: #0e0f12;
+  --bg-sunken: #0a0b0d;
+  --surface: #131519;
+  --surface-raised: #181a1f;
+  --surface-hover: #1d2026;
+  --surface-active: #23262d;
+  --stage: #08090b;
+  --text: #e9e7e2;
+  --text-muted: #a6a39d;
+  --text-faint: #86847e;
+  --border: rgba(255, 255, 255, 0.075);
+  --border-strong: rgba(255, 255, 255, 0.13);
+  --border-focus: var(--brand);
+  --scrim: rgba(4, 5, 7, 0.6);
+  --shadow-popover: 0 8px 24px rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(255, 255, 255, 0.06);
+
+  /* Accent (derived from --brand) */
+  --accent: var(--brand);
+  --accent-text: color-mix(in oklab, var(--brand), white 18%);
+  --accent-solid: color-mix(in oklab, var(--brand), black 24%);
+  --accent-solid-hover: color-mix(in oklab, var(--brand), black 14%);
+  --on-accent: #ffffff;
+  --accent-wash: color-mix(in oklab, var(--brand) 16%, transparent);
+  --accent-line: color-mix(in oklab, var(--brand) 55%, transparent);
+
+  /* Semantic */
+  --danger: #e5836f;
+  --danger-wash: rgba(229, 131, 111, 0.12);
+  --warning: #d9b25e;
+  --warning-wash: rgba(217, 178, 94, 0.12);
+  --success: #7cc49a;
+
+  /* Code syntax (quiet: ink, muted, accent, one warm second) */
+  --syn-plain: var(--text);
+  --syn-keyword: #b7a8e8;
+  --syn-string: #d8b77e;
+  --syn-number: #d8b77e;
+  --syn-comment: #86847e;
+  --syn-fn: var(--accent-text);
+  --syn-gate: var(--accent-text);
+  --syn-punct: #8e8c86;
+  --syn-setting: #a6a39d;
+
+  /* Timeline and graph */
+  --track-bar: color-mix(in oklab, var(--brand) 34%, var(--surface));
+  --track-bar-exit: color-mix(in oklab, #d9b25e 28%, var(--surface));
+  --marker-label: var(--text-muted);
+  --marker-pause: var(--warning);
+  --marker-caption: #8fb8a8;
+  --marker-key: var(--accent-text);
+  --guide: #e5836f;
+
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--brand);
+
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-ui-theme='dark']),
+  :host {
+    --bg: #f7f5f0;
+    --bg-sunken: #efece5;
+    --surface: #fbfaf7;
+    --surface-raised: #ffffff;
+    --surface-hover: #f0ede6;
+    --surface-active: #e8e4dc;
+    --stage: #e9e6df;
+    --text: #1b1b1d;
+    --text-muted: #57544e;
+    --text-faint: #6f6c66;
+    --border: rgba(20, 18, 14, 0.09);
+    --border-strong: rgba(20, 18, 14, 0.16);
+    --scrim: rgba(247, 245, 240, 0.6);
+    --shadow-popover: 0 8px 24px rgba(30, 26, 18, 0.12), 0 0 0 1px rgba(20, 18, 14, 0.08);
+    --accent: color-mix(in oklab, var(--brand), black 10%);
+    --accent-text: color-mix(in oklab, var(--brand), black 30%);
+    --accent-solid: color-mix(in oklab, var(--brand), black 24%);
+    --accent-solid-hover: color-mix(in oklab, var(--brand), black 32%);
+    --accent-wash: color-mix(in oklab, var(--brand) 12%, transparent);
+    --danger: #b4452f;
+    --danger-wash: rgba(180, 69, 47, 0.1);
+    --warning: #926510;
+    --warning-wash: rgba(154, 107, 18, 0.1);
+    --success: #2f7a4e;
+    --syn-keyword: #6a4fc0;
+    --syn-string: #8a5a12;
+    --syn-number: #8a5a12;
+    --syn-comment: #6f6c66;
+    --syn-punct: #6d6a64;
+    --syn-setting: #57544e;
+    --marker-caption: #3f7d66;
+    --guide: #c4553e;
+    color-scheme: light;
+  }
+}
+
+:root[data-ui-theme='light'] {
+  --bg: #f7f5f0;
+  --bg-sunken: #efece5;
+  --surface: #fbfaf7;
+  --surface-raised: #ffffff;
+  --surface-hover: #f0ede6;
+  --surface-active: #e8e4dc;
+  --stage: #e9e6df;
+  --text: #1b1b1d;
+  --text-muted: #57544e;
+  --text-faint: #6f6c66;
+  --border: rgba(20, 18, 14, 0.09);
+  --border-strong: rgba(20, 18, 14, 0.16);
+  --scrim: rgba(247, 245, 240, 0.6);
+  --shadow-popover: 0 8px 24px rgba(30, 26, 18, 0.12), 0 0 0 1px rgba(20, 18, 14, 0.08);
+  --accent: color-mix(in oklab, var(--brand), black 10%);
+  --accent-text: color-mix(in oklab, var(--brand), black 30%);
+  --accent-solid: color-mix(in oklab, var(--brand), black 24%);
+  --accent-solid-hover: color-mix(in oklab, var(--brand), black 32%);
+  --accent-wash: color-mix(in oklab, var(--brand) 12%, transparent);
+  --danger: #b4452f;
+  --danger-wash: rgba(180, 69, 47, 0.1);
+  --warning: #926510;
+  --warning-wash: rgba(154, 107, 18, 0.1);
+  --success: #2f7a4e;
+  --syn-keyword: #6a4fc0;
+  --syn-string: #8a5a12;
+  --syn-number: #8a5a12;
+  --syn-comment: #6f6c66;
+  --syn-punct: #6d6a64;
+  --syn-setting: #57544e;
+  --marker-caption: #3f7d66;
+  --guide: #c4553e;
+  color-scheme: light;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root,
+  :host {
+    --dur-instant: 0ms;
+    --dur-fast: 0ms;
+    --dur-base: 0ms;
+    --dur-slow: 0ms;
+  }
+}

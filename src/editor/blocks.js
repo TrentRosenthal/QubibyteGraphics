@@ -6,7 +6,7 @@
  * @module editor/blocks
  */
 
-import { Circle, Rect, RegularPolygon, Star, Arrow, Line, Dot, SVGPathShape, Brace, ImageNode, VideoNode } from '../core/shapes.js';
+import { Circle, Rect, RegularPolygon, Star, Arrow, Line, Dot, SVGPathShape, Brace, ImageNode, VideoNode, Polyline } from '../core/shapes.js';
 import { Text, Tex, DecimalNumber } from '../text/nodes.js';
 import { CodeBlock } from '../text/code.js';
 import { Axes, NumberLine, ComplexPlane, PolarPlane } from '../core/coords.js';
@@ -14,12 +14,13 @@ import { toFunction } from '../core/plots.js';
 import { evaluate as evaluateQubi, enumerateSweep } from '../qubi/index.js';
 import { StatevectorSimulator } from '../quantum/statevector.js';
 import { circuitUnitary } from '../quantum/decompose.js';
-import { densityMatrixOf } from '../quantum/analysis.js';
+import { densityMatrixOf, stateToBloch, reducedDensityMatrix } from '../quantum/analysis.js';
 import { sweepProbabilities } from '../quantum/sweep.js';
 import { CircuitDiagram } from '../quantum/views/circuit.js';
 import { AmplitudeBars, ProbabilityPie, HintonDiagram, PhaseDisks, diracTex, matrixTex, sweepPlot } from '../quantum/views/state.js';
 import { DimensionLine } from '../board/dimension.js';
-import { ValueTracker } from '../core/node.js';
+import { ValueTracker, Group } from '../core/node.js';
+import { highlightQubi } from '../text/code.js';
 
 /**
  * @typedef {Object} Field
@@ -43,6 +44,16 @@ import { ValueTracker } from '../core/node.js';
  * @property {{in: Array<{name: string, kind: string}>, out: Array<{name: string, kind: string}>}} ports
  * @property {(props: any, inputs: any, doc: any) => Record<string, any>} [outputs]
  * @property {(props: any, inputs: any, ctx: any) => any} [create]
+ * @property {(props: any, outputs: any) => Array<{id: string, at: number[], label?: string}>} [handles]
+ *   Interactive points in the block's local coordinates (the frame its node is built in, before placement).
+ * @property {(props: any, handle: {id: string, at: number[]}, ctx: HandleContext) => Record<string, any>|null} [onDrag]
+ *   Called while a handle is dragged; returns new props for this block (or null) and may write other blocks through ctx.update.
+ */
+
+/**
+ * @typedef {Object} HandleContext
+ * @property {(port: string) => {block: any, port: string}|null} source the block and output port wired into an input port
+ * @property {(blockId: string, patch: Record<string, any>) => void} update merge props into another block
  */
 
 /** @type {Record<string, BlockDefinition>} */
@@ -85,6 +96,7 @@ function place(node, p) {
   if ((p.scale ?? 1) !== 1) node.scale(p.scale);
   node.moveTo([p.x ?? 0, p.y ?? 0]);
   if (p.tokens) node.tokens = { ...p.tokens };
+  if (p.zIndex) node.set('zIndex', p.zIndex);
   return node;
 }
 
@@ -453,13 +465,13 @@ registerBlock({
   type: 'matrix',
   label: 'Unitary matrix',
   category: 'quantum',
-  defaults: { ...BASE, size: 0.4, style: 'numbers' },
-  fields: [{ key: 'style', label: 'Style', kind: 'select', options: ['numbers', 'hinton'] }, { key: 'size', label: 'Size', kind: 'number', min: 0.1, step: 0.05 }, ...POS],
+  defaults: { ...BASE, size: 0.4, style: 'numbers', label: 'U =' },
+  fields: [{ key: 'style', label: 'Style', kind: 'select', options: ['numbers', 'hinton'] }, { key: 'label', label: 'Label (TeX)', kind: 'tex' }, { key: 'size', label: 'Size', kind: 'number', min: 0.1, step: 0.05 }, ...POS],
   ports: { in: [{ name: 'unitary', kind: 'matrix' }], out: [] },
   create: (p, inputs) => {
-    if (!inputs.unitary) throw new Error('Wire a Qubi program unitary into this block (programs without measurements, up to six qubits)');
+    if (!inputs.unitary) throw new Error('Wire a matrix into this block: a Qubi program unitary (no measurements, up to six qubits) or a Bloch sphere rho');
     if (p.style === 'hinton') return place(new HintonDiagram(inputs.unitary, { size: p.size * 10 }), p);
-    return place(matrixTex(inputs.unitary, { size: p.size, prefix: 'U =' }), p);
+    return place(matrixTex(inputs.unitary, { size: p.size, prefix: p.label || undefined }), p);
   },
 });
 
@@ -485,6 +497,188 @@ registerBlock({
   create: (p, inputs) => {
     if (!inputs.sweep) throw new Error('Wire a Qubi program with a sweep (for example a=<0..1>) into this block');
     return place(sweepPlot(inputs.sweep, { width: p.width, height: p.height }), p);
+  },
+});
+
+const QUBI_NOT_VARIABLES = new Set(['LOOP', 'REPEAT', 'if', 'elseif', 'elif', 'else', 'endif', 'gate', 'function', 'fn', 'LABEL', 'ANNOTATE', 'ANN', 'ENDANNOTATE', 'ENDANN', 'and', 'or', 'xor', 'not', 'blackbox', 'encapsulate', 'arg', 'argmax', 'pi', 'e', 'true', 'false', 'deg', 'rad', 'pirad', 'sqrt', 'round', 'roundup', 'rounddown', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'len', 'length', 'count', 'tolist', 'typeof', 'listtype', 'error', 'int', 'float', 'number', 'string', 'bitstring', 'list', 'boolean', 'qubit', 'wire', 'wirelist', 'wires', 'name', 'label', 'matrix', 'sequence', 'desc', 'examples', 'color', 'category', 'qubits']);
+
+/**
+ * Classical variables a Qubi program reads but never assigns: the names a
+ * slider or an expression can drive through a `var:NAME` input port.
+ * Gates, keywords, constants, builtins, standard library calls, settings,
+ * and names defined as functions or gates are not variables.
+ * @param {string} source
+ * @returns {string[]} names in order of first use
+ */
+export function qubiVariables(source) {
+  const defined = new Set();
+  const assigned = new Set();
+  const seen = [];
+  for (const raw of String(source).split('\n')) {
+    if (/^\s*#/.test(raw)) continue;
+    const line = raw.replace(/"(?:[^"\\]|\\.)*"/g, '""');
+    for (const m of line.matchAll(/\b(?:fn|function|gate)\s+([A-Za-z_]\w*)(?:\s*\(([^)]*)\))?/g)) {
+      defined.add(m[1]);
+      for (const a of (m[2] || '').split(',')) if (a.trim()) defined.add(a.trim());
+    }
+    for (const m of line.matchAll(/(?:^|[;{\s])([A-Za-z_]\w*)\s*(?:=(?!=)|\+\+|--|[+\-*/]=)/g)) assigned.add(m[1]);
+    const spans = highlightQubi(line);
+    let col = 0;
+    for (const sp of spans) {
+      const at = col;
+      col += sp.text.length;
+      if (sp.kind !== 'plain' || !/^[A-Za-z_]\w*$/.test(sp.text)) continue;
+      const after = line.slice(at + sp.text.length);
+      if (/^\s*\(/.test(after) || QUBI_NOT_VARIABLES.has(sp.text)) continue;
+      if (!seen.includes(sp.text)) seen.push(sp.text);
+    }
+  }
+  return seen.filter((n) => !defined.has(n) && !assigned.has(n));
+}
+
+function formatTurns(v) {
+  const r = Math.round(v * 1000) / 1000;
+  return String(Object.is(r, -0) ? 0 : r);
+}
+
+/**
+ * Write the rotations that prepare a Bloch direction on one wire into a Qubi
+ * program: the first RY and RZ lines for that wire (after settings and
+ * comments) are updated in place, or inserted there. The rest of the
+ * program is kept verbatim.
+ * @param {string} source
+ * @param {number} wire
+ * @param {number} theta polar angle in turns of pi
+ * @param {number} phi azimuth in turns of pi
+ * @returns {string}
+ */
+function writePreparation(source, wire, theta, phi) {
+  const lines = String(source).split('\n');
+  let i = 0;
+  while (i < lines.length && /^\s*(#settings|#import|#include|\/\/|$)/.test(lines[i])) i++;
+  const ry = `RY(${formatTurns(theta)}) ${wire}`;
+  const rz = `RZ(${formatTurns(phi)}) ${wire}`;
+  const is = (gate, l) => new RegExp(`^\\s*${gate}\\(\\s*-?[\\d.]+\\s*\\)\\s+${wire}\\s*$`).test(l ?? '');
+  if (is('RY', lines[i])) {
+    lines[i] = ry;
+    if (is('RZ', lines[i + 1])) lines[i + 1] = rz;
+    else lines.splice(i + 1, 0, rz);
+  } else lines.splice(i, 0, ry, rz);
+  return lines.join('\n');
+}
+
+/**
+ * Orthographic view of Bloch coordinates: azimuth turns the sphere about z,
+ * elevation tilts the camera above the equator.
+ * @returns {number[]} [screen x, screen y, depth toward the viewer]
+ */
+function blochView(x, y, z, az, el) {
+  const x1 = x * Math.cos(az) - y * Math.sin(az);
+  const y1 = x * Math.sin(az) + y * Math.cos(az);
+  return [y1, z * Math.cos(el) - x1 * Math.sin(el), x1 * Math.cos(el) + z * Math.sin(el)];
+}
+
+function blochSphere(v, p) {
+  const R = p.radius;
+  const az = p.azimuth;
+  const el = p.elevation;
+  const pt = (x, y, z) => blochView(x, y, z, az, el).map((c, i) => (i < 2 ? c * R : c));
+  const parts = [new Circle({ radius: R, stroke: 'muted', strokeWidth: 2, fill: null })];
+  const front = [];
+  const back = [];
+  let run = null;
+  for (let k = 0; k <= 96; k++) {
+    const t = (k / 96) * 2 * Math.PI;
+    const [sx, sy, d] = pt(Math.cos(t), Math.sin(t), 0);
+    const side = d >= 0 ? front : back;
+    if (!run || run.side !== side) {
+      run = { side, points: run ? [run.points[run.points.length - 1]] : [] };
+      side.push(run);
+    }
+    run.points.push([sx, sy]);
+  }
+  for (const r of front) if (r.points.length > 1) parts.push(new Polyline(r.points, { stroke: 'muted', strokeWidth: 1.5 }));
+  for (const r of back) if (r.points.length > 1) parts.push(new Polyline(r.points, { stroke: 'faint', strokeWidth: 1.5, dash: [0.05, 0.07] }));
+  for (const [a, b] of [[[-1, 0, 0], [1, 0, 0]], [[0, -1, 0], [0, 1, 0]], [[0, 0, -1], [0, 0, 1]]]) {
+    const pa = pt(...a);
+    const pb = pt(...b);
+    parts.push(new Line([pa[0], pa[1]], [pb[0], pb[1]], { stroke: 'faint', strokeWidth: 1.5, dash: [0.05, 0.07] }));
+  }
+  const lab = (tex, at, dx, dy) => {
+    const t = new Tex(tex, { size: 0.26, color: 'muted' });
+    t.moveTo([at[0] + dx, at[1] + dy]);
+    return t;
+  };
+  if (p.labels) {
+    parts.push(lab('|0\\rangle', pt(0, 0, 1), 0, 0.24));
+    parts.push(lab('|1\\rangle', pt(0, 0, -1), 0, -0.24));
+    const px = pt(1.12, 0, 0);
+    const py = pt(0, 1.12, 0);
+    parts.push(lab('x', px, 0.06, -0.06), lab('y', py, 0.1, 0));
+  }
+  const len = Math.hypot(v.x, v.y, v.z);
+  const tip = pt(v.x, v.y, v.z);
+  const foot = pt(v.x, v.y, 0);
+  if (Math.hypot(v.x, v.y) > 0.02 && Math.abs(v.z) > 0.02) parts.push(new Line([tip[0], tip[1]], [foot[0], foot[1]], { stroke: 'faint', strokeWidth: 1.5, dash: [0.04, 0.05] }));
+  if (len > 0.04) parts.push(new Arrow([0, 0], [tip[0], tip[1]], { color: 'accent', strokeWidth: 4, headLength: 0.18, headWidth: 0.16 }));
+  parts.push(new Dot({ radius: 0.05, fill: 'accent', x: tip[0], y: tip[1] }));
+  if (p.labels) {
+    const theta = Math.acos(Math.max(-1, Math.min(1, v.z / Math.max(len, 1e-12)))) / Math.PI;
+    const phi = Math.atan2(v.y, v.x) / Math.PI;
+    const t = new Tex(`\\theta = ${formatTurns(theta)}\\pi,\\;\\varphi = ${formatTurns(phi)}\\pi`, { size: 0.24, color: 'muted' });
+    t.moveTo([0, -R - 0.62]);
+    parts.push(t);
+  }
+  return new Group(parts, { type: 'blochSphere' });
+}
+
+registerBlock({
+  type: 'bloch',
+  label: 'Bloch sphere',
+  category: '3d',
+  defaults: { ...BASE, qubit: 0, radius: 1.3, azimuth: -0.55, elevation: 0.32, labels: true },
+  fields: [
+    { key: 'qubit', label: 'Qubit', kind: 'number', min: 0, max: 15, step: 1 },
+    { key: 'radius', label: 'Radius', kind: 'number', min: 0.3, step: 0.05 },
+    { key: 'azimuth', label: 'View azimuth', kind: 'number', step: 0.05 },
+    { key: 'elevation', label: 'View elevation', kind: 'number', min: -1.5, max: 1.5, step: 0.05 },
+    { key: 'labels', label: 'Labels', kind: 'bool' },
+    ...POS,
+  ],
+  ports: { in: [{ name: 'state', kind: 'state' }], out: [{ name: 'vector', kind: 'vector' }, { name: 'rho', kind: 'matrix' }] },
+  outputs: (p, inputs) => {
+    if (!inputs.state) return {};
+    const q = Math.max(0, Math.min(inputs.state.numQubits - 1, Math.round(p.qubit)));
+    const b = stateToBloch(inputs.state, q);
+    return { vector: { x: b.x, y: b.y, z: b.z }, rho: reducedDensityMatrix(inputs.state, [q]) };
+  },
+  create: (p, _inputs, ctx) => place(blochSphere(ctx.outputs.vector ?? { x: 0, y: 0, z: 1 }, p), p),
+  handles: (p, out) => {
+    const v = out.vector ?? { x: 0, y: 0, z: 1 };
+    const [sx, sy] = blochView(v.x, v.y, v.z, p.azimuth, p.elevation);
+    return [{ id: 'state', at: [sx * p.radius, sy * p.radius], label: 'Drag to rotate the state' }];
+  },
+  onDrag: (p, h, ctx) => {
+    let u = h.at[0] / p.radius;
+    let v = h.at[1] / p.radius;
+    const r = Math.hypot(u, v);
+    if (r > 1) {
+      u /= r;
+      v /= r;
+    }
+    const w = Math.sqrt(Math.max(0, 1 - u * u - v * v));
+    const el = p.elevation;
+    const az = p.azimuth;
+    const x1 = -v * Math.sin(el) + w * Math.cos(el);
+    const y1 = u;
+    const z = v * Math.cos(el) + w * Math.sin(el);
+    const x = x1 * Math.cos(az) + y1 * Math.sin(az);
+    const y = -x1 * Math.sin(az) + y1 * Math.cos(az);
+    const theta = Math.acos(Math.max(-1, Math.min(1, z))) / Math.PI;
+    const phi = Math.hypot(x, y) < 1e-6 ? 0 : Math.atan2(y, x) / Math.PI;
+    const src = ctx.source('state');
+    if (src && src.block.type === 'qubi') ctx.update(src.block.id, { source: writePreparation(src.block.props.source, Math.round(p.qubit), theta, phi) });
+    return null;
   },
 });
 

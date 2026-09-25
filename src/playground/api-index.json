@@ -1,0 +1,2095 @@
+{
+ "exports": [
+  {
+   "name": "alignPaths",
+   "kind": "function",
+   "signature": "(a, b)",
+   "summary": "Make two paths compatible for interpolation: same subpath count, and each matched pair of subpaths has the same segment count and a consistent winding and start point.",
+   "module": "src/core/path.js"
+  },
+  {
+   "name": "angleTex",
+   "kind": "function",
+   "signature": "(j, n)",
+   "summary": "TeX for the angle j * 2 pi / n in lowest terms.",
+   "module": "src/core/coords.js"
+  },
+  {
+   "name": "animateWith",
+   "kind": "function",
+   "signature": "(fn, opts)",
+   "summary": "",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "Animation",
+   "kind": "class",
+   "signature": "(opts = {})",
+   "summary": "Base class.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "AnimationGroup",
+   "kind": "class",
+   "signature": "(anims, opts = {})",
+   "summary": "Several animations starting together.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "applyMatrix",
+   "kind": "function",
+   "signature": "(plane, A, opts)",
+   "summary": "Animate a plane to a matrix along a linear or polar path.",
+   "module": "src/explainers/linear.js"
+  },
+  {
+   "name": "ApplyMatrix",
+   "kind": "class",
+   "signature": "(plane, A, opts = {})",
+   "summary": "Animate a plane to a matrix along a linear or polar path.",
+   "module": "src/explainers/linear.js"
+  },
+  {
+   "name": "Arc",
+   "kind": "class",
+   "signature": "(props = {})",
+   "summary": "Circular arc from startAngle to endAngle (radians, counterclockwise).",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "AreaUnder",
+   "kind": "class",
+   "signature": "(graph, range, props = {})",
+   "summary": "Filled area between a graph and a baseline (or a second graph) over [a, b].",
+   "module": "src/core/plots.js"
+  },
+  {
+   "name": "Arrow",
+   "kind": "class",
+   "signature": "(from = [-1, 0], to = [1, 0], props = {})",
+   "summary": "Arrow from one point to another, straight or curved, with a head at the end (and optionally the start).",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "ARROW_HEADS",
+   "kind": "const",
+   "signature": "",
+   "summary": "Arrow head styles.",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "Axes",
+   "kind": "class",
+   "signature": "(opts = {})",
+   "summary": "Two-dimensional axes.",
+   "module": "src/core/coords.js"
+  },
+  {
+   "name": "backdrop",
+   "kind": "function",
+   "signature": "(node, opts = {})",
+   "summary": "A backing panel behind a node so labels stay readable over busy content (grids, plots).",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "Bar",
+   "kind": "class",
+   "signature": "(x, base, value, width, props = {})",
+   "summary": "One bar with an animatable value.",
+   "module": "src/core/plots.js"
+  },
+  {
+   "name": "BarChart",
+   "kind": "class",
+   "signature": "(values, props = {})",
+   "summary": "Filled rectangles for bar charts and histograms, in data space.",
+   "module": "src/core/plots.js"
+  },
+  {
+   "name": "Bezier",
+   "kind": "class",
+   "signature": "(controls, props = {})",
+   "summary": "Bezier curve of any order through control points.",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "bezierPath",
+   "kind": "function",
+   "signature": "(c)",
+   "summary": "Exact or fitted cubic path for a Bezier of arbitrary order.",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "blockDefinition",
+   "kind": "function",
+   "signature": "(type)",
+   "summary": "",
+   "module": "src/editor/blocks.js"
+  },
+  {
+   "name": "blockLibrary",
+   "kind": "function",
+   "signature": "()",
+   "summary": "Block definitions grouped by library category, for the editor's block library.",
+   "module": "src/editor/blocks.js"
+  },
+  {
+   "name": "BLOCKS",
+   "kind": "const",
+   "signature": "",
+   "summary": "",
+   "module": "src/editor/blocks.js"
+  },
+  {
+   "name": "blockTypes",
+   "kind": "function",
+   "signature": "()",
+   "summary": "",
+   "module": "src/editor/document.js"
+  },
+  {
+   "name": "Brace",
+   "kind": "class",
+   "signature": "(a, b, props = {})",
+   "summary": "Curly brace spanning from a to b, bulging to the right of the direction a to b (use flip to bulge the other way).",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "braceFor",
+   "kind": "function",
+   "signature": "(node, side = 'bottom', props = {})",
+   "summary": "Brace under (or beside) a node's bounds.",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "bSplinePath",
+   "kind": "function",
+   "signature": "(pts, closed = false)",
+   "summary": "Uniform cubic B-spline with the given control points, converted exactly to Bezier segments.",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "buildDocument",
+   "kind": "function",
+   "signature": "(doc, opts = {})",
+   "summary": "Build a Scene from a document.",
+   "module": "src/editor/document.js"
+  },
+  {
+   "name": "buildScene",
+   "kind": "function",
+   "signature": "(buildFn, opts = {})",
+   "summary": "Build a scene by running an async build function.",
+   "module": "src/core/scene.js"
+  },
+  {
+   "name": "Camera",
+   "kind": "class",
+   "signature": "()",
+   "summary": "Camera: position, zoom, and rotation of the view, animatable like any node.",
+   "module": "src/core/scene.js"
+  },
+  {
+   "name": "catmullRomPath",
+   "kind": "function",
+   "signature": "(pts, closed = false, tension = 0.5)",
+   "summary": "Catmull-Rom spline through points as cubic segments.",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "Circle",
+   "kind": "class",
+   "signature": "(props = {})",
+   "summary": "Circle.",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "circlePath",
+   "kind": "function",
+   "signature": "(cx, cy, r)",
+   "summary": "Circle as four cubic arcs, starting at angle 0 and running counterclockwise.",
+   "module": "src/core/path.js"
+  },
+  {
+   "name": "circumscribe",
+   "kind": "function",
+   "signature": "(node, opts)",
+   "summary": "Draw a temporary outline around a node, then erase it.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "Circumscribe",
+   "kind": "class",
+   "signature": "(node, opts = {})",
+   "summary": "Draw a temporary outline around a node, then erase it.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "CodeBlock",
+   "kind": "class",
+   "signature": "(source, props = {})",
+   "summary": "A block of code with syntax colors.",
+   "module": "src/text/code.js"
+  },
+  {
+   "name": "ComplexPlane",
+   "kind": "class",
+   "signature": "(opts = {})",
+   "summary": "The complex plane: axes with imaginary-unit labels on y.",
+   "module": "src/core/coords.js"
+  },
+  {
+   "name": "Contours",
+   "kind": "class",
+   "signature": "(F, props = {})",
+   "summary": "Contour lines of a scalar field at several levels.",
+   "module": "src/core/plots.js"
+  },
+  {
+   "name": "contrast",
+   "kind": "function",
+   "signature": "(a, b)",
+   "summary": "WCAG contrast ratio between two colors, in [1, 21].",
+   "module": "src/core/color.js"
+  },
+  {
+   "name": "countTo",
+   "kind": "function",
+   "signature": "(node, value, opts = {})",
+   "summary": "Animate a DecimalNumber (or any node with a value) to a target value.",
+   "module": "src/text/nodes.js"
+  },
+  {
+   "name": "create",
+   "kind": "function",
+   "signature": "(node, opts)",
+   "summary": "Stroke-draws a node, then fills it.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "Create",
+   "kind": "class",
+   "signature": "(node, opts = {})",
+   "summary": "Stroke-draws a node, then fills it.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "crossFade",
+   "kind": "function",
+   "signature": "(a, b, opts)",
+   "summary": "Cross-fade from one node to another.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "CrossFade",
+   "kind": "class",
+   "signature": "(a, b, opts = {})",
+   "summary": "Cross-fade from one node to another.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "cubicBezier",
+   "kind": "function",
+   "signature": "(x1, y1, x2, y2)",
+   "summary": "CSS-style cubic Bezier easing through (0,0), (x1,y1), (x2,y2), (1,1).",
+   "module": "src/core/easing.js"
+  },
+  {
+   "name": "CurvedArrow",
+   "kind": "class",
+   "signature": "(from, to, props = {})",
+   "summary": "Curved arrow: an arrow with a default bend.",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "DataDot",
+   "kind": "class",
+   "signature": "(x, y, props = {})",
+   "summary": "A dot at a data position (animatable dataX, dataY).",
+   "module": "src/core/plots.js"
+  },
+  {
+   "name": "DataPolyline",
+   "kind": "class",
+   "signature": "(points, props = {})",
+   "summary": "A polyline given in data coordinates.",
+   "module": "src/core/plots.js"
+  },
+  {
+   "name": "DecimalNumber",
+   "kind": "class",
+   "signature": "(value = 0, props = {})",
+   "summary": "A number that animates its value and re-typesets each frame.",
+   "module": "src/text/nodes.js"
+  },
+  {
+   "name": "derivationFor",
+   "kind": "function",
+   "signature": "(req)",
+   "summary": "Stepped result for a derivation request, from the math engine.",
+   "module": "src/explainers/derivation.js"
+  },
+  {
+   "name": "describeGroup",
+   "kind": "function",
+   "signature": "(g)",
+   "summary": "Sentence introducing a standard library call.",
+   "module": "src/quantum/explainers.js"
+  },
+  {
+   "name": "describeOp",
+   "kind": "function",
+   "signature": "(op)",
+   "summary": "One sentence describing what an op does, for narration.",
+   "module": "src/quantum/explainers.js"
+  },
+  {
+   "name": "diagnoseQubi",
+   "kind": "function",
+   "signature": "(source, opts = {})",
+   "summary": "Collect diagnostics for the editor without throwing: every syntax error (parsing recovers at the next line), then evaluation errors and warnings.",
+   "module": "src/qubi/index.js"
+  },
+  {
+   "name": "DimensionLine",
+   "kind": "class",
+   "signature": "(a, b, opts = {})",
+   "summary": "Dimension line between two points.",
+   "module": "src/board/dimension.js"
+  },
+  {
+   "name": "direction",
+   "kind": "function",
+   "signature": "(d)",
+   "summary": "Normalize a direction name or vector to [dx, dy] with components in {-1, 0, 1}.",
+   "module": "src/core/node.js"
+  },
+  {
+   "name": "DOCUMENT_ANIMATIONS",
+   "kind": "const",
+   "signature": "",
+   "summary": "Named entrance and exit animations available to documents and the editor.",
+   "module": "src/editor/document.js"
+  },
+  {
+   "name": "documentToModule",
+   "kind": "function",
+   "signature": "(doc)",
+   "summary": "The JavaScript view of a document: a module that exports it.",
+   "module": "src/editor/document.js"
+  },
+  {
+   "name": "Dot",
+   "kind": "class",
+   "signature": "(props = {})",
+   "summary": "Filled dot.",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "DoubleArrow",
+   "kind": "class",
+   "signature": "(from, to, props = {})",
+   "summary": "Double-headed arrow.",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "drawRibbon",
+   "kind": "function",
+   "signature": "(ctx, pts, width, o = {})",
+   "summary": "Fill a variable-width ribbon along points (pixel space) with round caps.",
+   "module": "src/board/boards.js"
+  },
+  {
+   "name": "drawRuling",
+   "kind": "function",
+   "signature": "(ctx, frame, view)",
+   "summary": "Draw paper ruling (ruled, graph, dots, blank) tied to the camera so page scrolls move the lines.",
+   "module": "src/board/boards.js"
+  },
+  {
+   "name": "easing",
+   "kind": "namespace",
+   "signature": "",
+   "summary": "Easing functions map progress u in [0, 1] to eased progress.",
+   "module": "src/core/easing.js"
+  },
+  {
+   "name": "Ellipse",
+   "kind": "class",
+   "signature": "(props = {})",
+   "summary": "Ellipse.",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "ellipsePath",
+   "kind": "function",
+   "signature": "(cx, cy, rx, ry)",
+   "summary": "",
+   "module": "src/core/path.js"
+  },
+  {
+   "name": "encodeWav",
+   "kind": "function",
+   "signature": "(samples, sampleRate = 48000)",
+   "summary": "Encode mono float samples as a 16-bit PCM WAV file.",
+   "module": "src/export/audio.js"
+  },
+  {
+   "name": "epicycleCoefficients",
+   "kind": "function",
+   "signature": "(pts, count)",
+   "summary": "Discrete Fourier coefficients of complex samples z_k = x_k + i y_k.",
+   "module": "src/explainers/fourier.js"
+  },
+  {
+   "name": "Epicycles",
+   "kind": "class",
+   "signature": "(shape, props = {})",
+   "summary": "Epicycle drawing: tracked time in [0, 1] turns the arrows; the traced curve is drawn up to the current time.",
+   "module": "src/explainers/fourier.js"
+  },
+  {
+   "name": "erase",
+   "kind": "function",
+   "signature": "(node, opts)",
+   "summary": "Sweep an eraser over a node.",
+   "module": "src/board/erase.js"
+  },
+  {
+   "name": "Erase",
+   "kind": "class",
+   "signature": "(node, opts = {})",
+   "summary": "Sweep an eraser over a node.",
+   "module": "src/board/erase.js"
+  },
+  {
+   "name": "evaluateGraph",
+   "kind": "function",
+   "signature": "(doc, overrides = {})",
+   "summary": "Evaluate the data-flow graph: each block's outputs from its props and wired inputs, in dependency order.",
+   "module": "src/editor/document.js"
+  },
+  {
+   "name": "evaluateQubi",
+   "kind": "function",
+   "signature": "(sourceOrAst, opts = {})",
+   "summary": "Evaluate Qubi source (or a parsed Program) into the circuit IR.",
+   "module": "src/qubi/index.js"
+  },
+  {
+   "name": "explainMath",
+   "kind": "function",
+   "signature": "(input, opts = {})",
+   "summary": "Build an explainer scene function from one expression.",
+   "module": "src/explainers/derivation.js"
+  },
+  {
+   "name": "explainQubi",
+   "kind": "function",
+   "signature": "(source, opts = {})",
+   "summary": "Build an explainer scene function for a Qubi program.",
+   "module": "src/quantum/explainers.js"
+  },
+  {
+   "name": "exportTheme",
+   "kind": "function",
+   "signature": "(theme)",
+   "summary": "Serialize a theme to a JSON string for export.",
+   "module": "src/themes/index.js"
+  },
+  {
+   "name": "fadeIn",
+   "kind": "function",
+   "signature": "(node, opts)",
+   "summary": "Fade in, optionally shifting in from an offset or scaling up.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "FadeIn",
+   "kind": "class",
+   "signature": "(node, opts = {})",
+   "summary": "Fade in, optionally shifting in from an offset or scaling up.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "fadeOut",
+   "kind": "function",
+   "signature": "(node, opts)",
+   "summary": "Fade out, optionally shifting away, then remove.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "FadeOut",
+   "kind": "class",
+   "signature": "(node, opts = {})",
+   "summary": "Fade out, optionally shifting away, then remove.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "fbm",
+   "kind": "function",
+   "signature": "(w, h, scale, octaves, seed, opts = {})",
+   "summary": "Fractal value noise over a w x h grid, values roughly in [-1, 1].",
+   "module": "src/board/textures.js"
+  },
+  {
+   "name": "flash",
+   "kind": "function",
+   "signature": "(at, opts)",
+   "summary": "Lines radiating from a point.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "Flash",
+   "kind": "class",
+   "signature": "(at, opts = {})",
+   "summary": "Lines radiating from a point.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "flattenPath",
+   "kind": "function",
+   "signature": "(p, tol = 0.01)",
+   "summary": "Flatten a path into polylines with the given tolerance.",
+   "module": "src/core/path.js"
+  },
+  {
+   "name": "focusOn",
+   "kind": "function",
+   "signature": "(at, opts)",
+   "summary": "Spotlight that closes in on a point.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "FocusOn",
+   "kind": "class",
+   "signature": "(at, opts = {})",
+   "summary": "Spotlight that closes in on a point.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "followPath",
+   "kind": "function",
+   "signature": "(node, path, opts = {})",
+   "summary": "",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "FORMATS",
+   "kind": "const",
+   "signature": "",
+   "summary": "",
+   "module": "src/export/formats.js"
+  },
+  {
+   "name": "formatTick",
+   "kind": "function",
+   "signature": "(v, step)",
+   "summary": "Format a tick value as TeX: integers without decimals, small or large magnitudes in scientific notation, otherwise the fewest digits the step needs.",
+   "module": "src/core/ticks.js"
+  },
+  {
+   "name": "FRAME_SHORT_SIDE",
+   "kind": "const",
+   "signature": "",
+   "summary": "Frame short side in world units.",
+   "module": "src/core/scene.js"
+  },
+  {
+   "name": "FunctionGraph",
+   "kind": "class",
+   "signature": "(f, props = {})",
+   "summary": "Graph of y = f(x).",
+   "module": "src/core/plots.js"
+  },
+  {
+   "name": "getTheme",
+   "kind": "function",
+   "signature": "(idOrTheme)",
+   "summary": "Get a theme by id, or normalize a theme object.",
+   "module": "src/themes/index.js"
+  },
+  {
+   "name": "Glyph",
+   "kind": "class",
+   "signature": "(path, props = {})",
+   "summary": "One glyph (or math rule or shape).",
+   "module": "src/text/nodes.js"
+  },
+  {
+   "name": "grainMask",
+   "kind": "function",
+   "signature": "(medium, seed, px = 1)",
+   "summary": "Alpha mask tile that breaks strokes into grain.",
+   "module": "src/board/textures.js"
+  },
+  {
+   "name": "Group",
+   "kind": "class",
+   "signature": "(children = [], props = {})",
+   "summary": "Group of nodes, also used as a layer.",
+   "module": "src/core/node.js"
+  },
+  {
+   "name": "Grow",
+   "kind": "class",
+   "signature": "(node, opts = {})",
+   "summary": "Grow from a point (default the node's center) from zero scale.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "growArrow",
+   "kind": "function",
+   "signature": "(arrow, opts)",
+   "summary": "Grow an arrow from its start point by moving its end.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "GrowArrow",
+   "kind": "class",
+   "signature": "(arrow, opts = {})",
+   "summary": "Grow an arrow from its start point by moving its end.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "growFromCenter",
+   "kind": "function",
+   "signature": "(node, opts = {})",
+   "summary": "",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "growFromEdge",
+   "kind": "function",
+   "signature": "(node, edge, opts = {})",
+   "summary": "",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "growFromPoint",
+   "kind": "function",
+   "signature": "(node, point, opts = {})",
+   "summary": "",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "HAND_STYLES",
+   "kind": "const",
+   "signature": "",
+   "summary": "Hand styles per medium, in world units.",
+   "module": "src/board/boards.js"
+  },
+  {
+   "name": "handStrokes",
+   "kind": "function",
+   "signature": "(path, seed, style = {}, tol = 0.004)",
+   "summary": "Flatten a path and perturb it into hand strokes.",
+   "module": "src/board/hand.js"
+  },
+  {
+   "name": "hatchPath",
+   "kind": "function",
+   "signature": "(path, spacing, angle, seed)",
+   "summary": "Hatch lines filling a polygon region, used to shade large filled areas the way a hand would.",
+   "module": "src/board/hand.js"
+  },
+  {
+   "name": "Heatmap",
+   "kind": "class",
+   "signature": "(F, props = {})",
+   "summary": "Heatmap of a scalar field as a grid of filled cells colored along a perceptual ramp from background to accent (or a diverging ramp).",
+   "module": "src/core/plots.js"
+  },
+  {
+   "name": "highlight",
+   "kind": "function",
+   "signature": "(node, opts)",
+   "summary": "A marker-style highlight band that sweeps in behind a node.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "Highlight",
+   "kind": "class",
+   "signature": "(node, opts = {})",
+   "summary": "A marker-style highlight band that sweeps in behind a node.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "highlightQubi",
+   "kind": "function",
+   "signature": "(line)",
+   "summary": "Split one line of Qubi into highlighted spans.",
+   "module": "src/text/code.js"
+  },
+  {
+   "name": "histogram",
+   "kind": "function",
+   "signature": "(samples, props = {})",
+   "summary": "Histogram of samples with automatic bins (Freedman-Diaconis).",
+   "module": "src/core/plots.js"
+  },
+  {
+   "name": "imageBackground",
+   "kind": "function",
+   "signature": "(source, opts = {})",
+   "summary": "A picture filling the frame behind everything else: the image covers the frame (cropping to keep its aspect), and an optional wash of the theme background dims it so content on top stays legible.",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "ImageNode",
+   "kind": "class",
+   "signature": "(source, props = {})",
+   "summary": "Image placed in world units.",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "ImplicitCurve",
+   "kind": "class",
+   "signature": "(F, props = {})",
+   "summary": "Implicit curve F(x, y) = 0 traced with marching squares.",
+   "module": "src/core/plots.js"
+  },
+  {
+   "name": "importTheme",
+   "kind": "function",
+   "signature": "(json)",
+   "summary": "Parse and register a theme from JSON text.",
+   "module": "src/themes/index.js"
+  },
+  {
+   "name": "indicate",
+   "kind": "function",
+   "signature": "(node, opts)",
+   "summary": "Briefly scale up and tint a node, then return.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "Indicate",
+   "kind": "class",
+   "signature": "(node, opts = {})",
+   "summary": "Briefly scale up and tint a node, then return.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "lagStart",
+   "kind": "function",
+   "signature": "(anims, opts = {})",
+   "summary": "Animations whose starts are staggered by a lag ratio.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "Layer",
+   "kind": "class",
+   "signature": "(children = [], props = {})",
+   "summary": "Layer: a group with its own z-order slot, opacity, and blend mode.",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "layoutText",
+   "kind": "function",
+   "signature": "(str, opts = {})",
+   "summary": "Lay out text into positioned glyph outlines.",
+   "module": "src/text/layout.js"
+  },
+  {
+   "name": "lerpAligned",
+   "kind": "function",
+   "signature": "(a, b, t)",
+   "summary": "Interpolate between two aligned paths (see alignPaths).",
+   "module": "src/core/path.js"
+  },
+  {
+   "name": "Line",
+   "kind": "class",
+   "signature": "(from = [-1, 0], to = [1, 0], props = {})",
+   "summary": "Straight line between two points (tracked as x1, y1, x2, y2 in local space).",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "LineChart",
+   "kind": "class",
+   "signature": "(points, props = {})",
+   "summary": "Line chart through data points, optionally stepped or filled to a baseline.",
+   "module": "src/core/plots.js"
+  },
+  {
+   "name": "listThemes",
+   "kind": "function",
+   "signature": "()",
+   "summary": "",
+   "module": "src/themes/index.js"
+  },
+  {
+   "name": "loadDefaultFonts",
+   "kind": "function",
+   "signature": "()",
+   "summary": "Load the bundled fonts (four Inter styles and all KaTeX faces).",
+   "module": "src/text/fonts.js"
+  },
+  {
+   "name": "loadImage",
+   "kind": "function",
+   "signature": "(src)",
+   "summary": "Decode an image from a URL, path, or bytes.",
+   "module": "src/core/platform.js"
+  },
+  {
+   "name": "logTicks",
+   "kind": "function",
+   "signature": "(dmin, dmax)",
+   "summary": "Decade ticks for a log axis.",
+   "module": "src/core/ticks.js"
+  },
+  {
+   "name": "mapPoints",
+   "kind": "function",
+   "signature": "(p, fn)",
+   "summary": "Apply an arbitrary point function to every point, anchors and handles alike.",
+   "module": "src/core/path.js"
+  },
+  {
+   "name": "marchingSquares",
+   "kind": "function",
+   "signature": "(F, xr, yr, nx, ny, level = 0)",
+   "summary": "Marching squares: contour polylines of F(x, y) = level over a grid.",
+   "module": "src/core/plots.js"
+  },
+  {
+   "name": "matchByKeys",
+   "kind": "function",
+   "signature": "(a, b)",
+   "summary": "Longest common subsequence match of two key lists; returns index pairs.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "matrixPath",
+   "kind": "function",
+   "signature": "(A, u, mode = 'linear', from = [1, 0, 0, 1])",
+   "summary": "Matrix on the path from the identity to A at u in [0, 1].",
+   "module": "src/explainers/linear.js"
+  },
+  {
+   "name": "MatrixView",
+   "kind": "class",
+   "signature": "(rows, props = {})",
+   "summary": "A matrix drawn as a grid of TeX entries between hand-built brackets, with access to entries, rows, and columns for highlighting.",
+   "module": "src/explainers/derivation.js"
+  },
+  {
+   "name": "mergePaths",
+   "kind": "function",
+   "signature": "(...paths)",
+   "summary": "Concatenate the subpaths of several paths.",
+   "module": "src/core/path.js"
+  },
+  {
+   "name": "mix",
+   "kind": "function",
+   "signature": "(a, b, t)",
+   "summary": "Perceptual mix in OKLab.",
+   "module": "src/core/color.js"
+  },
+  {
+   "name": "moduleToDocument",
+   "kind": "function",
+   "signature": "(src)",
+   "summary": "Parse the JavaScript view back into a document without executing code: the module body after export default must be a JSON object.",
+   "module": "src/editor/document.js"
+  },
+  {
+   "name": "moveAlongPath",
+   "kind": "function",
+   "signature": "(node, path, opts)",
+   "summary": "Move a node's center along a path; optionally rotate with the tangent.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "MoveAlongPath",
+   "kind": "class",
+   "signature": "(node, path, opts = {})",
+   "summary": "Move a node's center along a path; optionally rotate with the tangent.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "newDocument",
+   "kind": "function",
+   "signature": "(meta = {})",
+   "summary": "A new empty document.",
+   "module": "src/editor/document.js"
+  },
+  {
+   "name": "niceTicks",
+   "kind": "function",
+   "signature": "(dmin, dmax, m = 5, onlyInside = false)",
+   "summary": "Choose tick positions for a data range.",
+   "module": "src/core/ticks.js"
+  },
+  {
+   "name": "Node",
+   "kind": "class",
+   "signature": "(type, props = {})",
+   "summary": "Base scene node.",
+   "module": "src/core/node.js"
+  },
+  {
+   "name": "noise1",
+   "kind": "function",
+   "signature": "(x, seed = 0)",
+   "summary": "Smooth deterministic 1D value noise in [-1, 1], used for hand-drawn jitter.",
+   "module": "src/core/random.js"
+  },
+  {
+   "name": "noise2",
+   "kind": "function",
+   "signature": "(x, y, seed = 0)",
+   "summary": "Smooth 2D value noise in [-1, 1].",
+   "module": "src/core/random.js"
+  },
+  {
+   "name": "normalizeDocument",
+   "kind": "function",
+   "signature": "(doc)",
+   "summary": "Validate a document and fill defaults.",
+   "module": "src/editor/document.js"
+  },
+  {
+   "name": "NumberLine",
+   "kind": "class",
+   "signature": "(opts = {})",
+   "summary": "A number line: an axes object with only the x axis.",
+   "module": "src/core/coords.js"
+  },
+  {
+   "name": "oklchToRgb",
+   "kind": "function",
+   "signature": "(L, C, H)",
+   "summary": "OKLCH to sRGB.",
+   "module": "src/core/color.js"
+  },
+  {
+   "name": "openVideo",
+   "kind": "function",
+   "signature": "(src)",
+   "summary": "Open a video file as a frame source for VideoNode: an object with width, height, duration, and a synchronous frameAt(seconds) returning a canvas.",
+   "module": "src/core/platform.js"
+  },
+  {
+   "name": "orbit",
+   "kind": "function",
+   "signature": "(node, center, opts)",
+   "summary": "Orbit a point at a fixed radius.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "Orbit",
+   "kind": "class",
+   "signature": "(node, center, opts = {})",
+   "summary": "Orbit a point at a fixed radius.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "pageFlip",
+   "kind": "function",
+   "signature": "(content, opts)",
+   "summary": "Turn the current page over its left edge.",
+   "module": "src/board/pages.js"
+  },
+  {
+   "name": "PageFlip",
+   "kind": "class",
+   "signature": "(content, opts = {})",
+   "summary": "Turn the current page over its left edge.",
+   "module": "src/board/pages.js"
+  },
+  {
+   "name": "pageScroll",
+   "kind": "function",
+   "signature": "(distance, opts)",
+   "summary": "Scroll the page by moving the camera down; ruled lines and grids move with it.",
+   "module": "src/board/pages.js"
+  },
+  {
+   "name": "PageScroll",
+   "kind": "class",
+   "signature": "(distance, opts = {})",
+   "summary": "Scroll the page by moving the camera down; ruled lines and grids move with it.",
+   "module": "src/board/pages.js"
+  },
+  {
+   "name": "paletteFrom",
+   "kind": "function",
+   "signature": "(seedOrDescription, opts = {})",
+   "summary": "Build a full palette from a seed color or description.",
+   "module": "src/themes/palette.js"
+  },
+  {
+   "name": "parallel",
+   "kind": "function",
+   "signature": "(anims, opts)",
+   "summary": "",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "ParametricCurve",
+   "kind": "class",
+   "signature": "(f, props = {})",
+   "summary": "Parametric curve (x(t), y(t)) in data space.",
+   "module": "src/core/plots.js"
+  },
+  {
+   "name": "parseColor",
+   "kind": "function",
+   "signature": "(input)",
+   "summary": "Parse a CSS-like color: #rgb, #rgba, #rrggbb, #rrggbbaa, rgb(), rgba(), hsl(), hsla(), oklch(), or a small set of named colors tuned to be muted.",
+   "module": "src/core/color.js"
+  },
+  {
+   "name": "parseDescription",
+   "kind": "function",
+   "signature": "(text)",
+   "summary": "Parse a description into a seed color and options.",
+   "module": "src/themes/palette.js"
+  },
+  {
+   "name": "parseMathRequest",
+   "kind": "function",
+   "signature": "(input)",
+   "summary": "Read a single-expression request.",
+   "module": "src/explainers/derivation.js"
+  },
+  {
+   "name": "parseResolution",
+   "kind": "function",
+   "signature": "(res, aspect)",
+   "summary": "Parse a resolution argument: '1080p', '4k', '1920x1080', or a preset name.",
+   "module": "src/export/formats.js"
+  },
+  {
+   "name": "parseSVGPath",
+   "kind": "function",
+   "signature": "(d)",
+   "summary": "Parse an SVG path d attribute into a Path.",
+   "module": "src/core/path.js"
+  },
+  {
+   "name": "partialPath",
+   "kind": "function",
+   "signature": "(p, a, b)",
+   "summary": "Portion of a path between fractions a and b of its total arc length.",
+   "module": "src/core/path.js"
+  },
+  {
+   "name": "pathArea",
+   "kind": "function",
+   "signature": "(path)",
+   "summary": "Approximate area of a path (sum of absolute subpath polygon areas).",
+   "module": "src/board/hand.js"
+  },
+  {
+   "name": "pathBounds",
+   "kind": "function",
+   "signature": "(p)",
+   "summary": "Axis-aligned bounds from anchors and handles (a tight superset).",
+   "module": "src/core/path.js"
+  },
+  {
+   "name": "PathBuilder",
+   "kind": "class",
+   "signature": "()",
+   "summary": "Incremental path builder with SVG-like commands.",
+   "module": "src/core/path.js"
+  },
+  {
+   "name": "pathLength",
+   "kind": "function",
+   "signature": "(p)",
+   "summary": "",
+   "module": "src/core/path.js"
+  },
+  {
+   "name": "PathNode",
+   "kind": "class",
+   "signature": "(path, props = {})",
+   "summary": "A node with explicit path geometry.",
+   "module": "src/core/node.js"
+  },
+  {
+   "name": "phaseColor",
+   "kind": "function",
+   "signature": "(phase, opts = {})",
+   "summary": "Hue for a complex phase, on a perceptually even OKLCH ring.",
+   "module": "src/core/color.js"
+  },
+  {
+   "name": "placeLabels",
+   "kind": "function",
+   "signature": "(items, opts = {})",
+   "summary": "Place labels next to their anchors without covering each other or the obstacles.",
+   "module": "src/core/labels.js"
+  },
+  {
+   "name": "pointAtFraction",
+   "kind": "function",
+   "signature": "(p, f)",
+   "summary": "Point at fraction f of the total arc length, and the tangent angle there.",
+   "module": "src/core/path.js"
+  },
+  {
+   "name": "pointsBounds",
+   "kind": "function",
+   "signature": "(pts)",
+   "summary": "Bounds of a set of world-space points.",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "polar2",
+   "kind": "function",
+   "signature": "(m)",
+   "summary": "Polar decomposition of a 2x2 matrix A = R S with R a rotation and S symmetric positive semidefinite (reflections fold into S's sign).",
+   "module": "src/explainers/linear.js"
+  },
+  {
+   "name": "PolarGraph",
+   "kind": "class",
+   "signature": "(f, props = {})",
+   "summary": "Polar graph r = f(theta) drawn into Cartesian axes.",
+   "module": "src/core/plots.js"
+  },
+  {
+   "name": "PolarPlane",
+   "kind": "class",
+   "signature": "(opts = {})",
+   "summary": "Polar grid: concentric circles and radial lines.",
+   "module": "src/core/coords.js"
+  },
+  {
+   "name": "Polygon",
+   "kind": "class",
+   "signature": "(points, props = {})",
+   "summary": "Closed polygon through points (local coordinates).",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "Polyline",
+   "kind": "class",
+   "signature": "(points, props = {})",
+   "summary": "Open polyline through points (local coordinates).",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "polyPath",
+   "kind": "function",
+   "signature": "(pts, closed = false)",
+   "summary": "Polyline or polygon through points.",
+   "module": "src/core/path.js"
+  },
+  {
+   "name": "preload",
+   "kind": "function",
+   "signature": "()",
+   "summary": "Run registered preload tasks.",
+   "module": "src/core/scene.js"
+  },
+  {
+   "name": "PRESETS",
+   "kind": "const",
+   "signature": "",
+   "summary": "Platform presets: size, frame rate, and format.",
+   "module": "src/export/formats.js"
+  },
+  {
+   "name": "PROJECT",
+   "kind": "const",
+   "signature": "",
+   "summary": "",
+   "module": "src/config.js"
+  },
+  {
+   "name": "PropertyAnimation",
+   "kind": "class",
+   "signature": "(builder)",
+   "summary": "Animation from an .animate chain: tweens every captured property.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "quantum",
+   "kind": "namespace",
+   "signature": "",
+   "summary": "Quantum simulation and analysis layer: simulators (statevector, density matrix, stabilizer), noise, analysis, sweeps, importers and exporters.",
+   "module": "src/quantum/index.js"
+  },
+  {
+   "name": "quantumViews",
+   "kind": "namespace",
+   "signature": "",
+   "summary": "Quantum visualizations built on the scene graph.",
+   "module": "src/quantum/views/index.js"
+  },
+  {
+   "name": "Random",
+   "kind": "class",
+   "signature": "(seed = 1)",
+   "summary": "xoshiro128** generator.",
+   "module": "src/core/random.js"
+  },
+  {
+   "name": "Rect",
+   "kind": "class",
+   "signature": "(props = {})",
+   "summary": "Rectangle with optional corner radius.",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "rectPath",
+   "kind": "function",
+   "signature": "(cx, cy, w, h, radius = 0)",
+   "summary": "Rectangle with optional corner radius, centered on (cx, cy).",
+   "module": "src/core/path.js"
+  },
+  {
+   "name": "registerBlock",
+   "kind": "function",
+   "signature": "(def)",
+   "summary": "Register a block type.",
+   "module": "src/editor/blocks.js"
+  },
+  {
+   "name": "registerBoard",
+   "kind": "function",
+   "signature": "(id, renderer)",
+   "summary": "Register a board renderer.",
+   "module": "src/render/canvas.js"
+  },
+  {
+   "name": "registerFont",
+   "kind": "function",
+   "signature": "(name, bytes, style = 'regular')",
+   "summary": "Register a user font from its file bytes.",
+   "module": "src/text/fonts.js"
+  },
+  {
+   "name": "registerPreload",
+   "kind": "function",
+   "signature": "(fn)",
+   "summary": "Register an async task that must finish before any scene builds (fonts, stroke fonts).",
+   "module": "src/core/scene.js"
+  },
+  {
+   "name": "registerTheme",
+   "kind": "function",
+   "signature": "(theme)",
+   "summary": "Register (or replace) a theme.",
+   "module": "src/themes/index.js"
+  },
+  {
+   "name": "RegularPolygon",
+   "kind": "class",
+   "signature": "(props = {})",
+   "summary": "Regular polygon with n sides.",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "renderFrame",
+   "kind": "function",
+   "signature": "(ctx, frame, opts = {})",
+   "summary": "Render a frame.",
+   "module": "src/render/canvas.js"
+  },
+  {
+   "name": "renderSVG",
+   "kind": "function",
+   "signature": "(frame, opts = {})",
+   "summary": "Render a frame to an SVG document string.",
+   "module": "src/render/svg.js"
+  },
+  {
+   "name": "replacementTransform",
+   "kind": "function",
+   "signature": "(source, target, opts = {})",
+   "summary": "Morph source into target, then swap them in the scene graph.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "RESOLUTIONS",
+   "kind": "const",
+   "signature": "",
+   "summary": "Named resolutions (16:9 unless noted).",
+   "module": "src/export/formats.js"
+  },
+  {
+   "name": "resolveEasing",
+   "kind": "function",
+   "signature": "(e, fallback = smooth)",
+   "summary": "Resolve an easing given as a function, a name, or a cubic-bezier array.",
+   "module": "src/core/easing.js"
+  },
+  {
+   "name": "rgbToOklch",
+   "kind": "function",
+   "signature": "(c)",
+   "summary": "sRGB to OKLCH.",
+   "module": "src/core/color.js"
+  },
+  {
+   "name": "RiemannRects",
+   "kind": "class",
+   "signature": "(f, range, props = {})",
+   "summary": "Riemann sum rectangles for f over [a, b] with n pieces.",
+   "module": "src/core/plots.js"
+  },
+  {
+   "name": "rotate",
+   "kind": "function",
+   "signature": "(node, angle, opts)",
+   "summary": "Rotate about a point along a true circular path (not a straight-line interpolation of position).",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "Rotate",
+   "kind": "class",
+   "signature": "(node, angle, opts = {})",
+   "summary": "Rotate about a point along a true circular path (not a straight-line interpolation of position).",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "sampleFrame",
+   "kind": "function",
+   "signature": "(scene, t, theme)",
+   "summary": "Sample the scene at scene time t.",
+   "module": "src/core/sampler.js"
+  },
+  {
+   "name": "sampleFunction",
+   "kind": "function",
+   "signature": "(f, a, b, toLocal, o)",
+   "summary": "Adaptive sampling of y = f(x) on [a, b] in local coordinates, breaking the curve at discontinuities and where it leaves the vertical range.",
+   "module": "src/core/plots.js"
+  },
+  {
+   "name": "samplePath",
+   "kind": "function",
+   "signature": "(p, n)",
+   "summary": "Sample points along a path at n evenly spaced arc-length positions.",
+   "module": "src/core/path.js"
+  },
+  {
+   "name": "Scatter",
+   "kind": "class",
+   "signature": "(points, props = {})",
+   "summary": "Scatter points in data space.",
+   "module": "src/core/plots.js"
+  },
+  {
+   "name": "Scene",
+   "kind": "class",
+   "signature": "(opts = {})",
+   "summary": "The scene.",
+   "module": "src/core/scene.js"
+  },
+  {
+   "name": "Sector",
+   "kind": "class",
+   "signature": "(props = {})",
+   "summary": "Annular sector (a wedge of a ring), for pie charts and angle markers.",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "setExpressionCompiler",
+   "kind": "function",
+   "signature": "(fn)",
+   "summary": "Install the expression compiler used when plots are given strings.",
+   "module": "src/core/plots.js"
+  },
+  {
+   "name": "setLabelFactory",
+   "kind": "function",
+   "signature": "(fn)",
+   "summary": "Install the function that turns a TeX string into glyph outlines.",
+   "module": "src/core/coords.js"
+  },
+  {
+   "name": "setPlatform",
+   "kind": "function",
+   "signature": "(overrides)",
+   "summary": "Replace platform functions (used by the Node CLI and tests).",
+   "module": "src/core/platform.js"
+  },
+  {
+   "name": "Shape",
+   "kind": "class",
+   "signature": "(type, defaults, props)",
+   "summary": "Shape with geometry computed by a function of its properties.",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "showPassingFlash",
+   "kind": "function",
+   "signature": "(node, opts)",
+   "summary": "A bright window that travels along a node's path.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "ShowPassingFlash",
+   "kind": "class",
+   "signature": "(node, opts = {})",
+   "summary": "A bright window that travels along a node's path.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "shrinkToCenter",
+   "kind": "function",
+   "signature": "(node, opts)",
+   "summary": "Shrink to the center and remove.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "ShrinkToCenter",
+   "kind": "class",
+   "signature": "(node, opts = {})",
+   "summary": "Shrink to the center and remove.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "spinIn",
+   "kind": "function",
+   "signature": "(node, opts = {})",
+   "summary": "",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "Spline",
+   "kind": "class",
+   "signature": "(points, props = {})",
+   "summary": "Smooth spline through or guided by points.",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "spring",
+   "kind": "function",
+   "signature": "(opts = {})",
+   "summary": "Damped spring response normalized to settle at 1.",
+   "module": "src/core/easing.js"
+  },
+  {
+   "name": "stagger",
+   "kind": "function",
+   "signature": "(n, t0, total, lagRatio)",
+   "summary": "Start times and per-item durations for a staggered group.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "Star",
+   "kind": "class",
+   "signature": "(props = {})",
+   "summary": "Star with n points.",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "streamline",
+   "kind": "function",
+   "signature": "(F, p0, o)",
+   "summary": "Integrate a streamline of a 2D field with RK4.",
+   "module": "src/core/plots.js"
+  },
+  {
+   "name": "StreamLines",
+   "kind": "class",
+   "signature": "(F, props = {})",
+   "summary": "Streamlines of a 2D field from a grid of seeds.",
+   "module": "src/core/plots.js"
+  },
+  {
+   "name": "stringifyDocument",
+   "kind": "function",
+   "signature": "(doc)",
+   "summary": "Serialize a document to JSON with stable key order and formatting, so edits in the visual editor produce minimal diffs.",
+   "module": "src/editor/document.js"
+  },
+  {
+   "name": "strokeText",
+   "kind": "function",
+   "signature": "(str, opts = {})",
+   "summary": "Lay out a string as pen strokes, in pen order, glyph by glyph.",
+   "module": "src/text/hershey.js"
+  },
+  {
+   "name": "succession",
+   "kind": "function",
+   "signature": "(anims, opts)",
+   "summary": "Animations one after another.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "Succession",
+   "kind": "class",
+   "signature": "(anims, opts = {})",
+   "summary": "Animations one after another.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "surface",
+   "kind": "function",
+   "signature": "(kind, W, H, seed, baseColor, opts = {})",
+   "summary": "Full-frame surface texture for a board, cached by size, kind, seed, and base color.",
+   "module": "src/board/textures.js"
+  },
+  {
+   "name": "SVGPathShape",
+   "kind": "class",
+   "signature": "(d, props = {})",
+   "summary": "Path node from an SVG d string.",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "synthesize",
+   "kind": "function",
+   "signature": "(events, duration, sampleRate = 48000)",
+   "summary": "Render synthesized events to a mono Float32Array.",
+   "module": "src/export/audio.js"
+  },
+  {
+   "name": "TangentLine",
+   "kind": "class",
+   "signature": "(graph, x0, props = {})",
+   "summary": "Tangent line to a function graph at x0, spanning a data length.",
+   "module": "src/core/plots.js"
+  },
+  {
+   "name": "Tex",
+   "kind": "class",
+   "signature": "(source, props = {})",
+   "summary": "Math typeset with KaTeX and converted to paths.",
+   "module": "src/text/nodes.js"
+  },
+  {
+   "name": "Text",
+   "kind": "class",
+   "signature": "(content, props = {})",
+   "summary": "Text set in a proportional font (Inter by default), laid out with kerning, line breaking, and alignment.",
+   "module": "src/text/nodes.js"
+  },
+  {
+   "name": "texToPaths",
+   "kind": "function",
+   "signature": "(src, opts = {})",
+   "summary": "Typeset TeX math into positioned paths with per-token addressing.",
+   "module": "src/text/tex.js"
+  },
+  {
+   "name": "textToPath",
+   "kind": "function",
+   "signature": "(str, opts = {})",
+   "summary": "Lay out text and merge the glyphs into one Path, keeping per-glyph addressing so glyph i can be animated on its own.",
+   "module": "src/text/layout.js"
+  },
+  {
+   "name": "themeFrom",
+   "kind": "function",
+   "signature": "(id, description, opts = {})",
+   "summary": "A complete theme object from a description, ready for registerTheme.",
+   "module": "src/themes/palette.js"
+  },
+  {
+   "name": "toCSS",
+   "kind": "function",
+   "signature": "(c, alpha = 1)",
+   "summary": "Format as a CSS rgba() string, optionally multiplying alpha.",
+   "module": "src/core/color.js"
+  },
+  {
+   "name": "toFunction",
+   "kind": "function",
+   "signature": "(f, vars)",
+   "summary": "Turn a function or expression string into a JS function of the given variables.",
+   "module": "src/core/plots.js"
+  },
+  {
+   "name": "toHex",
+   "kind": "function",
+   "signature": "(c)",
+   "summary": "Format as #rrggbb or #rrggbbaa.",
+   "module": "src/core/color.js"
+  },
+  {
+   "name": "toSRT",
+   "kind": "function",
+   "signature": "(scene, opts = {})",
+   "summary": "Build an SRT document for a scene.",
+   "module": "src/export/srt.js"
+  },
+  {
+   "name": "toSVGPath",
+   "kind": "function",
+   "signature": "(p, digits = 3)",
+   "summary": "Serialize a path to an SVG d string.",
+   "module": "src/core/path.js"
+  },
+  {
+   "name": "transform",
+   "kind": "function",
+   "signature": "(source, target, opts)",
+   "summary": "Morph one node into another.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "Transform",
+   "kind": "class",
+   "signature": "(source, target, opts = {})",
+   "summary": "Morph one node into another.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "transformMatching",
+   "kind": "function",
+   "signature": "(source, target, opts)",
+   "summary": "Transform where leaves are matched by key (for text and math, the token text), matched pieces morph, and unmatched pieces fade out or in.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "TransformMatching",
+   "kind": "class",
+   "signature": "(source, target, opts = {})",
+   "summary": "Transform where leaves are matched by key (for text and math, the token text), matched pieces morph, and unmatched pieces fade out or in.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "transformMatchingTex",
+   "kind": "function",
+   "signature": "(a, b, opts)",
+   "summary": "Morph one Tex into another: glyphs of matching tokens move to their new places, the rest fade out and in.",
+   "module": "src/text/nodes.js"
+  },
+  {
+   "name": "TransformMatchingTex",
+   "kind": "class",
+   "signature": "(a, b, opts = {})",
+   "summary": "Morph one Tex into another: glyphs of matching tokens move to their new places, the rest fade out and in.",
+   "module": "src/text/nodes.js"
+  },
+  {
+   "name": "transformPath",
+   "kind": "function",
+   "signature": "(p, m)",
+   "summary": "Affine transform of a path.",
+   "module": "src/core/path.js"
+  },
+  {
+   "name": "TransformPlane",
+   "kind": "class",
+   "signature": "(props = {})",
+   "summary": "A plane that a 2x2 matrix acts on.",
+   "module": "src/explainers/linear.js"
+  },
+  {
+   "name": "typewriter",
+   "kind": "function",
+   "signature": "(node, opts)",
+   "summary": "Reveal children one at a time in order (typewriter): each child appears instantly at its turn.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "Typewriter",
+   "kind": "class",
+   "signature": "(node, opts = {})",
+   "summary": "Reveal children one at a time in order (typewriter): each child appears instantly at its turn.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "uncreate",
+   "kind": "function",
+   "signature": "(node, opts)",
+   "summary": "Reverse of Create: erases stroke and fill, then removes the node.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "Uncreate",
+   "kind": "class",
+   "signature": "(node, opts = {})",
+   "summary": "Reverse of Create: erases stroke and fill, then removes the node.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "unwrite",
+   "kind": "function",
+   "signature": "(node, opts = {})",
+   "summary": "",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "UpdateAnimation",
+   "kind": "class",
+   "signature": "(fn, opts = {})",
+   "summary": "Run a function of eased progress every frame for the duration, then bake its final state.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "ValueTracker",
+   "kind": "class",
+   "signature": "(value = 0, props = {})",
+   "summary": "A value holder that animates like any other property.",
+   "module": "src/core/node.js"
+  },
+  {
+   "name": "VectorField",
+   "kind": "class",
+   "signature": "(F, props = {})",
+   "summary": "Arrows of a 2D vector field on a grid, scaled to fit their cell and colored by magnitude from muted to accent.",
+   "module": "src/core/plots.js"
+  },
+  {
+   "name": "VideoNode",
+   "kind": "class",
+   "signature": "(source, props = {})",
+   "summary": "Video frames as an image source.",
+   "module": "src/core/shapes.js"
+  },
+  {
+   "name": "viewFor",
+   "kind": "function",
+   "signature": "(frame, pixelRatio = 1)",
+   "summary": "Compute the world-to-pixel view for a frame.",
+   "module": "src/render/canvas.js"
+  },
+  {
+   "name": "Wait",
+   "kind": "class",
+   "signature": "(duration = 1)",
+   "summary": "Do nothing for a while (useful inside successions).",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "wiggle",
+   "kind": "function",
+   "signature": "(node, opts)",
+   "summary": "Wiggle: a short rotational shake with a scale pulse.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "Wiggle",
+   "kind": "class",
+   "signature": "(node, opts = {})",
+   "summary": "Wiggle: a short rotational shake with a scale pulse.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "worldGeometry",
+   "kind": "function",
+   "signature": "(node)",
+   "summary": "Resolve the world-space geometry of a node at the current evaluation time.",
+   "module": "src/core/node.js"
+  },
+  {
+   "name": "write",
+   "kind": "function",
+   "signature": "(node, opts = {})",
+   "summary": "Write text or math: Create with a per-glyph stagger.",
+   "module": "src/core/animations.js"
+  },
+  {
+   "name": "zigzag",
+   "kind": "function",
+   "signature": "(b, band)",
+   "summary": "Zigzag covering a rectangle, in world coordinates.",
+   "module": "src/board/erase.js"
+  }
+ ],
+ "scene": [
+  {
+   "name": "sceneDuration",
+   "signature": "",
+   "summary": "Scene duration in scene time (seconds)."
+  },
+  {
+   "name": "duration",
+   "signature": "",
+   "summary": "Output duration in seconds, after speed changes and holds."
+  },
+  {
+   "name": "frameCount",
+   "signature": "",
+   "summary": "Number of output frames."
+  },
+  {
+   "name": "add",
+   "signature": "(node, ...more)",
+   "summary": "Add nodes to the scene."
+  },
+  {
+   "name": "include",
+   "signature": "(build, props = {})",
+   "summary": "Compose scenes: run another scene's build function on this timeline, with everything it adds placed in one group that can be moved, scaled, or animated as a unit."
+  },
+  {
+   "name": "remove",
+   "signature": "(...nodes)",
+   "summary": "Hide nodes from the current clock on."
+  },
+  {
+   "name": "play",
+   "signature": "(...items)",
+   "summary": "Play animations starting at the clock and advance the clock to the end of the longest one."
+  },
+  {
+   "name": "wait",
+   "signature": "(seconds = 1)",
+   "summary": "Advance the clock."
+  },
+  {
+   "name": "label",
+   "signature": "(name)",
+   "summary": "Name the current time."
+  },
+  {
+   "name": "markers",
+   "signature": "(marks)",
+   "summary": "Define named times (voiceover markers, beats) in scene time."
+  },
+  {
+   "name": "waitUntil",
+   "signature": "(name)",
+   "summary": "Advance the clock to a label or marker."
+  },
+  {
+   "name": "at",
+   "signature": "(time, fn)",
+   "summary": "Run a block at an absolute scene time, then restore the clock."
+  },
+  {
+   "name": "parallel",
+   "signature": "(...fns)",
+   "summary": "Run several blocks from the same start time (nested timelines); the clock ends at the latest end."
+  },
+  {
+   "name": "pause",
+   "signature": "(name = `pause${this.pauses.length + 1}`)",
+   "summary": "Mark a pause point for interactive playback (exports ignore it)."
+  },
+  {
+   "name": "setSpeed",
+   "signature": "(rate)",
+   "summary": "Change playback rate from the current scene time on (time remapping)."
+  },
+  {
+   "name": "speedRamp",
+   "signature": "(from, to, duration, steps = 12)",
+   "summary": "Speed ramp over a scene-time range: rate eases from from to to in steps pieces."
+  },
+  {
+   "name": "hold",
+   "signature": "(seconds)",
+   "summary": "Freeze scene time for a number of output seconds (variable-length hold)."
+  },
+  {
+   "name": "sceneToOutputTime",
+   "signature": "(t)",
+   "summary": "Convert scene time to output time."
+  },
+  {
+   "name": "outputToSceneTime",
+   "signature": "(T)",
+   "summary": "Convert output time to scene time (inverse of sceneToOutputTime; holds map to a constant)."
+  },
+  {
+   "name": "frameTime",
+   "signature": "(n)",
+   "summary": "Scene time of output frame n."
+  },
+  {
+   "name": "always",
+   "signature": "(fn)",
+   "summary": "Register an updater that runs every frame from now on."
+  },
+  {
+   "name": "caption",
+   "signature": "(text, duration = 2)",
+   "summary": "Show a caption from the clock for a duration (exported as SRT and burned in on request)."
+  },
+  {
+   "name": "sound",
+   "signature": "(source, opts = {})",
+   "summary": "Attach an audio track or clip at the clock."
+  },
+  {
+   "name": "tone",
+   "signature": "(opts = {})",
+   "summary": "Synthesized tone or sweep at the clock."
+  },
+  {
+   "name": "click",
+   "signature": "(opts = {})",
+   "summary": "Short click at the clock."
+  },
+  {
+   "name": "control",
+   "signature": "(control)",
+   "summary": "Register an interactive control (slider, toggle)."
+  },
+  {
+   "name": "evaluateAt",
+   "signature": "(t, fn)",
+   "summary": "Evaluate a function with the scene sampled at time t (read-only helper for tests and tools)."
+  },
+  {
+   "name": "find",
+   "signature": "(id)",
+   "summary": "Find a node by id."
+  }
+ ],
+ "qubi": {
+  "stdlib": [
+   {
+    "name": "Bell",
+    "signatures": [
+     "([wires])"
+    ],
+    "defaults": "(0,1)",
+    "summary": "H a then CX [a,b]: (|00> + |11>)/sqrt(2)."
+   },
+   {
+    "name": "GHZ",
+    "signatures": [
+     "([wires])"
+    ],
+    "defaults": "(0,1,2)",
+    "summary": "H on the first wire, then a chain of CX: (|0...0> + |1...1>)/sqrt(2)."
+   },
+   {
+    "name": "W",
+    "signatures": [
+     "([wires])"
+    ],
+    "defaults": "(0,1,2)",
+    "summary": "One excitation spread evenly: X on the first wire, then for each next wire a controlled RY with cos(theta/2) = sqrt(1/(n-k+1)) and a CX back."
+   },
+   {
+    "name": "Superdense",
+    "signatures": [
+     "(message, [wires])"
+    ],
+    "defaults": "(0,1)",
+    "summary": "A 2-bit message (0b00 to 0b11) sent through a Bell pair."
+   },
+   {
+    "name": "Teleport",
+    "signatures": [
+     "([wires])"
+    ],
+    "defaults": "(0,1,2)",
+    "summary": "Moves the state of the first wire to the third."
+   },
+   {
+    "name": "Deutsch",
+    "signatures": [
+     "([oracle], [wires])"
+    ],
+    "defaults": "(x, y) = (0,1)",
+    "summary": "Oracle \"constant0\", \"constant1\", \"balanced\" (f(x) = x, the default) or \"balanced-inverted\" (f(x) = not x)."
+   },
+   {
+    "name": "BV",
+    "signatures": [
+     "(secret, [wires])"
+    ],
+    "defaults": "0..width-1",
+    "summary": "Bernstein-Vazirani with a phase oracle (Z on each secret bit between two H layers)."
+   },
+   {
+    "name": "Grover",
+    "signatures": [
+     "(marked, [iterations], [wires])"
+    ],
+    "defaults": "0..width-1",
+    "summary": "The argument is the marked state; the qubit count is its bit width."
+   },
+   {
+    "name": "QFT",
+    "signatures": [
+     "(wires)"
+    ],
+    "defaults": "none",
+    "summary": "Quantum Fourier transform with the first wire as LSB: basis state x goes to the sum over k of e^(2 pi i x k / 2^n) |k> / sqrt(2^n)."
+   },
+   {
+    "name": "IQFT",
+    "signatures": [
+     "(wires)"
+    ],
+    "defaults": "none",
+    "summary": "The exact inverse of QFT on the same wires (reversed order, negated angles)."
+   },
+   {
+    "name": "Shor",
+    "signatures": [
+     "([N], [a], [counting], [wires])"
+    ],
+    "defaults": "0..counting+3",
+    "summary": "Order finding for N = 15 (the only supported modulus), a in {2, 4, 7, 8, 11, 13, 14} (default 7), counting qubits default 3."
+   },
+   {
+    "name": "PhaseKickback",
+    "signatures": [
+     "(kind, [wires])"
+    ],
+    "defaults": "(control, target) = (0,1)",
+    "summary": "kind is \"CX\" or \"CZ\"; anything else is an error."
+   },
+   {
+    "name": "PhaseOracle",
+    "signatures": [
+     "(marked, [wires])"
+    ],
+    "defaults": "0..width-1",
+    "summary": "Flips the sign of the marked basis state (or each state in a list) and leaves the rest unchanged."
+   },
+   {
+    "name": "SwapTest",
+    "signatures": [
+     "([\"similar\"], [wires])"
+    ],
+    "defaults": "(0,1,2)",
+    "summary": "An ancilla and two registers of equal size (3, 5, 7, ... wires)."
+   },
+   {
+    "name": "StatePreparation",
+    "signatures": [
+     "(states, [probabilities], [wires])",
+     "(name, [wires])"
+    ],
+    "defaults": "0..width-1",
+    "summary": "Basis states (a bitstring or a list such as (0b101..0b111)) with their probabilities; whatever is left of 1 goes to |0...0>."
+   },
+   {
+    "name": "QubitPreparation",
+    "signatures": [
+     "(probabilities, [wires])"
+    ],
+    "defaults": "0..count-1",
+    "summary": "RY(2 asin(sqrt(p))) on each wire, so P(|1>) = p per qubit."
+   },
+   {
+    "name": "BitFlip",
+    "signatures": [
+     "([error], [wires])"
+    ],
+    "defaults": "(data, a1, a2) = (0,1,2)",
+    "summary": "The 3-qubit bit-flip code: encode with two CX, apply X on code qubit error (0, 1, or 2; -1 or omitted for none), decode with two CX, and correct with CX [a1,a2,data]."
+   },
+   {
+    "name": "QPE",
+    "signatures": [
+     "(angle, [counting], [wires])"
+    ],
+    "defaults": "0..counting",
+    "summary": "Phase estimation of P(angle) with counting qubits (default 3) and the target on the last wire, prepared in |1>."
+   },
+   {
+    "name": "Stego",
+    "signatures": [
+     "(secret, [\"hide\" or \"reveal\"], [wires])"
+    ],
+    "defaults": "0..width-1",
+    "summary": "Hides a bitstring in the phases of a uniform superposition (H on every wire, Z on the secret bits): every outcome is equally likely."
+   }
+  ]
+ }
+}

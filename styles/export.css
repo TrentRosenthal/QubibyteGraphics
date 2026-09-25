@@ -1,0 +1,193 @@
+/*
+ * Export panel: an inline panel anchored under the Export button.
+ * Only tokens from tokens.css are used here.
+ */
+
+.export-panel {
+  top: calc(var(--topbar-h) + var(--space-2));
+  right: var(--space-3);
+  width: var(--popover-w);
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-4);
+}
+
+.xp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.xp-title {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+}
+
+.xp-formats {
+  display: grid;
+  gap: var(--space-0);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.xp-format {
+  display: grid;
+  grid-template-columns: var(--space-4) minmax(0, auto) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--text-md);
+}
+
+.xp-format:hover {
+  background: var(--surface-hover);
+}
+
+.xp-format input {
+  appearance: none;
+  width: var(--space-3);
+  height: var(--space-3);
+  margin: 0;
+  border: var(--hairline) solid var(--border-strong);
+  border-radius: var(--radius-full);
+  display: grid;
+  place-items: center;
+}
+
+.xp-format input:checked {
+  border-color: var(--accent);
+}
+
+.xp-format input:checked::after {
+  content: '';
+  width: var(--space-1);
+  height: var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--accent);
+}
+
+.xp-format:has(input:checked) {
+  background: var(--surface-active);
+}
+
+.xp-name {
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+}
+
+.xp-desc {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.xp-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: var(--hairline) solid var(--border);
+}
+
+.xp-field {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.xp-check {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.xp-summary {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.xp-go {
+  width: 100%;
+}
+
+.xp-progress {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.xp-bar {
+  height: var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--bg-sunken);
+  overflow: hidden;
+}
+
+.xp-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width var(--dur-fast) linear;
+}
+
+.xp-progress-text {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.xp-result {
+  display: grid;
+  gap: var(--space-1);
+  padding-top: var(--space-3);
+  border-top: var(--hairline) solid var(--border);
+  font-size: var(--text-sm);
+}
+
+.xp-result-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.xp-result-line .icon {
+  color: var(--success);
+}
+
+.xp-file {
+  font-weight: var(--weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.xp-note {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: var(--leading-ui);
+}
+
+.xp-error {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--danger-wash);
+  color: var(--danger);
+  font-size: var(--text-sm);
+}
+
+@media (max-width: 900px) {
+  .export-panel {
+    left: var(--space-3);
+    width: auto;
+  }
+}

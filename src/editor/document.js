@@ -136,7 +136,8 @@ export async function loadAssets(scene, assets) {
 /**
  * Build a Scene from a document.
  * @param {Record<string, any>} doc
- * @param {{overrides?: Record<string, any>, script?: (scene: import('../core/scene.js').Scene, nodes: Map<string, any>) => any}} [opts]
+ * @param {{overrides?: Record<string, any>, tolerant?: boolean, script?: (scene: import('../core/scene.js').Scene, nodes: Map<string, any>) => any}} [opts]
+ *   tolerant: a block that fails to build is skipped and reported in `scene.blockErrors` instead of failing the scene (the editor uses this).
  * @returns {Promise<import('../core/scene.js').Scene>}
  */
 export async function buildDocument(doc, opts = {}) {
@@ -147,11 +148,19 @@ export async function buildDocument(doc, opts = {}) {
     const outputs = evaluateGraph(d, opts.overrides);
     /** @type {Map<string, any>} */
     const nodes = new Map();
+    scene.blockErrors = [];
     for (const b of d.blocks) {
       const def = blockDefinition(b.type);
       if (!def.create) continue;
       const out = outputs.get(b.id);
-      const node = def.create(b.props, out.__inputs, { scene, doc: d, outputs: out, assets: scene.assets });
+      let node;
+      try {
+        node = def.create(b.props, out.__inputs, { scene, doc: d, outputs: out, assets: scene.assets });
+      } catch (e) {
+        if (!opts.tolerant) throw e;
+        scene.blockErrors.push({ block: b.id, message: e.message });
+        continue;
+      }
       if (!node) continue;
       node.meta.blockId = b.id;
       nodes.set(b.id, node);

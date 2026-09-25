@@ -1,0 +1,340 @@
+{
+  "examples": [
+    {
+      "file": "examples/00-first-scene.js",
+      "name": "00-first-scene",
+      "title": "First scene",
+      "summary": "First scene: a formula writes on, its graph draws on a pair of axes, and a three-qubit circuit builds column by column.",
+      "posterTime": null,
+      "thumbnail": "docs/renders/gallery/00-first-scene.png"
+    },
+    {
+      "file": "examples/01-shapes.js",
+      "name": "01-shapes",
+      "title": "Shapes",
+      "summary": "Any path morphs into any other: the engine aligns their points, so a circle can become a square, a hexagon, and a star without a seam.",
+      "posterTime": 5.4,
+      "thumbnail": "docs/renders/gallery/01-shapes.png"
+    },
+    {
+      "file": "examples/04-fourier-epicycles.js",
+      "name": "04-fourier-epicycles",
+      "title": "Fourier epicycles",
+      "summary": "The outline of an integral sign, traced by eighty rotating arrows.",
+      "posterTime": 7.2,
+      "thumbnail": "docs/renders/gallery/04-fourier-epicycles.png"
+    },
+    {
+      "file": "examples/05-riemann-sums.js",
+      "name": "05-riemann-sums",
+      "title": "Riemann sums",
+      "summary": "Left Riemann sums with 4, 8, 16, and 64 rectangles close in on the integral.",
+      "posterTime": 9,
+      "thumbnail": "docs/renders/gallery/05-riemann-sums.png"
+    },
+    {
+      "file": "examples/06-polar-roses.js",
+      "name": "06-polar-roses",
+      "title": "Polar roses",
+      "summary": "Roses r = cos(k theta): k petals for odd k, 2k for even k, and a fractional k needs more than one turn to close.",
+      "posterTime": 7.5,
+      "thumbnail": "docs/renders/gallery/06-polar-roses.png"
+    },
+    {
+      "file": "examples/07-phase-portrait.js",
+      "name": "07-phase-portrait",
+      "title": "Phase portrait",
+      "summary": "The damped pendulum: arrows show the flow, streamlines follow it, and one trajectory spirals into the resting state.",
+      "posterTime": 9,
+      "thumbnail": "docs/renders/gallery/07-phase-portrait.png"
+    },
+    {
+      "file": "examples/08-roots-of-unity.js",
+      "name": "08-roots-of-unity",
+      "title": "Roots of unity",
+      "summary": "The seven solutions of z^7 = 1 sit evenly on the unit circle, and multiplying by the first root turns the whole set onto itself.",
+      "posterTime": 8,
+      "thumbnail": "docs/renders/gallery/08-roots-of-unity.png"
+    },
+    {
+      "file": "examples/09-taylor-series.js",
+      "name": "09-taylor-series",
+      "title": "Taylor series",
+      "summary": "Partial sums of the sine series hug the curve over a wider and wider stretch as terms are added.",
+      "posterTime": 9.5,
+      "thumbnail": "docs/renders/gallery/09-taylor-series.png"
+    },
+    {
+      "file": "examples/10-central-limit.js",
+      "name": "10-central-limit",
+      "title": "Central limit",
+      "summary": "The average of more dice looks more and more like a bell curve.",
+      "posterTime": 12,
+      "thumbnail": "docs/renders/gallery/10-central-limit.png"
+    },
+    {
+      "file": "examples/11-derivative.js",
+      "name": "11-derivative",
+      "title": "Derivative",
+      "summary": "Generated from one expression by the math engine.",
+      "posterTime": 12.5,
+      "thumbnail": "docs/renders/gallery/11-derivative.png"
+    },
+    {
+      "file": "examples/12-definite-integral.js",
+      "name": "12-definite-integral",
+      "title": "Definite integral",
+      "summary": "Generated from one expression by the math engine.",
+      "posterTime": null,
+      "thumbnail": "docs/renders/gallery/12-definite-integral.png"
+    },
+    {
+      "file": "examples/13-matrix-product.js",
+      "name": "13-matrix-product",
+      "title": "Matrix product",
+      "summary": "Generated from one expression by the math engine.",
+      "posterTime": null,
+      "thumbnail": "docs/renders/gallery/13-matrix-product.png"
+    },
+    {
+      "file": "examples/14-eigenvectors-solved.js",
+      "name": "14-eigenvectors-solved",
+      "title": "Eigenvectors solved",
+      "summary": "Generated from one expression by the math engine.",
+      "posterTime": null,
+      "thumbnail": "docs/renders/gallery/14-eigenvectors-solved.png"
+    },
+    {
+      "file": "examples/15-gradient-descent.js",
+      "name": "15-gradient-descent",
+      "title": "Gradient descent",
+      "summary": "A tilted valley: gradient descent zigzags across the narrow direction while it creeps along the long one.",
+      "posterTime": 10,
+      "thumbnail": "docs/renders/gallery/15-gradient-descent.png"
+    },
+    {
+      "file": "examples/16-eigenvectors.js",
+      "name": "16-eigenvectors",
+      "title": "Eigenvectors",
+      "summary": "Most vectors get knocked off their span; eigenvectors only stretch.",
+      "posterTime": 7,
+      "thumbnail": "docs/renders/gallery/16-eigenvectors.png"
+    },
+    {
+      "file": "examples/17-linear-transformation.js",
+      "name": "17-linear-transformation",
+      "title": "Linear transformation",
+      "summary": "A shear, then a quarter turn.",
+      "posterTime": 6.5,
+      "thumbnail": "docs/renders/gallery/17-linear-transformation.png"
+    },
+    {
+      "file": "examples/18-quadratic.js",
+      "name": "18-quadratic",
+      "title": "Quadratic",
+      "summary": "Generated from one expression by the math engine.",
+      "posterTime": null,
+      "thumbnail": "docs/renders/gallery/18-quadratic.png"
+    },
+    {
+      "file": "examples/19-typography.js",
+      "name": "19-typography",
+      "title": "Typography",
+      "summary": "Text and TeX are both outlines, so letters can travel: an anagram rearranges itself, each letter flying to its new place.",
+      "posterTime": 7.5,
+      "thumbnail": "docs/renders/gallery/19-typography.png"
+    },
+    {
+      "file": "examples/20-grover-explainer.js",
+      "name": "20-grover-explainer",
+      "title": "Grover explainer",
+      "summary": "Narrated Grover search for 110, generated entirely from the program.",
+      "posterTime": null,
+      "thumbnail": "docs/renders/gallery/20-grover-explainer.png"
+    },
+    {
+      "file": "examples/21-qft-explainer.js",
+      "name": "21-qft-explainer",
+      "title": "QFT explainer",
+      "summary": "Narrated quantum Fourier transform of the basis state 22 on five qubits.",
+      "posterTime": null,
+      "thumbnail": "docs/renders/gallery/21-qft-explainer.png"
+    },
+    {
+      "file": "examples/22-bell-state.js",
+      "name": "22-bell-state",
+      "title": "Bell state",
+      "summary": "A Bell pair: one Hadamard, one controlled X, then both qubits measured.",
+      "posterTime": null,
+      "thumbnail": "docs/renders/gallery/22-bell-state.png"
+    },
+    {
+      "file": "examples/23-ghz-state.js",
+      "name": "23-ghz-state",
+      "title": "GHZ state",
+      "summary": "Three-qubit GHZ state: the Bell construction extended down a ladder.",
+      "posterTime": null,
+      "thumbnail": "docs/renders/gallery/23-ghz-state.png"
+    },
+    {
+      "file": "examples/24-teleportation.js",
+      "name": "24-teleportation",
+      "title": "Teleportation",
+      "summary": "Teleporting a prepared state from qubit 0 to qubit 2.",
+      "posterTime": null,
+      "thumbnail": "docs/renders/gallery/24-teleportation.png"
+    },
+    {
+      "file": "examples/25-bernstein-vazirani.js",
+      "name": "25-bernstein-vazirani",
+      "title": "Bernstein vazirani",
+      "summary": "Bernstein-Vazirani reads a hidden bitstring with a single query.",
+      "posterTime": null,
+      "thumbnail": "docs/renders/gallery/25-bernstein-vazirani.png"
+    },
+    {
+      "file": "examples/26-phase-estimation.js",
+      "name": "26-phase-estimation",
+      "title": "Phase estimation",
+      "summary": "Phase estimation of P(3 pi / 4) with three counting qubits.",
+      "posterTime": null,
+      "thumbnail": "docs/renders/gallery/26-phase-estimation.png"
+    },
+    {
+      "file": "examples/30-pythagoras-boards.js",
+      "name": "30-pythagoras-boards",
+      "title": "Pythagoras boards",
+      "summary": "The rearrangement proof: four copies of a right triangle inside a square of side a + b leave c^2 uncovered, and after sliding them, a^2 + b^2.",
+      "posterTime": 11,
+      "thumbnail": "docs/renders/gallery/30-pythagoras-boards.png"
+    },
+    {
+      "file": "examples/31-blueprint-construction.js",
+      "name": "31-blueprint-construction",
+      "title": "Blueprint construction",
+      "summary": "Euclid, Elements I.1: an equilateral triangle on a given segment, with nothing but a compass and a straightedge.",
+      "posterTime": 11,
+      "thumbnail": "docs/renders/gallery/31-blueprint-construction.png"
+    },
+    {
+      "file": "examples/32-paper-notes.js",
+      "name": "32-paper-notes",
+      "title": "Paper notes",
+      "summary": "Study notes on ruled paper: the derivative as a limit of secant slopes, drawn and annotated by hand.",
+      "posterTime": 10,
+      "thumbnail": "docs/renders/gallery/32-paper-notes.png"
+    },
+    {
+      "file": "examples/40-platonic-solids.js",
+      "name": "40-platonic-solids",
+      "title": "Platonic solids",
+      "summary": "The five Platonic solids, turning in place under key, fill, and rim light.",
+      "posterTime": 6,
+      "thumbnail": "docs/renders/gallery/40-platonic-solids.png"
+    },
+    {
+      "file": "examples/41-surface-plot.js",
+      "name": "41-surface-plot",
+      "title": "Surface plot",
+      "summary": "A surface drawn in along x, then seen from a slowly turning camera.",
+      "posterTime": 8,
+      "thumbnail": "docs/renders/gallery/41-surface-plot.png"
+    },
+    {
+      "file": "examples/42-bloch-gates.js",
+      "name": "42-bloch-gates",
+      "title": "Bloch gates",
+      "summary": "Each single-qubit gate is a rotation of the Bloch sphere.",
+      "posterTime": 9,
+      "thumbnail": "docs/renders/gallery/42-bloch-gates.png"
+    },
+    {
+      "file": "examples/43-qsphere.js",
+      "name": "43-qsphere",
+      "title": "Qsphere",
+      "summary": "The Q-sphere of a three-qubit state: basis states sit by Hamming weight from |000> at the north pole to |111> at the south; dot size is the amplitude and color the phase.",
+      "posterTime": 7,
+      "thumbnail": "docs/renders/gallery/43-qsphere.png"
+    },
+    {
+      "file": "examples/44-cross-section.js",
+      "name": "44-cross-section",
+      "title": "Cross section",
+      "summary": "A trefoil knot turning in place beside a torus that a plane slices open, showing the circular cross-section of its tube.",
+      "posterTime": 8.5,
+      "thumbnail": "docs/renders/gallery/44-cross-section.png"
+    },
+    {
+      "file": "examples/45-printable-circuit.js",
+      "name": "45-printable-circuit",
+      "title": "Printable circuit",
+      "summary": "A Qubi program as a physical object: the same model exports to STL or 3MF for a printer (qgfx render ... --format stl).",
+      "posterTime": 8,
+      "thumbnail": "docs/renders/gallery/45-printable-circuit.png"
+    },
+    {
+      "file": "examples/50-images.js",
+      "name": "50-images",
+      "title": "Images",
+      "summary": "One picture used three ways: as an object that moves and scales, as a texture on a plane in 3D, and as a dimmed background for the whole frame.",
+      "posterTime": 9,
+      "thumbnail": "docs/renders/gallery/50-images.png"
+    },
+    {
+      "file": "examples/51-benford.js",
+      "name": "51-benford",
+      "title": "Benford",
+      "summary": "Leading digits of 2^1 ... 2^1000, counted exactly with BigInt, against Benford's law log10(1 + 1/d).",
+      "posterTime": 9,
+      "thumbnail": "docs/renders/gallery/51-benford.png"
+    },
+    {
+      "file": "examples/52-dijkstra.js",
+      "name": "52-dijkstra",
+      "title": "Dijkstra",
+      "summary": "Dijkstra's algorithm settles the nearest unsettled node, then relaxes its edges.",
+      "posterTime": 14,
+      "thumbnail": "docs/renders/gallery/52-dijkstra.png"
+    },
+    {
+      "file": "examples/53-insertion-sort.js",
+      "name": "53-insertion-sort",
+      "title": "Insertion sort",
+      "summary": "Insertion sort: each new bar slides left past every taller bar before it.",
+      "posterTime": 9,
+      "thumbnail": "docs/renders/gallery/53-insertion-sort.png"
+    },
+    {
+      "file": "examples/54-markov-chain.js",
+      "name": "54-markov-chain",
+      "title": "Markov chain",
+      "summary": "A three-state weather chain.",
+      "posterTime": 12,
+      "thumbnail": "docs/renders/gallery/54-markov-chain.png"
+    },
+    {
+      "file": "examples/55-pendulum.js",
+      "name": "55-pendulum",
+      "title": "Pendulum",
+      "summary": "A damped pendulum swings on the left while its angle is traced against time on the right.",
+      "posterTime": 9,
+      "thumbnail": "docs/renders/gallery/55-pendulum.png"
+    },
+    {
+      "file": "examples/56-conformal-map.js",
+      "name": "56-conformal-map",
+      "title": "Conformal map",
+      "summary": "The grid of the right half-plane pushed through z -> z^2: straight lines become parabolas, and every crossing stays a right angle.",
+      "posterTime": 8,
+      "thumbnail": "docs/renders/gallery/56-conformal-map.png"
+    },
+    {
+      "file": "examples/57-composition.js",
+      "name": "57-composition",
+      "title": "Composition",
+      "summary": "Scenes compose: two gallery scenes play side by side, each inside its own scaled group, on one shared timeline.",
+      "posterTime": 13.2,
+      "thumbnail": "docs/renders/gallery/57-composition.png"
+    }
+  ]
+}

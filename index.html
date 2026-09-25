@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qubibyte Graphics Playground</title>
+<meta name="description" content="Write scenes in JavaScript or Qubi, or compose them on a canvas, and export video, GIF, PNG, and SVG from the browser.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230e0f12'/%3E%3Ccircle cx='16' cy='16' r='8.5' fill='none' stroke='%235b8def' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%235b8def'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/playground.css">
+<link rel="stylesheet" href="styles/editor.css">
+<link rel="stylesheet" href="styles/export.css">
+<script type="module" src="src/playground/app.js"></script>
+</head>
+<body>
+<div class="app" id="app" data-mode="code">
+  <header class="topbar" role="banner">
+    <div class="topbar-left">
+      <a class="wordmark" href="./" aria-label="Qubibyte Graphics home">
+        <svg class="wordmark-mark" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="6.25" /><circle class="dot" cx="10" cy="10" r="2" /></svg>
+        <span class="wordmark-text">Qubibyte Graphics</span>
+      </a>
+      <div class="seg mode-switch" role="tablist" aria-label="Mode">
+        <button type="button" role="tab" id="tab-code" aria-selected="true" aria-controls="mode-code" data-mode="code">Code</button>
+        <button type="button" role="tab" id="tab-editor" aria-selected="false" aria-controls="mode-editor" data-mode="editor">Editor</button>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <label class="select has-prefix topbar-select">
+        <span class="prefix">Theme</span>
+        <select id="theme-select" aria-label="Theme"></select>
+        <svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 6.5 3.5 3.5 3.5-3.5"/></svg>
+      </label>
+      <label class="select has-prefix topbar-select">
+        <span class="prefix">Board</span>
+        <select id="board-select" aria-label="Board style">
+          <option value="clean">Clean</option>
+          <option value="whiteboard">Whiteboard</option>
+          <option value="chalkboard">Chalkboard</option>
+          <option value="paper">Paper</option>
+          <option value="blueprint">Blueprint</option>
+        </select>
+        <svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 6.5 3.5 3.5 3.5-3.5"/></svg>
+      </label>
+      <label class="select has-prefix topbar-select">
+        <span class="prefix">Size</span>
+        <select id="size-select" aria-label="Resolution and aspect ratio">
+          <option value="1920x1080">1920 × 1080 · 16:9</option>
+          <option value="1280x720">1280 × 720 · 16:9</option>
+          <option value="3840x2160">3840 × 2160 · 16:9</option>
+          <option value="1080x1920">1080 × 1920 · 9:16</option>
+          <option value="1080x1080">1080 × 1080 · 1:1</option>
+          <option value="1080x1350">1080 × 1350 · 4:5</option>
+          <option value="1440x1080">1440 × 1080 · 4:3</option>
+        </select>
+        <svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 6.5 3.5 3.5 3.5-3.5"/></svg>
+      </label>
+      <span class="divider-v" aria-hidden="true"></span>
+      <button type="button" class="icon-btn" id="ui-theme-btn" aria-label="Switch interface theme" data-tip="Interface theme"></button>
+      <button type="button" class="icon-btn" id="shortcuts-btn" aria-label="Keyboard shortcuts" aria-expanded="false" aria-controls="shortcuts-panel" data-tip="Shortcuts  ?"></button>
+      <button type="button" class="btn ghost" id="share-btn"><span class="btn-icon" data-icon="link"></span>Share</button>
+      <button type="button" class="btn primary" id="export-btn" aria-expanded="false" aria-controls="export-panel"><span class="btn-icon" data-icon="download"></span>Export</button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <section class="mode mode-code" id="mode-code" role="tabpanel" aria-labelledby="tab-code">
+      <div class="pane code-pane">
+        <div class="tabs code-tabs" role="tablist" aria-label="Source">
+          <button type="button" role="tab" id="src-js" aria-selected="true" data-src="js">Scene (JS)</button>
+          <button type="button" role="tab" id="src-qubi" aria-selected="false" data-src="qubi">Qubi</button>
+          <span class="spacer"></span>
+          <div class="seg sm qubi-view" id="qubi-view" role="group" aria-label="Qubi presentation" hidden>
+            <button type="button" aria-pressed="true" data-view="explain">Explain</button>
+            <button type="button" aria-pressed="false" data-view="circuit">Circuit</button>
+          </div>
+          <button type="button" class="btn sm run-btn" id="run-btn" aria-keyshortcuts="Control+Enter Meta+Enter"><span class="btn-icon" data-icon="run"></span>Run<span class="kbd" id="run-kbd"></span></button>
+        </div>
+        <div class="code-host" id="code-host"></div>
+        <div class="problems" id="problems">
+          <button type="button" class="problems-head" id="problems-toggle" aria-expanded="true" aria-controls="problems-list">
+            <span class="section-title">Problems</span>
+            <span class="problems-count" id="problems-count">0</span>
+          </button>
+          <ul class="problems-list" id="problems-list" aria-live="polite"></ul>
+        </div>
+      </div>
+
+      <div class="pane preview-pane">
+        <div class="stage" id="code-stage">
+          <div class="stage-frame" id="code-frame">
+            <div class="caption-overlay" id="code-caption" aria-live="polite"></div>
+            <div class="pick-outline" id="pick-outline" hidden></div>
+          </div>
+          <div class="stage-status" id="code-status" role="status"></div>
+        </div>
+        <div class="transport" id="code-transport"></div>
+        <div class="controls" id="code-controls" aria-label="Scene controls"></div>
+      </div>
+
+      <aside class="pane side-pane">
+        <div class="tabs" role="tablist" aria-label="Side panel">
+          <button type="button" role="tab" id="side-gallery" aria-selected="true" aria-controls="gallery-panel" data-side="gallery">Gallery</button>
+          <button type="button" role="tab" id="side-inspector" aria-selected="false" aria-controls="inspector-panel" data-side="inspector">Inspector</button>
+        </div>
+        <div class="panel-body" id="gallery-panel" role="tabpanel" aria-labelledby="side-gallery"></div>
+        <div class="panel-body" id="inspector-panel" role="tabpanel" aria-labelledby="side-inspector" hidden></div>
+      </aside>
+    </section>
+
+    <section class="mode mode-editor" id="mode-editor" role="tabpanel" aria-labelledby="tab-editor" hidden></section>
+  </main>
+
+  <div class="popover export-panel" id="export-panel" role="region" aria-label="Export" hidden></div>
+  <div class="popover shortcuts-panel" id="shortcuts-panel" role="region" aria-label="Keyboard shortcuts" hidden></div>
+</div>
+</body>
+</html>
