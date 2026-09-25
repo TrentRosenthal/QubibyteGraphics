@@ -227,6 +227,10 @@ function chalkStroke(ctx, pts, w, color, seed) {
   ctx.fillStyle = toCSS(color, 0.5);
   drawRibbon(ctx, pts, w * 0.82);
   const rgb = `${Math.round(color.r * 255)},${Math.round(color.g * 255)},${Math.round(color.b * 255)}`;
+  // Particles are grouped into a few opacity levels and filled as one path
+  // per level: a handful of fills per stroke instead of one per particle.
+  const LEVELS = 8;
+  const paths = Array.from({ length: LEVELS }, () => null);
   const step = 0.7;
   let acc = 0;
   let idx = 0;
@@ -250,14 +254,21 @@ function chalkStroke(ctx, pts, w, color, seed) {
         const off = g * width * 0.62;
         const size = (0.7 + rng.next() * 1.3) * Math.max(1, width / 7);
         const alpha = (0.35 + 0.6 * rng.next()) * (1 - 0.55 * Math.abs(g));
-        ctx.fillStyle = `rgba(${rgb},${alpha.toFixed(3)})`;
-        ctx.fillRect(x + nx * off - size / 2, y + ny * off - size / 2, size, size);
+        const level = Math.min(LEVELS - 1, Math.max(0, Math.round(alpha * (LEVELS - 1) / 0.95)));
+        (paths[level] ?? (paths[level] = [])).push(x + nx * off - size / 2, y + ny * off - size / 2, size);
       }
       idx++;
       t += step / L;
     }
     acc = (acc + L) % step;
   }
+  paths.forEach((r, level) => {
+    if (!r) return;
+    ctx.fillStyle = `rgba(${rgb},${((level * 0.95) / (LEVELS - 1)).toFixed(3)})`;
+    ctx.beginPath();
+    for (let j = 0; j < r.length; j += 3) ctx.rect(r[j], r[j + 1], r[j + 2], r[j + 2]);
+    ctx.fill();
+  });
 }
 
 
