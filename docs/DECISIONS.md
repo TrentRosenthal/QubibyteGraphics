@@ -29,3 +29,59 @@ The brief allows VitePress or Astro Starlight. Both pull a large node_modules tr
 ## 7. Code editor is our own textarea-based editor
 
 The playground uses a plain overlay editor: a transparent `<textarea>` over a highlighted `<pre>`, with our own tokenizer for JavaScript and Qubi, completions, and diagnostics from the real Qubi parser. CodeMirror 6 is dozens of packages that would need bundling to vendor. The overlay approach is small, accessible (the textarea is a native control), and good enough for scene-sized files.
+
+## Quantum: `if` conditions are evaluated from their source text
+
+The IR carries a branch condition only as `IfBranch.condText`, so `runCircuit` includes a small evaluator (`src/quantum/condition.js`) for the Qubi operators that make sense on classical bits (comparison, logic words and symbols, bitwise, arithmetic, `name[j]` bit reads, `0b`/`0x` literals). Callers that own the full Qubi expression evaluator can pass `evaluateCondition` to the runner and replace it.
+
+## Quantum: measurement registers and indexed bits
+
+`op.register = "m"` stores a measurement's bits in `m` as an integer (the op's first target is bit 0). `op.register = "c[2]"` writes into register `c` starting at bit 2. Importers use the indexed form to represent `measure q[i] -> c[j]`, and the exporters read it back, so classical bit layout survives round trips.
+
+## Quantum: our own seeded RNG in `src/quantum/rng.js`
+
+There is no `src/core/random.js` yet, so the quantum layer ships a 30-line xoshiro128** seeded through splitmix32. Every simulator takes an `rng` or `seed`, so measurement sampling in tests and renders is reproducible.
+
+## Quantum: conventions for observables and metrics
+
+Pauli strings read like kets, most significant qubit first (`"XZ"` is Z on qubit 0 and X on qubit 1). Fidelity uses the squared convention (|<a|b>|^2, and (Tr sqrt(sqrt(rho) sigma sqrt(rho)))^2 for mixed states). The one-qubit depolarizing channel with parameter p is rho -> (1 - p) rho + p I/2. `fidelityDecay(circuit, model, steps)` repeats the circuit `steps` times and reports <psi_k|rho_k|psi_k> after each repetition.
+
+## Quantum: SortBy and SortOrder meanings for Dirac terms
+
+`state` sorts by basis index, `probability` by |amplitude|^2, `amplitude` by the signed amplitude (real part, then imaginary part, so negative-amplitude marked states group together), and `phase` by the phase in [0, 2 pi). SortOrder flips only the primary key; ties always fall back to ascending basis index so output is stable. HideNegligibles hides terms whose amplitude rounds to zero at DecimalPlaces.
+
+## Quantum: two-qubit decomposition by the magic basis
+
+`decomposeTwoQubit` writes any two-qubit unitary as three CX plus one-qubit U gates: the magic-basis KAK splits it into local factors around exp(i(a XX + b YY + c ZZ)), and that core is the Vatan-Williams three-CX circuit (signs fixed by numerical search and verified by reconstruction in tests). Controlled one-qubit gates use the two-CX A X B X C construction, and multiply controlled ones use Barenco et al. Lemma 7.5 with square roots from `unitaryPath`. The same routines lower gates that a target format cannot spell, in the exporters and in the Qubi text emitter.
+
+## Quantum: importers emit Qubi text with a provisional emitter
+
+`src/quantum/import/emit.js` writes Qubi from the IR until the Qubi module's `toQubiSource` exists; the two should be reconciled then. Choices that need confirming against the parser: multi-wire uncontrolled gates use a bracket register (`SWAP [0,1]`); parameterized gates use the call form `RX(0.25) 0`; angles are piradians when a short decimal is exact, else `deg` or `rad` suffixed; user matrices become `gate NAME { matrix: ... }` blocks; barriers are dropped (Qubi has none); `reset` is rejected by every importer because Qubi cannot express it.
+
+## Quantum: Qiskit input is a JSON schema, not QPY
+
+The Qiskit importer reads `{num_qubits, instructions: [{name, qubits, params, clbits}]}`, which a few lines of Python produce from a QuantumCircuit. Binary QPY is refused with an explanatory error: it is versioned per Qiskit release and embeds Python-side payloads (symengine expressions, custom instructions), so a browser parser could not stay correct.
+
+## Quantum: Cirq qubits map by identity, not endianness
+
+`LineQubit(k)` becomes wire k when all qubits are LineQubits; otherwise qubits are numbered in Cirq's sort order. Cirq prints state vectors with its first qubit as the most significant bit while Qubi puts wire 0 last, but that only changes labels, not which qubit a gate touches. Non-integer exponents map to exact Qubi forms where controls make phase observable (CZ^t is CP(pi t), CX^t is H CP(pi t) H) and to rotations up to global phase for uncontrolled gates.
+
+## Text: font containers accepted, and WOFF2 only where Brotli exists
+
+`src/text/ttf.js` reads TrueType (`glyf`, including composite glyphs) and CFF-flavored OpenType (Type 2 charstrings with subroutines, CID-keyed fonts and `seac` accents), plus the first face of a TTC. WOFF 1.0 is unwrapped with zlib (`node:zlib` in Node, `DecompressionStream('deflate')` in browsers). WOFF 2.0 is decoded in full, including the transformed `glyf`/`loca`/`hmtx` tables, but it needs Brotli: Node has it in `node:zlib`; in a browser we use `DecompressionStream('brotli')` where it exists and otherwise throw an error telling the user to convert the font to TTF, OTF or WOFF. Shipping our own Brotli decoder would mean vendoring its 120 KB static dictionary for a format users can convert once. CFF2 (variable OpenType) is rejected with a clear message. The WOFF2 path is tested against a KaTeX font in both containers and matches outline for outline.
+
+## Text: KaTeX layout is evaluated by our own CSS engine
+
+`src/text/tex.js` takes KaTeX's in-memory HTML tree (`__renderToHTMLTree`) and evaluates the subset of `katex.css` that KaTeX depends on: inline flow, `.vlist` tables positioned with `top` against a `.pstrut`, cell text-align, the `.sizing` table, font-family classes, borders as rules, and absolutely positioned SVGs with viewBox scaling and overflow clipping. Clipping of SVG shapes (radical vinculum, arrow shafts, brace bars) clamps coordinates to the clip box, which is exact for KaTeX's shapes because only straight horizontal bars cross the clip edges. Output is identical in Node and the browser (checked byte for byte). Against real KaTeX HTML in headless Chromium, over 28 formulas and 228 glyphs, the largest glyph-origin error is 0.0023 em (tolerance 0.02 em); `tests/unit/text-katex-chromium.test.js` re-runs the comparison whenever a Chromium binary is present.
+
+## Text: TeX token addressing uses a colored probe render
+
+To know which source token produced each glyph, rule or shape, we render a second copy of the formula in which every glyph-making unit is wrapped in `\textcolor{#nnnnnn}{...}` with a unique color. KaTeX builds color groups as transparent fragments, so atom classes and spacing do not change; the probe must produce the same item sequence as the real render, and each item's color then names its token. Script bases are not wrapped (a colored base loses its italic correction and operator limits); the whole `base^sup_sub` is wrapped and the base inherits that color, with prime glyphs routed to their `'` tokens. If the fine probe fails (for example a user macro with unknown arity), a coarse probe wrapping only top-level units is tried, and failing that items stay unmapped and `mapping` reports `'none'`. We rejected `\htmlData` markers (they need `trust` and change sub/superscript placement) and order-based matching (fractions and op limits emit their parts out of source order). `matchTokens` aligns significant tokens with an LCS, then pairs leftover equal tokens so reordered terms still morph.
+
+## Text: skeleton strokes use the nonzero fill rule by default
+
+The outline skeletonizer in `src/text/skeleton.js` rasterizes with our own scanline fill. It defaults to the nonzero rule, not even-odd: glyph outlines and KaTeX's SVG shapes are defined with nonzero filling, and even-odd leaves holes wherever contours overlap (clamped radical bars, fonts with overlapping contours). Even-odd remains available as `fillRule: 'evenodd'`. After Zhang-Suen thinning the skeleton is traced with m-adjacency (so staircase corners are not junctions), spurs are pruned, straight continuations are joined through junctions, and free ends are extended back to the ink tip that thinning erodes.
+
+## Text: layout coordinates and Knuth-Plass defaults
+
+`layoutText` returns world units with y up and the origin at the top-left of the layout box, so the first baseline is at `-ascender`. Knuth-Plass uses TeX's defaults (line penalty 10, flagged demerits 100, fitness demerits 3000; glue stretch 1/2 and shrink 1/3 of a space) and tries tolerances 2, 10, then unlimited before falling back to first fit. Words wider than the line get break points between characters so no line overflows. Line breaks may follow hyphens; no automatic hyphenation dictionary is shipped.
