@@ -29,7 +29,9 @@ function state(ctx, view) {
   let s = states.get(ctx);
   if (!s || s.w !== view.pixelWidth || s.h !== view.pixelHeight) {
     const layer = createCanvas(view.pixelWidth, view.pixelHeight);
-    s = { w: view.pixelWidth, h: view.pixelHeight, layer, lctx: layer.getContext('2d'), ink: 0, tip: null };
+    // Writing goes on its own layer so the band it wipes under itself never clips neighboring letters.
+    const wlayer = createCanvas(view.pixelWidth, view.pixelHeight);
+    s = { w: view.pixelWidth, h: view.pixelHeight, layer, lctx: layer.getContext('2d'), wlayer, wctx: wlayer.getContext('2d'), wrote: false, ink: 0, tip: null };
     states.set(ctx, s);
   }
   return s;
@@ -181,6 +183,15 @@ function cameraOffset(view, tile) {
  */
 function flushLayer(ctx, frame, view, medium, composite = 'source-over') {
   const s = state(ctx, view);
+  if (s.wrote) {
+    s.lctx.save();
+    s.lctx.setTransform(1, 0, 0, 1, 0, 0);
+    s.lctx.drawImage(s.wlayer, 0, 0);
+    s.lctx.restore();
+    s.wctx.setTransform(1, 0, 0, 1, 0, 0);
+    s.wctx.clearRect(0, 0, s.w, s.h);
+    s.wrote = false;
+  }
   const mask = grainMask(medium, frame.seed, view.strokeScale);
   const [ox, oy] = cameraOffset(view, mask);
   s.lctx.save();
@@ -277,10 +288,20 @@ const chalkboard = {
     if (item.stroke) {
       const hs = strokesPx(view, handStrokes(item.path, item.seed, HAND_STYLES.chalk));
       const w = Math.max(3.5, item.strokeWidth * 1.25) * px;
+      const writing = !!(item.meta && item.meta.handwriting);
+      if (writing) {
+        // Wipe a narrow band of earlier chalk (hatching, washes) under writing so labels stay legible.
+        lctx.globalCompositeOperation = 'destination-out';
+        lctx.fillStyle = 'rgba(0,0,0,0.9)';
+        for (const st of hs) drawRibbon(lctx, st.pts, w * 3.4);
+        lctx.globalCompositeOperation = 'source-over';
+        s.wrote = true;
+      }
+      const target = writing ? s.wctx : lctx;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.fillStyle = toCSS(item.stroke, 0.03);
       for (const st of hs) drawRibbon(ctx, st.pts, w * 2);
-      hs.forEach((st, k) => chalkStroke(lctx, st.pts, w, item.stroke, item.seed * 131 + k));
+      hs.forEach((st, k) => chalkStroke(target, st.pts, w, item.stroke, item.seed * 131 + k));
       s.ink += strokeLength(hs.map((st) => ({ pts: st.pts })));
       trackTip(s, item, hs);
     }
@@ -352,6 +373,11 @@ const whiteboard = {
     if (item.stroke) {
       const hs = strokesPx(view, handStrokes(item.path, item.seed, HAND_STYLES.marker));
       const w = Math.max(3, item.strokeWidth * 1.15) * px;
+      if (item.meta && item.meta.handwriting) {
+        // Clean board under writing: a band of the surface color covers hatching behind labels.
+        ctx.fillStyle = toCSS(parseColor(frame.theme.colors.background), 0.75);
+        for (const st of hs) drawRibbon(ctx, st.pts, w * 2.4);
+      }
       ctx.fillStyle = toCSS(item.stroke, 0.16);
       for (const st of hs) drawRibbon(ctx, st.pts, w * 1.35);
       ctx.fillStyle = toCSS(item.stroke, 0.82);

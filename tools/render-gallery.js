@@ -5,7 +5,7 @@
  * example's own size), a poster (the 75% frame, or the example's
  * `posterTime`), and a contact strip of all five at reduced size.
  *
- *   node tools/render-gallery.js [name-filter] [--theme id] [--out dir]
+ *   node tools/render-gallery.js [name-filter] [--theme id] [--board style] [--out dir]
  */
 
 import { readdirSync, mkdirSync, writeFileSync } from 'node:fs';
@@ -14,7 +14,7 @@ import { parseArgs } from 'node:util';
 import { createCanvas, loadImage } from '@napi-rs/canvas';
 import { loadSceneModule, buildFromModule, renderFrameCanvas, sceneTheme } from '../cli/render.js';
 
-const { values, positionals } = parseArgs({ allowPositionals: true, options: { theme: { type: 'string' }, out: { type: 'string' }, width: { type: 'string' } } });
+const { values, positionals } = parseArgs({ allowPositionals: true, options: { theme: { type: 'string' }, board: { type: 'string' }, out: { type: 'string' }, width: { type: 'string' } } });
 const filter = positionals[0] ?? '';
 const outDir = values.out ?? 'docs/renders/gallery';
 mkdirSync(outDir, { recursive: true });
@@ -24,12 +24,15 @@ for (const f of files) {
   const name = basename(f, '.js');
   const started = Date.now();
   const mod = await loadSceneModule(join('examples', f));
-  const overrides = values.theme ? { theme: values.theme } : {};
+  const overrides = {};
+  if (values.theme) overrides.theme = values.theme;
+  if (values.board) overrides.board = values.board;
+  const suffix = [values.theme, values.board].filter(Boolean).map((v) => `-${v}`).join('');
   const scene = await buildFromModule(mod, overrides);
   const theme = sceneTheme(scene);
   const n = scene.frameCount;
   const picks = [0, Math.round((n - 1) * 0.25), Math.round((n - 1) * 0.5), Math.round((n - 1) * 0.75), n - 1];
-  const dir = join(outDir, name + (values.theme ? `-${values.theme}` : ''));
+  const dir = join(outDir, name + suffix);
   mkdirSync(dir, { recursive: true });
   const stripW = 480;
   const stripH = Math.round((stripW * scene.height) / scene.width);
@@ -46,7 +49,7 @@ for (const f of files) {
   }
   const posterFrame = mod.config.posterTime != null ? Math.round(mod.config.posterTime * scene.fps) : picks[3];
   const poster = renderFrameCanvas(scene, Math.min(n - 1, posterFrame), { theme });
-  writeFileSync(join(outDir, `${name}${values.theme ? `-${values.theme}` : ''}.png`), await poster.encode('png'));
+  writeFileSync(join(outDir, `${name}${suffix}.png`), await poster.encode('png'));
   writeFileSync(join(dir, 'strip.png'), await strip.encode('png'));
   console.log(`${name}: ${n} frames, ${scene.duration.toFixed(1)} s, rendered in ${((Date.now() - started) / 1000).toFixed(1)} s`);
 }

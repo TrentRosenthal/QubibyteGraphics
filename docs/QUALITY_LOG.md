@@ -20,3 +20,6 @@ Every rendered visual is graded against `docs/QUALITY.md` (criteria a to g, 1 to
 | 10-central-limit | 50, 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | 3Blue1Brown, "But what is the Central Limit Theorem?": exact dice distributions converge on a live bell curve; the reference animates sampling, ours morphs exact distributions. |
 | 15-gradient-descent | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Distill "Why Momentum Really Works": same zigzag in a narrow valley; heatmap cells no longer show seams at 1080p, a faint cell texture remains visible up close. |
 | 16-eigenvectors | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | 3Blue1Brown, Essence of Linear Algebra ch. 14: eigenvectors stay on dashed spans while others turn; the reference also labels the stretch factors on the vectors. |
+| 30-pythagoras-boards (clean) | 50, 100 | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Classic rearrangement proof figure (Wikipedia, Pythagorean theorem): same two panels, animated between them. |
+| 30-pythagoras-boards (chalkboard) | 50, 100 | 4 | 5 | 4 | 5 | 5 | 4 | 4 | A lecture chalkboard photo: hatching and grain read as chalk; labels now wipe a band of hatching so they stay legible. |
+| 30-pythagoras-boards (whiteboard) | 75, 100 | 4 | 5 | 4 | 5 | 5 | 4 | 4 | Marker whiteboard: same scene from the one --board switch; a faint surface halo under writing keeps labels clear of hatching. |
