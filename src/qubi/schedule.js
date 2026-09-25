@@ -101,6 +101,10 @@ export function scheduleCircuit(circuit, opts = {}) {
   const nq = Math.max(1, circuit.numQubits, ...ops.flatMap(opWires).map((w) => w + 1));
   const barriers = barrierSet(circuit, mode);
   const lastCol = new Int32Array(nq).fill(-1);
+  // Measurements and conditionals also share a classical lane, so an `if`
+  // never moves before the measurement that produces its register.
+  let lastMeasureCol = -1;
+  let lastIfCol = -1;
   const columns = [];
   const colNames = [];
   const opColumn = [];
@@ -113,6 +117,8 @@ export function scheduleCircuit(circuit, opts = {}) {
     const [lo, hi] = spanOf(op, nq);
     let busy = -1;
     for (let w = lo; w <= hi; w++) busy = Math.max(busy, lastCol[w]);
+    if (op.kind === 'if') busy = Math.max(busy, lastMeasureCol, lastIfCol);
+    if (op.kind === 'measure') busy = Math.max(busy, lastIfCol);
     const earliest = Math.max(floor, busy + 1);
     let col;
     const cur = columns.length - 1;
@@ -145,6 +151,8 @@ export function scheduleCircuit(circuit, opts = {}) {
     columns[col].push(k);
     opColumn.push(col);
     for (let w = lo; w <= hi; w++) lastCol[w] = Math.max(lastCol[w], col);
+    if (op.kind === 'measure') lastMeasureCol = Math.max(lastMeasureCol, col);
+    if (op.kind === 'if') lastIfCol = Math.max(lastIfCol, col);
   }
   countAt.push(columns.length);
   for (const c of columns) c.sort((a, b) => a - b);

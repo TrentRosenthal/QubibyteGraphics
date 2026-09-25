@@ -76,9 +76,11 @@ test('group spans cover stdlib calls; labels map to columns', () => {
   assert.deepEqual(s.opColumn, [0, 1, 0, 0]);
 });
 
-test('if ops span every wire of their branches', () => {
+test('if ops span every wire of their branches and follow their measurement', () => {
   const s = schedule(ev('m = MEASURE 0\nif m == 1 { CX [1,3] }\nH 2'), { mode: 'always' });
-  assert.deepEqual(s.columns, [[0, 1], [2]]);
+  assert.deepEqual(s.columns, [[0], [1], [2]]);
+  const t = schedule(ev('m = MEASURE 0\nH 1\nif m == 1 { X 2 }'), { mode: 'always' });
+  assert.ok(t.opColumn[2] > t.opColumn[0], 'the if sits after the measurement that sets m');
 });
 
 test('the mode defaults to the Scheduling setting, and unknown modes throw', () => {
