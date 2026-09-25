@@ -12,7 +12,8 @@ mkdirSync(out, { recursive: true });
 const entries = ['index.html', 'src', 'styles', 'vendor', 'examples', 'dist', 'docs/site', 'docs/renders'];
 for (const e of entries) {
   if (!existsSync(e)) continue;
-  cpSync(e, `${out}/${e}`, { recursive: true });
+  // Skip local render caches and other dot folders; they are never part of the site.
+  cpSync(e, `${out}/${e}`, { recursive: true, filter: (src) => !/(^|\/)\.qgfx-cache(\/|$)/.test(src) });
 }
 cpSync('src/embed/qubibyte-scene.js', `${out}/qubibyte-scene.js`);
 writeFileSync(`${out}/.nojekyll`, '');

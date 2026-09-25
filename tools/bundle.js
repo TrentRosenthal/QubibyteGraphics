@@ -18,6 +18,10 @@ const common = {
   target: ['es2022'],
   legalComments: 'none',
   loader: { '.ttf': 'empty', '.jhf': 'empty' },
+  // Node built-ins are only reached through dynamic imports on the Node code
+  // path (reading fonts from disk, inflating compressed tables); the browser
+  // never runs them, so they stay as imports instead of being bundled.
+  external: ['node:*'],
 };
 
 await build({
