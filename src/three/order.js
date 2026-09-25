@@ -532,19 +532,20 @@ function screenOverlap(a, b) {
  * 'front' (eye side), 'behind', 'on' (coplanar), 'cross', or null when A is
  * seen edge-on.
  */
-function against(A, X, eyeH, eps) {
+function against(A, X, eyeH, eps, bias) {
   const es = eyeSide(A.pl, eyeH);
   if (Math.abs(es) < eps) return null;
   const sg = es > 0 ? 1 : -1;
   const [nx, ny, nz, d] = A.pl;
   if (A.dev) eps += A.dev;
+  const behindTol = X.k === POLY ? eps : eps + bias;
   let front = 0;
   let back = 0;
   const p = X.p;
   for (let i = 0; i < p.length; i += 3) {
     const v = (nx * p[i] + ny * p[i + 1] + nz * p[i + 2] - d) * sg;
     if (v > eps) front++;
-    else if (v < -eps) back++;
+    else if (v < -behindTol) back++;
   }
   if (front && back) return 'cross';
   if (front) return 'front';
@@ -564,14 +565,15 @@ function relation(A, B, sa, sb, ia, ib, cam, eps) {
   }
   if (!screenOverlap(sa, sb)) return 0;
   const e = cam.eyeH;
-  let r = A.k === POLY ? against(A, B, e, eps) : null;
+  const bias = cam.bias ?? 0;
+  let r = A.k === POLY ? against(A, B, e, eps, bias) : null;
   if (r === 'behind') return 1;
   if (r === 'front') return -1;
   if (r === 'on') {
     if (B.k !== POLY) return -1;
     return ia < ib ? -1 : 1;
   }
-  r = B.k === POLY ? against(B, A, e, eps) : null;
+  r = B.k === POLY ? against(B, A, e, eps, bias) : null;
   if (r === 'behind') return -1;
   if (r === 'front') return 1;
   if (r === 'on') return A.k !== POLY ? 1 : ia < ib ? -1 : 1;
@@ -839,11 +841,12 @@ function clusterBoxes(boxes, eps) {
  * Order all primitives of a frame back to front.
  * @param {Prim[]} prims
  * @param {any} cam camera state (eye, forward, eyeH, viewProj, orthographic)
- * @param {{eps?: number, items?: Prim[][]}} [opts] items: pre-grouped primitives (one entry per mesh object or line piece)
+ * @param {{eps?: number, bias?: number, items?: Prim[][]}} [opts] items: pre-grouped primitives (one entry per mesh object or line piece); bias: how far behind a face a line or point may sit and still count as lying on it (a polygon offset)
  * @returns {Prim[]}
  */
 export function orderScene(prims, cam, opts = {}) {
   const eps = opts.eps ?? 1e-7;
+  cam = { ...cam, bias: opts.bias ?? 0 };
   let groups = (opts.items ?? prims.map((x) => [x])).filter((g) => g.length);
   if (!groups.length) return [];
   let boxes = groups.map(boxOf);

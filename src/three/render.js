@@ -211,7 +211,7 @@ export function renderUnits(input, items) {
     }
   }
 
-  const ordered = orderScene(prims, cam, { eps, items: groupItems });
+  const ordered = orderScene(prims, cam, { eps, bias: 2e-3 * scene.size, items: groupItems });
 
   const bgItem = input.background ? input.color(input.background) : null;
   if (bgItem) {

@@ -20,7 +20,7 @@ PROP_KIND.background = 'color';
 
 /** Default edge-class styles (for grid lines drawn on meshes). */
 const EDGE_STYLES = {
-  grid: { opacity: 0.16, width: 1.2 },
+  grid: { opacity: 0.22, width: 1.2 },
   major: { opacity: 0.42, width: 1.6 },
 };
 

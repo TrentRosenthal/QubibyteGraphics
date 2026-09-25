@@ -600,7 +600,7 @@ export function polyhedron(name, radius = 1) {
  * point along (d/du) x (d/dv).
  * @param {number} nu @param {number} nv
  * @param {(u: number, v: number) => number[]} fn u, v in [0, 1]
- * @param {{closedU?: boolean, closedV?: boolean, convex?: boolean, weldEps?: number}} [opts]
+ * @param {{closedU?: boolean, closedV?: boolean, convex?: boolean, weldEps?: number, lines?: number[]}} [opts] lines [everyU, everyV] marks every n-th grid line as a 'grid' edge class
  * @returns {MeshGeometry}
  */
 export function gridMesh(nu, nv, fn, opts = {}) {
@@ -617,6 +617,14 @@ export function gridMesh(nu, nv, fn, opts = {}) {
     }
   }
   const id = (i, j) => (j % cv) * cu + (i % cu);
+  let edgeClass = null;
+  if (opts.lines) {
+    edgeClass = new Map();
+    const [eu, ev] = opts.lines;
+    const mark = (a, b) => edgeClass.set(a < b ? `${a},${b}` : `${b},${a}`, 'grid');
+    for (let j = 0; j <= nv; j++) for (let i = 0; i < nu; i++) if (ev > 0 && j % ev === 0) mark(id(i, j), id(i + 1, j));
+    for (let i = 0; i <= nu; i++) for (let j = 0; j < nv; j++) if (eu > 0 && i % eu === 0) mark(id(i, j), id(i, j + 1));
+  }
   const faces = [];
   const params = new Float64Array(nu * nv * 2);
   for (let j = 0; j < nv; j++) {
@@ -626,7 +634,7 @@ export function gridMesh(nu, nv, fn, opts = {}) {
       faces.push([id(i, j), id(i + 1, j), id(i + 1, j + 1), id(i, j + 1)]);
     }
   }
-  const mesh = makeMesh(pos, faces, { convex: opts.convex, faceParams: params });
+  const mesh = makeMesh(pos, faces, { convex: opts.convex, faceParams: params, edgeClass });
   return opts.weldEps === 0 ? mesh : weld(mesh, opts.weldEps ?? 1e-9);
 }
 
@@ -903,13 +911,13 @@ export function plane(w = 1, d = 1, nx = 1, ny = 1) {
 /**
  * Parametric surface p(u, v).
  * @param {(u: number, v: number) => number[]} f
- * @param {{u?: number[], v?: number[], nu?: number, nv?: number, closedU?: boolean, closedV?: boolean}} [opts] u and v ranges default to [0, 1]
+ * @param {{u?: number[], v?: number[], nu?: number, nv?: number, closedU?: boolean, closedV?: boolean, lines?: number[]}} [opts] u and v ranges default to [0, 1]; lines marks every n-th parameter line as a grid edge
  * @returns {MeshGeometry}
  */
 export function parametricSurface(f, opts = {}) {
   const [u0, u1] = opts.u ?? [0, 1];
   const [v0, v1] = opts.v ?? [0, 1];
-  const mesh = gridMesh(opts.nu ?? 32, opts.nv ?? 32, (s, t) => f(u0 + (u1 - u0) * s, v0 + (v1 - v0) * t), { closedU: opts.closedU, closedV: opts.closedV });
+  const mesh = gridMesh(opts.nu ?? 32, opts.nv ?? 32, (s, t) => f(u0 + (u1 - u0) * s, v0 + (v1 - v0) * t), { closedU: opts.closedU, closedV: opts.closedV, lines: opts.lines });
   return orientOutward(mesh);
 }
 

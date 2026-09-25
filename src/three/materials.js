@@ -35,7 +35,7 @@ const BASE = {
 export const MATERIALS = {
   flat: { kind: 'flat', shading: 'none' },
   matte: { kind: 'matte', shading: 'lambert' },
-  glossy: { kind: 'glossy', shading: 'phong', specular: 0.55, shininess: 48 },
+  glossy: { kind: 'glossy', shading: 'phong', specular: 0.4, shininess: 20 },
   glass: { kind: 'glass', shading: 'lambert', alpha: 0.12, rim: 0.32, specular: 0.35, shininess: 64, edgeOpacity: 0.18, silhouetteOpacity: 0.35, backEdges: 'dim' },
   wireframe: { kind: 'wireframe', faces: false, edges: 'all', edgeOpacity: 0.85, silhouetteOpacity: 0.85, edgeWidth: 2, backEdges: 'dim' },
   ink: { kind: 'ink', shading: 'none', occluder: true, edgeOpacity: 1, silhouetteOpacity: 1, edgeWidth: 2.5, edges: 'auto' },
@@ -106,8 +106,8 @@ export function shade(base, diffuse, specular = 0) {
   const c = parseColor(base);
   const lab = toLab(c);
   const k = Math.max(0, Math.min(1.3, diffuse));
-  let L = lab.L * (0.4 + 0.6 * k);
-  const chroma = 0.8 + 0.2 * Math.min(1, k);
+  let L = lab.L * (0.32 + 0.68 * k);
+  const chroma = 0.82 + 0.18 * Math.min(1, k);
   let A = lab.a * chroma;
   let B = lab.b * chroma;
   const s = Math.max(0, Math.min(0.85, specular));

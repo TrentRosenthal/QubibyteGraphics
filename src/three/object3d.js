@@ -309,13 +309,17 @@ export class Mesh3D extends Object3D {
 export class Surface3D extends Mesh3D {
   /**
    * @param {(u: number, v: number) => number[]} f
-   * @param {{u?: number[], v?: number[], nu?: number, nv?: number}} [opts]
+   * @param {{u?: number[], v?: number[], nu?: number, nv?: number, grid?: number[]|false}} [opts] grid: draw every n-th u and v parameter line (default about eight per direction)
    * @param {Record<string, any>} [props]
    */
   constructor(f, opts = {}, props = {}) {
-    super(parametricSurface(f, opts), { type: 'surface3d', ...props });
+    const nu = opts.nu ?? 32;
+    const nv = opts.nv ?? 32;
+    const lines = opts.grid === false ? undefined : opts.grid ?? [Math.max(1, Math.round(nu / 8)), Math.max(1, Math.round(nv / 8))];
+    const o = { u: opts.u ?? [0, 1], v: opts.v ?? [0, 1], nu, nv, lines };
+    super(parametricSurface(f, o), { type: 'surface3d', ...props });
     this.fn = f;
-    this.opts = { u: opts.u ?? [0, 1], v: opts.v ?? [0, 1], nu: opts.nu ?? 32, nv: opts.nv ?? 32 };
+    this.opts = o;
     this._sweepCache = { key: '', mesh: null };
   }
 
@@ -331,9 +335,11 @@ export class Surface3D extends Mesh3D {
     if (axis === 'v') {
       opts.v = [o.v[0], o.v[0] + (o.v[1] - o.v[0]) * s];
       opts.nv = Math.max(1, Math.ceil(o.nv * s));
+      if (o.lines) opts.lines = [o.lines[0], 0];
     } else {
       opts.u = [o.u[0], o.u[0] + (o.u[1] - o.u[0]) * s];
       opts.nu = Math.max(1, Math.ceil(o.nu * s));
+      if (o.lines) opts.lines = [0, o.lines[1]];
     }
     const mesh = parametricSurface(this.fn, opts);
     mesh.faceParams = null;

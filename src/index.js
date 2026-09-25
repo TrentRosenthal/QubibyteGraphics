@@ -36,6 +36,12 @@ export { setPlatform } from './core/platform.js';
 export { sampleFrame } from './core/sampler.js';
 
 export { getTheme, registerTheme, listThemes, exportTheme, importTheme } from './themes/index.js';
+export { paletteFrom, themeFrom, parseDescription } from './themes/palette.js';
+export { explainQubi, describeOp, describeGroup } from './quantum/explainers.js';
+export * as quantumViews from './quantum/views/index.js';
+export { CodeBlock, highlightQubi } from './text/code.js';
+export { buildDocument, newDocument, normalizeDocument, evaluateGraph, stringifyDocument, documentToModule, moduleToDocument, ANIMATIONS as DOCUMENT_ANIMATIONS } from './editor/document.js';
+export { BLOCKS, registerBlock, blockDefinition, blockLibrary } from './editor/blocks.js';
 export { renderFrame, registerBoard, viewFor } from './render/canvas.js';
 export { renderSVG } from './render/svg.js';
 export * from './board/index.js';

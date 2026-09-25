@@ -90,7 +90,7 @@ export function parseUnit(text) {
   if (src === '' || src === '1') return { factor: 1, dim: D(), offset: 0 };
   const toks = src.match(/[A-Za-zµΩ]+|-?\d+(?:\.\d+)?|[*/^()·]|\s+/g) || [];
   if (toks.join('') !== src) throw new DimensionError('Cannot parse unit "' + text + '"');
-  const list = toks.filter((t) => !/^\s+$/.test(t) || true);
+  const list = toks;
   let p = 0;
   const peek = () => list[p];
   const skipSpace = () => {
