@@ -1115,23 +1115,14 @@ export class VisualEditor {
     return stringifyDocument(this.doc);
   }
 
-  /** @param {string} text */
-  loadText(text) {
-    try {
-      this.doc = normalizeDocument(JSON.parse(text));
-      this.selection = new Set();
-      this.history.reset(this.doc);
-      this.refreshPanels();
-      this.stage.layout();
-      this.scheduleBuild();
-    } catch (e) {
-      toast(`That link does not hold a valid scene document: ${e.message}`);
-    }
+  /** @returns {Promise<string>} a link fragment that opens this document */
+  permalink() {
+    return encodePermalink('doc', this.documentText());
   }
 
   async save() {
     this.persist();
-    history.replaceState(null, '', await encodePermalink('doc', this.documentText()));
+    history.replaceState(null, '', await this.permalink());
     toast('Saved in this browser. The address bar link now opens this document.');
   }
 
@@ -1160,17 +1151,11 @@ export class VisualEditor {
   }
 
   activate() {
-    this.active = true;
     const sel = document.querySelector('#theme-select');
     if (sel) sel.value = this.doc.meta.theme;
     const size = document.querySelector('#size-select');
     if (size) size.value = `${this.doc.meta.width}x${this.doc.meta.height}`;
     requestAnimationFrame(() => this.stage.layout());
-  }
-
-  deactivate() {
-    this.active = false;
-    if (this.playing) this.togglePlay();
   }
 }
 

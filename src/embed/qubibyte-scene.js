@@ -7,7 +7,7 @@
  * Attributes: `src` (a scene module .js or a scene document .json),
  * `autoplay`, `loop`, `controls`, `theme`, `poster-time` (seconds shown
  * before playing). The scene loads when the element scrolls into view,
- * runs in the same sandboxed worker runtime as the playground, and honors
+ * runs in the same sandboxed worker runtime as the editor, and honors
  * `prefers-reduced-motion` by showing the last frame without autoplay.
  *
  * Methods: `play()`, `pause()`, `seek(seconds)`. Properties: `currentTime`,

@@ -14,17 +14,16 @@ const GROUPS = [
     ['Previous or next frame', ['←', '→']],
     ['Back or forward one second', ['Shift', '←/→']],
     ['Start or end', ['Home', 'End']],
-    ['Shuttle back, stop, forward', ['J', 'K', 'L']],
   ]],
-  ['Code', [
-    ['Run', [MOD, 'Enter']],
-    ['Save and update the link', [MOD, 'S']],
+  ['Code fields and the code view', [
+    ['Apply', [MOD, 'Enter']],
     ['Toggle line comment', [MOD, '/']],
     ['Indent or outdent', ['Tab', 'Shift Tab']],
     ['Completions', ['Ctrl', 'Space']],
     ['Move focus out of the editor', ['Esc', 'Tab']],
   ]],
-  ['Visual editor', [
+  ['Editor', [
+    ['Save and update the link', [MOD, 'S']],
     ['Undo or redo', [MOD, 'Z'], [MOD, 'Shift', 'Z']],
     ['Duplicate', [MOD, 'D']],
     ['Group', [MOD, 'G']],

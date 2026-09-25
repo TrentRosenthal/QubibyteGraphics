@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Copies everything the GitHub Pages site needs into out/pages.
- * The playground is index.html at the root; docs live under docs/site.
+ * The editor is index.html at the root; docs live under docs/site.
  */
 import { cpSync, mkdirSync, rmSync, existsSync, writeFileSync } from 'node:fs';
 

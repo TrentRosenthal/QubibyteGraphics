@@ -17,8 +17,6 @@ async function openEditor() {
   const o = await openPage(env.browser, { width: 1600, height: 1000 });
   await o.page.addInitScript(() => localStorage.clear());
   await o.page.goto(`${env.url}index.html`);
-  await o.page.waitForSelector('#code-host .ce-ta');
-  await o.page.click('#tab-editor');
   await o.page.waitForSelector('.ve-frame canvas');
   await o.page.waitForFunction(() => document.querySelectorAll('.tl-row').length >= 4);
   await o.page.waitForTimeout(800);

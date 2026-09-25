@@ -6,11 +6,10 @@ Everything the project vendors or depends on, with its license. Runtime code in 
 | --- | --- | --- | --- | --- |
 | Inter | 4.001 (TTF) | `vendor/fonts/inter/` | UI face and the default text face in scenes | SIL Open Font License 1.1 (`vendor/fonts/inter/LICENSE.txt`) |
 | KaTeX | 0.16.47 | `vendor/katex/katex.mjs` | Math layout | MIT (`vendor/katex/LICENSE`) |
-| KaTeX fonts | 0.16.47 | `vendor/fonts/katex/` | Math glyphs; `KaTeX_Typewriter-Regular.ttf` is also the code face in the playground | SIL Open Font License 1.1 (`vendor/fonts/katex/LICENSE`) |
+| KaTeX fonts | 0.16.47 | `vendor/fonts/katex/` | Math glyphs; `KaTeX_Typewriter-Regular.ttf` is also the code face in the editor's code fields | SIL Open Font License 1.1 (`vendor/fonts/katex/LICENSE`) |
 | Hershey fonts | kamalmostafa/hershey-fonts | `vendor/fonts/hershey/` | Single-stroke handwriting | Public domain derived data, distributed under the notice below |
-| @ffmpeg/ffmpeg | 0.12.15 | `vendor/ffmpeg/ffmpeg/` | Worker client for ffmpeg.wasm (browser export fallback) | MIT |
-| @ffmpeg/util | 0.12.2 | `vendor/ffmpeg/util/` | Helpers shipped with the client | MIT |
-| @ffmpeg/core | 0.12.10 | `vendor/ffmpeg/core/` (`ffmpeg-core.js`, `ffmpeg-core.wasm`, ESM) | Encoders WebCodecs lacks in a given browser: H.264 (x264) for MP4, VP8 with alpha for WebM; loaded only when an export needs it | GPL-2.0-or-later |
+| mp4-muxer | 5.2.2 | `vendor/mp4-muxer/mp4-muxer.mjs` | MP4 container for WebCodecs video and audio in the browser export | MIT (`vendor/mp4-muxer/LICENSE`) |
+| webm-muxer | 5.1.4 | `vendor/webm-muxer/webm-muxer.mjs` | WebM container for opaque WebCodecs video and Opus in the browser export | MIT (`vendor/webm-muxer/LICENSE`) |
 | @napi-rs/canvas | 0.1.100 | npm dependency | Canvas2D in Node for the CLI and tests (not used in the browser) | MIT |
 | esbuild | 0.28.2 | dev dependency | Single-file bundle | MIT |
 | eslint and @eslint/js | 10.x | dev dependency | Lint | MIT |
@@ -19,8 +18,8 @@ Everything the project vendors or depends on, with its license. Runtime code in 
 
 ## Notes
 
-- ffmpeg.wasm is never part of the playground's initial load. `src/playground/export/ffmpeg.js` imports it from `vendor/ffmpeg/` inside the scene worker the first time an export needs it, and the GPL core runs in its own worker. The WebCodecs path, the muxers (`src/playground/export/mp4.js`, `webm.js`), and the GIF and APNG encoders are our own code under the project license.
-- The versions of the ffmpeg.wasm packages are also recorded in `vendor/ffmpeg/VERSIONS.txt`.
+- The browser export encodes with WebCodecs only. mp4-muxer and webm-muxer are the published `build/*.mjs` files, fetched with `npm pack`; both packages are marked deprecated upstream in favor of Mediabunny, by the same author, and still work as vendored. Transparent WebM, the GIF and APNG encoders, and `src/playground/export/webm.js` (which writes alpha as BlockAdditions, a feature webm-muxer lacks for video) are our own code under the project license.
+- The CLI uses the FFmpeg installed on the system; nothing from FFmpeg is vendored.
 
 ## Hershey fonts notice
 

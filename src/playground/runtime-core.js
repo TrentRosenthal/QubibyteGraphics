@@ -4,26 +4,22 @@
  * OffscreenCanvas is missing) and never on the main page. The page talks to
  * it through messages; see `src/playground/runtime.js` for the client side.
  *
- * Sources come in three kinds:
- * - `module`: a scene module (`export default async function (scene) {}`),
- *   imported from a Blob URL after its engine imports are rewritten to
- *   absolute URLs;
+ * Sources come in two kinds:
  * - `document`: scene document JSON from the visual editor, built with
  *   `buildDocument`;
- * - `qubi`: a Qubi program, presented as an explainer or a circuit view.
+ * - `module`: a scene module (`export default async function (scene) {}`)
+ *   for the embed element, imported from a Blob URL after its engine
+ *   imports are rewritten to absolute URLs.
  *
  * @module playground/runtime-core
  */
 
 import {
-  buildScene, sampleFrame, renderFrame, viewFor, renderSVG, getTheme, registerTheme, buildDocument,
-  normalizeDocument, evaluateGraph, blockDefinition, explainQubi, evaluateQubi, quantumViews, Text, Tex,
-  fadeIn, write, lagStart,
+  buildScene, sampleFrame, renderFrame, renderSVG, getTheme, registerTheme, buildDocument,
+  normalizeDocument, evaluateGraph, blockDefinition, Tex,
 } from '../index.js';
-import { tracePath, pathBounds } from '../core/path.js';
 import { themeWithBoard } from '../themes/index.js';
 import { createCanvas } from '../core/platform.js';
-import { StatevectorSimulator } from '../quantum/statevector.js';
 
 /** Package specifiers a scene may import, mapped to engine modules. */
 const PACKAGE_MAP = {
@@ -32,8 +28,6 @@ const PACKAGE_MAP = {
   'qubibyte-graphics/quantum': '../quantum/index.js',
   'qubibyte-graphics/math': '../math/index.js',
 };
-
-/** Board names in the playground and the themes that draw them. */
 
 const BUILD_KEYS = ['width', 'height', 'fps', 'seed'];
 
@@ -112,47 +106,6 @@ function locateSyntaxError(source) {
 }
 
 /**
- * The Qubi circuit presentation: the diagram builds, then the final state
- * appears as bars and in Dirac notation.
- * @param {string} source
- * @returns {(scene: any) => Promise<void>}
- */
-function circuitView(source) {
-  return async (scene) => {
-    const circuit = evaluateQubi(source);
-    const n = circuit.numQubits;
-    const sim = new StatevectorSimulator(n, { seed: 7 });
-    for (const op of circuit.ops) if (op.kind === 'gate') sim.applyOp(op);
-    const halfW = scene.frameWidth / 2;
-    const halfH = scene.frameHeight / 2;
-    const margin = Math.min(scene.frameWidth, scene.frameHeight) * 0.07;
-    const title = new Text(`${n} qubit${n === 1 ? '' : 's'}, ${circuit.ops.length} operation${circuit.ops.length === 1 ? '' : 's'}`, { size: 'caption', color: 'muted' });
-    title.moveTo([-halfW + margin, halfH - margin], 'top-left');
-    const diagram = new quantumViews.CircuitDiagram(circuit, { groups: 'outline' });
-    const areaW = scene.frameWidth - 2 * margin;
-    diagram.fitTo(areaW, (scene.frameHeight - 2 * margin) * 0.46);
-    if (diagram.width > 0 && diagram.width < areaW * 0.5) diagram.scale(Math.min(1.4, (areaW * 0.55) / diagram.width));
-    diagram.moveTo([-halfW + margin, halfH - margin - 0.7], 'top-left');
-    const bottom = -halfH + margin;
-    const views = [];
-    if (n <= 6) {
-      const bars = new quantumViews.AmplitudeBars(n, sim, { mode: 'phase', width: Math.min(7, areaW * 0.48), height: 2.2 });
-      bars.moveTo([-halfW + margin, bottom], 'bottom-left');
-      views.push(bars);
-    }
-    const dirac = quantumViews.diracTex(sim, { size: 0.42, maxTerms: 8, perLine: 4 });
-    const room = n <= 6 ? areaW * 0.46 : areaW;
-    if (dirac.width > room || dirac.height > 2.4) dirac.fitTo(room, 2.4);
-    dirac.moveTo([halfW - margin, bottom + 1.1], n <= 6 ? 'right' : 'center');
-    views.push(dirac);
-    await scene.play(fadeIn(title), { duration: 0.4 });
-    await scene.play(diagram.build());
-    await scene.play(lagStart(views.map((v) => (v instanceof Tex ? write(v) : fadeIn(v, { shift: 'up' }))), { lagRatio: 0.25 }), { duration: 1 });
-    await scene.wait(1.2);
-  };
-}
-
-/**
  * Encode a canvas (OffscreenCanvas or HTMLCanvasElement) as an image blob.
  * @param {any} canvas
  * @param {string} type
@@ -166,16 +119,6 @@ export function canvasToBlob(canvas, type = 'image/png', quality) {
 
 function applyMatrix(m, x, y) {
   return [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
-}
-
-function formatValue(v) {
-  if (v == null) return null;
-  if (typeof v === 'number') return Number.isFinite(v) ? +v.toPrecision(5) : String(v);
-  if (typeof v === 'boolean' || typeof v === 'string') return v;
-  if (Array.isArray(v)) return v.map(formatValue);
-  if (typeof v === 'object' && 'r' in v && 'g' in v) return `rgba(${Math.round(v.r * 255)}, ${Math.round(v.g * 255)}, ${Math.round(v.b * 255)}, ${+v.a.toFixed(2)})`;
-  if (typeof v === 'object' && v.constructor && v.constructor.name) return v.constructor.name;
-  return String(v);
 }
 
 /**
@@ -219,23 +162,14 @@ export class RuntimeCore {
         this.options = m.options || {};
         this.controlOverrides = {};
         return this.rebuild();
-      case 'options':
-        this.options = { ...this.options, ...m.options };
-        return this.rebuild();
       case 'viewport':
         this.viewport = { width: Math.max(1, Math.round(m.width)), height: Math.max(1, Math.round(m.height)) };
         this.refresh();
         return true;
-      case 'pick':
-        return this.pick(m.x, m.y);
-      case 'inspect':
-        return this.inspect(m.node);
       case 'control':
         return this.setControl(m.index, m.value);
       case 'texPreview':
         return this.texPreview(m.source, m.color);
-      case 'still':
-        return this.still(m);
       case 'export': {
         this.cancelled = false;
         const { exportScene } = await import('./export/encode.js');
@@ -274,10 +208,6 @@ export class RuntimeCore {
         layout = await buildDocument(still, { overrides, tolerant: true });
       }
       return { scene, doc, layout };
-    }
-    if (src.kind === 'qubi') {
-      const fn = o.qubiView === 'circuit' ? circuitView(src.source) : explainQubi(src.source);
-      return { scene: await buildScene(fn, { theme: 'qubibyte', ...opts }) };
     }
     if (!this.module || this.module.source !== src.source) {
       const code = rewriteImports(src.source, src.baseURL || new URL('../../examples/', import.meta.url).href);
@@ -507,112 +437,6 @@ export class RuntimeCore {
   }
 
   /**
-   * Find the node under a point of the preview canvas (device pixels).
-   * @param {number} px
-   * @param {number} py
-   * @returns {{chain: Array<{id: string, type: string, blockId: string|null}>}|null}
-   */
-  pick(px, py) {
-    const s = this.scene;
-    if (!s) return null;
-    const vp = this.viewport ?? { width: s.width, height: s.height };
-    const pr = vp.width / s.width;
-    const frame = sampleFrame(s, this.sceneTime(this.lastT), this.theme);
-    const view = viewFor(frame, pr);
-    if (!this.pickCtx) this.pickCtx = createCanvas(4, 4).getContext('2d');
-    const ctx = this.pickCtx;
-    const [a, b, c, d, e, f] = view.matrix;
-    const det = a * d - b * c;
-    const wx = (d * (px - e) - c * (py - f)) / det;
-    const wy = (-b * (px - e) + a * (py - f)) / det;
-    let hit = null;
-    for (let i = frame.items.length - 1; i >= 0 && !hit; i--) {
-      const it = frame.items[i];
-      if (it.kind === 'image') {
-        const m = it.matrix;
-        const det2 = m[0] * m[3] - m[1] * m[2];
-        const lx = (m[3] * (wx - m[4]) - m[2] * (wy - m[5])) / det2;
-        const ly = (-m[1] * (wx - m[4]) + m[0] * (wy - m[5])) / det2;
-        if (Math.abs(lx) <= it.width / 2 && Math.abs(ly) <= it.height / 2) hit = it;
-        continue;
-      }
-      ctx.setTransform(a, b, c, d, e, f);
-      ctx.beginPath();
-      tracePath(ctx, it.path);
-      if (it.fill && ctx.isPointInPath(px, py, it.fillRule)) hit = it;
-      else if (it.stroke) {
-        ctx.lineWidth = Math.max((it.strokeWidth * view.strokeScale) / view.scale, (8 * pr) / view.scale);
-        if (ctx.isPointInStroke(px, py)) hit = it;
-      }
-    }
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    if (!hit) {
-      // Thin glyphs and hairlines are hard to hit exactly: take the smallest
-      // item whose bounds, padded by a few pixels, contain the point.
-      const pad = (6 * pr) / view.scale;
-      let best = Infinity;
-      for (const it of frame.items) {
-        if (it.kind !== 'path') continue;
-        const b = pathBounds(it.path);
-        if (!b || wx < b.x - pad || wx > b.x + b.w + pad || wy < b.y - pad || wy > b.y + b.h + pad) continue;
-        const area = (b.w + pad) * (b.h + pad);
-        if (area < best) {
-          best = area;
-          hit = it;
-        }
-      }
-    }
-    if (!hit) return null;
-    const node = s.find(hit.id);
-    if (!node) return null;
-    const chain = [];
-    for (let n = node; n && n !== s.root; n = n.parent) chain.unshift({ id: n.id, type: n.type, blockId: n.meta?.blockId ?? null });
-    return { chain, world: [wx, wy] };
-  }
-
-  /**
-   * Tracked properties of a node at the current time, and its bounds in canvas pixels.
-   * @param {string} id
-   * @returns {any}
-   */
-  inspect(id) {
-    const s = this.scene;
-    const node = s && s.find(id);
-    if (!node) return null;
-    const st = this.sceneTime(this.lastT);
-    const props = [];
-    let bounds = null;
-    s.evaluateAt(st, () => {
-      for (const key of Object.keys(node._cur)) {
-        if (key === 'shape') continue;
-        props.push({ key, value: formatValue(node.get(key)), animated: node._tracks.has(key) });
-      }
-      bounds = node.bounds();
-    });
-    let rect = null;
-    if (bounds) {
-      const vp = this.viewport ?? { width: s.width, height: s.height };
-      const frame = sampleFrame(s, st, this.theme);
-      const view = viewFor(frame, vp.width / s.width);
-      const corners = [[bounds.x, bounds.y], [bounds.x + bounds.w, bounds.y], [bounds.x, bounds.y + bounds.h], [bounds.x + bounds.w, bounds.y + bounds.h]].map(([x, y]) => applyMatrix(view.matrix, x, y));
-      const xs = corners.map((p) => p[0]);
-      const ys = corners.map((p) => p[1]);
-      rect = { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
-    }
-    return {
-      id: node.id,
-      type: node.type,
-      name: node.name ?? null,
-      children: node.children.length,
-      blockId: node.meta?.blockId ?? null,
-      source: typeof node.source === 'string' ? node.source : typeof node.content === 'string' ? node.content : null,
-      props,
-      rect,
-      world: bounds,
-    };
-  }
-
-  /**
    * Typeset TeX to an SVG string for the inspector preview.
    * @param {string} source
    * @param {string} [color]
@@ -634,21 +458,6 @@ export class RuntimeCore {
     const theme = this.theme ?? getTheme('qubibyte');
     const frame = sampleFrame(scene, 0, theme);
     return { svg: renderSVG(frame, { transparent: true }), width: scene.width, height: scene.height };
-  }
-
-  /**
-   * Render one frame at a size to an image blob (stills and previews).
-   * @param {{t?: number, width?: number, format?: string}} m
-   * @returns {Promise<Blob>}
-   */
-  async still(m) {
-    const s = this.scene;
-    const w = Math.round(m.width ?? s.width);
-    const h = Math.round((w * s.height) / s.width);
-    const c = createCanvas(w, h);
-    const t = m.t ?? s.duration;
-    renderFrame(c.getContext('2d'), sampleFrame(s, this.sceneTime(t), this.theme), { pixelRatio: w / s.width, assets: s.assets });
-    return canvasToBlob(c, m.format === 'jpeg' ? 'image/jpeg' : 'image/png', 0.9);
   }
 
   /**

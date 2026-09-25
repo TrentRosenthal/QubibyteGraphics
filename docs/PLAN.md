@@ -25,7 +25,7 @@ Qubibyte Graphics is a programmatic animation engine written in plain JavaScript
  Canvas2D        SVG            3D engine (own WebGL2 + software raster)
    |               |                |
    +------- export pipeline --------+
-      PNG, SVG, PDF, Lottie, frames, FFmpeg (native in CLI, wasm in browser)
+      PNG, SVG, PDF, Lottie, frames, FFmpeg (native in CLI), WebCodecs in browser
 ```
 
 Every renderer consumes the same display list: a flat list of draw commands (paths with fill and stroke, images, text runs already converted to paths) produced by sampling the scene at time `t`. This is what makes frame N identical in preview and export.

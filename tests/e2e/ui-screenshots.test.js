@@ -27,8 +27,10 @@ after(async () => {
 async function page(w, h, scheme = 'dark') {
   const o = await openPage(env.browser, { width: w, height: h, colorScheme: scheme });
   await o.page.addInitScript(() => localStorage.clear());
-  await o.page.goto(`${env.url}index.html?mode=code`);
-  await o.page.waitForFunction(() => /Frame \d+ of [1-9]/.test(document.querySelector('.frame-readout')?.textContent || ''), null, { timeout: 30000 });
+  await o.page.goto(`${env.url}index.html`);
+  await o.page.waitForSelector('.ve-frame canvas');
+  await o.page.waitForFunction(() => document.querySelectorAll('.tl-row').length >= 4);
+  await o.page.waitForTimeout(900);
   return o;
 }
 
@@ -37,25 +39,11 @@ async function shot(p, name, w, h) {
   await p.screenshot({ path: path.pathname });
 }
 
-async function pauseAt(p, t) {
-  await p.evaluate(() => document.querySelector('[data-act=play][aria-label=Pause]')?.click());
-  await p.evaluate((time) => {
-    const scrub = document.querySelector('.scrubber');
-    const r = scrub.getBoundingClientRect();
-    const total = Number(scrub.getAttribute('aria-valuemax'));
-    const x = r.left + (time / total) * r.width;
-    scrub.dispatchEvent(new PointerEvent('pointerdown', { clientX: x, clientY: r.top + 4, bubbles: true, pointerId: 1 }));
-    scrub.dispatchEvent(new PointerEvent('pointerup', { clientX: x, clientY: r.top + 4, bubbles: true, pointerId: 1 }));
-  }, t);
-  await p.waitForTimeout(500);
-}
-
 for (const [w, h] of SIZES) {
   for (const scheme of ['dark', 'light']) {
-    test(`code mode, ${scheme} interface, ${w}x${h}`, { skip }, async () => {
+    test(`editor, ${scheme} interface, ${w}x${h}`, { skip }, async () => {
       const { page: p, context, errors } = await page(w, h, scheme);
-      await pauseAt(p, 7.2);
-      await shot(p, `code-${scheme}`, w, h);
+      await shot(p, `editor-${scheme}`, w, h);
       assert.deepEqual(errors, []);
       await context.close();
     });
@@ -63,9 +51,6 @@ for (const [w, h] of SIZES) {
 
   test(`editor with Qubi to Bloch to matrix wiring, ${w}x${h}`, { skip }, async () => {
     const { page: p, context, errors } = await page(w, h);
-    await p.click('#tab-editor');
-    await p.waitForFunction(() => document.querySelectorAll('.tl-row').length >= 4);
-    await p.waitForTimeout(900);
     await p.click('.tl-row[data-id=bloch] .tl-label');
     await p.keyboard.press('w');
     await p.waitForTimeout(700);
@@ -76,7 +61,6 @@ for (const [w, h] of SIZES) {
 
   test(`export panel, ${w}x${h}`, { skip }, async () => {
     const { page: p, context } = await page(w, h);
-    await pauseAt(p, 7.2);
     await p.click('#export-btn');
     await p.check('input[name=xp-format][value=mp4]');
     await p.waitForTimeout(300);
@@ -86,8 +70,6 @@ for (const [w, h] of SIZES) {
 
   test(`theme panel with a palette from "pastel green", ${w}x${h}`, { skip }, async () => {
     const { page: p, context } = await page(w, h);
-    await p.click('#tab-editor');
-    await p.waitForFunction(() => document.querySelectorAll('.tl-row').length >= 4);
     await p.click('.ve-side [data-tab=theme]');
     await p.fill('.tp [data-words]', 'pastel green');
     await p.click('.tp [data-gen] button');

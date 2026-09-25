@@ -1,6 +1,6 @@
 /**
- * Export formats, resolution presets, and FFmpeg argument builders. Shared by
- * the Node CLI (native FFmpeg) and the browser (ffmpeg.wasm).
+ * Export formats, resolution presets, and FFmpeg argument builders for the
+ * Node CLI (native FFmpeg). The browser export encodes with WebCodecs.
  * @module export/formats
  */
 

@@ -1,6 +1,6 @@
 # Progress
 
-Status against the definition of done, kept current with each commit batch. The focus is the visual editor and the quantum views; Code mode is the secondary path. The example gallery and theme sheets were retired (see `docs/DECISIONS.md`).
+Status against the definition of done, kept current with each commit batch. The browser app is the visual editor, built around Qubi programs and their quantum views; scenes in code run through the `qgfx` CLI and the embed element. The example gallery, theme sheets, and Code mode were retired (see `docs/DECISIONS.md`).
 
 ## Definition of done
 
@@ -8,7 +8,7 @@ Status against the definition of done, kept current with each commit batch. The 
 | --- | --- | --- |
 | Live Pages URL in the README | Written; the Pages workflow deploys the default branch on every push once Pages is enabled in the repository settings with GitHub Actions as the source | `README.md`, `.github/workflows/pages.yml` |
 | `npm test` clean | 658 tests pass; 21 browser tests pass under `npm run test:e2e` in Chromium. Unit, parser, export, and golden suites pass (87% of lines and 84% of branches covered, excluding the browser UI); lint includes an unused-export check | `tests/` |
-| Narrated Grover and QFT explainers | Done | `examples/20-grover-explainer.js`, `examples/21-qft-explainer.js`, `src/quantum/explainers.js` |
+| Narrated Grover and QFT explainers | Done | `explainQubi` in `src/quantum/explainers.js` |
 | Editor Qubi block wired to Bloch, state, and unitary views | Done: wires carry state and unitary out of a Qubi block; dragging the Bloch handle writes RY and RZ back into the program (covered by an e2e test) | `src/editor/blocks.js`, `src/editor/ui/`, `docs/renders/ui-editor-wires-*.png` |
 | Single-expression math animations | Done: derivatives, integrals, equations, matrix products, eigenvectors | `src/explainers/derivation.js`, examples 11 to 14 and 18 |
 | Clean, whiteboard, and chalkboard from one switch | Done: a board keeps the theme's colors | `examples/30-pythagoras-boards.js` with `--board`, board picker in the top bar |
@@ -28,11 +28,11 @@ Status against the definition of done, kept current with each commit batch. The 
 | Themes and palette helper | Done: 19 themes |
 | Boards | Done: chalkboard, whiteboard, paper, blueprint, erase, page turns |
 | Export | Done in Node: MP4, HEVC, WebM with alpha, AV1, ProRes, MKV, GIF, APNG, WebP, sequences, PDF, animated SVG, Lottie, SRT, audio |
-| Visual editor, code mode, embed, browser export | Done: block editor with wires and timeline (the default view), code mode with Qubi diagnostics and permalinks, `<qubibyte-scene>` element, and PNG, MP4, WebM (with alpha), GIF, and APNG export in the browser |
+| Visual editor, embed, browser export | Done: block editor with wires, timeline, and document permalinks; `<qubibyte-scene>` element; PNG, SVG, MP4, WebM (with alpha), GIF, and APNG export in the browser through WebCodecs, mp4-muxer, and webm-muxer |
 | Documentation site | Done: `tools/build-docs.js` builds overview, Qubi, cookbook, and API reference pages |
 
 ## Known gaps
 
 - The editor's Bloch block draws in 2D; the 3D `BlochSphere` is available to code scenes but not yet to the editor.
-- Browser export: WebM with alpha is VP8 (the bundled ffmpeg.wasm's VP9 encoder crashes at 640x360 and above), and the editor's video and font assets are stored but not yet rendered.
+- Browser export needs WebCodecs encoders; MP4 falls back to AV1 or VP9 where the browser has no H.264 encoder. The editor's video and font assets are stored but not yet rendered.
 - Video files play in Node renders (`openVideo`); in the browser a VideoNode needs a frame source with a `frameAt` method.

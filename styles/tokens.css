@@ -91,12 +91,10 @@
   --panel-header-h: 40px;
   --icon: 16px;
   --panel-w: 296px;
-  --code-pane-w: 38%;
   --code-pane-min: 360px;
   --timeline-h: 208px;
   --track-h: 28px;
   --track-label-w: 168px;
-  --scrub-h: 28px;
   --popover-w: 360px;
   --control-min-w: 240px;
   --select-max-w: 180px;
@@ -175,9 +173,6 @@
   /* Timeline and graph */
   --track-bar: color-mix(in oklab, var(--brand) 34%, var(--surface));
   --track-bar-exit: color-mix(in oklab, #d9b25e 28%, var(--surface));
-  --marker-label: var(--text-muted);
-  --marker-pause: var(--warning);
-  --marker-caption: #8fb8a8;
   --marker-key: var(--accent-text);
   --guide: #e5836f;
 
@@ -219,7 +214,6 @@
     --syn-comment: #6f6c66;
     --syn-punct: #6d6a64;
     --syn-setting: #57544e;
-    --marker-caption: #3f7d66;
     --guide: #c4553e;
     color-scheme: light;
   }
@@ -256,7 +250,6 @@
   --syn-comment: #6f6c66;
   --syn-punct: #6d6a64;
   --syn-setting: #57544e;
-  --marker-caption: #3f7d66;
   --guide: #c4553e;
   color-scheme: light;
 }
@@ -265,7 +258,6 @@
   :root {
     --library-w: 208px;
     --panel-w: 264px;
-    --code-pane-w: 34%;
     --code-pane-min: 320px;
   }
 }

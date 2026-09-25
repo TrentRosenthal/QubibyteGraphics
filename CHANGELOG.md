@@ -33,4 +33,9 @@ First release.
 
 ### Output
 - `qgfx` CLI: MP4, HEVC, WebM with alpha, AV1, ProRes, MKV, GIF, APNG, WebP, image sequences, PDF, animated SVG, Lottie, SRT captions, and audio; chunked renders that resume.
-- Quantum example scenes, golden-image tests, and a static documentation site.
+- Golden-image tests and a static documentation site.
+
+### Editor
+- The browser app is a visual editor: drag blocks onto a canvas, wire Qubi programs to Bloch spheres, state views, matrices, and sweep plots, and animate them on a timeline. Documents travel in links.
+- Browser export of PNG, SVG, GIF, APNG, MP4, and WebM (with alpha) through WebCodecs, with mp4-muxer and webm-muxer; MP4 falls back to AV1 or VP9 where the browser has no H.264 encoder.
+- `<qubibyte-scene>` embeds a scene or a document in any page.

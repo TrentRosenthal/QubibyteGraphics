@@ -184,25 +184,15 @@ export class Runtime extends EventTarget {
 
   /**
    * Load a source and build its scene.
-   * @param {'module'|'document'|'qubi'} kind
+   * @param {'module'|'document'} kind
    * @param {{source?: string, doc?: any, baseURL?: string}} payload
-   * @param {Record<string, any>} [options] width, height, fps, theme, board, themes, qubiView
+   * @param {Record<string, any>} [options] width, height, fps, theme, board, themes
    * @returns {Promise<any>} scene info
    */
   async load(kind, payload, options = {}) {
     this.lastLoad = { kind, payload, options };
     this.inflight = false;
     return this.request('load', { kind, ...payload, options }, { timeout: BUILD_TIMEOUT_MS });
-  }
-
-  /**
-   * Change build options (theme, board, size) and rebuild.
-   * @param {Record<string, any>} options
-   * @returns {Promise<any>} scene info
-   */
-  setOptions(options) {
-    if (this.lastLoad) this.lastLoad.options = { ...this.lastLoad.options, ...options };
-    return this.request('options', { options }, { timeout: BUILD_TIMEOUT_MS });
   }
 
   /**
@@ -235,16 +225,6 @@ export class Runtime extends EventTarget {
     this.ready.then(() => this.post({ type: 'viewport', ...this.viewport }));
   }
 
-  /** @param {number} x @param {number} y device pixels @returns {Promise<any>} */
-  pick(x, y) {
-    return this.request('pick', { x, y });
-  }
-
-  /** @param {string} id @returns {Promise<any>} */
-  inspect(id) {
-    return this.request('inspect', { node: id });
-  }
-
   /** @param {number} index @param {number} value @returns {Promise<any>} */
   setControl(index, value) {
     return this.request('control', { index, value });
@@ -253,11 +233,6 @@ export class Runtime extends EventTarget {
   /** @param {string} source @param {string} [color] @returns {Promise<{svg: string, width: number, height: number}>} */
   texPreview(source, color) {
     return this.request('texPreview', { source, color });
-  }
-
-  /** @param {{t?: number, width?: number, format?: string}} opts @returns {Promise<Blob>} */
-  still(opts) {
-    return this.request('still', opts);
   }
 
   /**

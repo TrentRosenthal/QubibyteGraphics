@@ -11,9 +11,9 @@ import { esc, download } from '../ui.js';
 const FORMATS = [
   { id: 'png', name: 'PNG', desc: 'Current frame', still: true, alpha: true },
   { id: 'svg', name: 'SVG', desc: 'Current frame as vectors', still: true, alpha: true },
-  { id: 'mp4', name: 'MP4', desc: 'H.264 video' },
+  { id: 'mp4', name: 'MP4', desc: 'H.264, or AV1 if unavailable' },
   { id: 'webm', name: 'WebM', desc: 'VP9 video' },
-  { id: 'webm-alpha', name: 'WebM with alpha', desc: 'VP9, transparent background', alphaOnly: true },
+  { id: 'webm-alpha', name: 'WebM with alpha', desc: 'Transparent, VP9 or VP8', alphaOnly: true },
   { id: 'gif', name: 'GIF', desc: 'Global palette, dithered', gif: true },
   { id: 'apng', name: 'APNG', desc: 'Lossless animated PNG', alpha: true },
 ];

@@ -9,8 +9,7 @@
 import { blockDefinition } from '../blocks.js';
 import { blockGlyph } from './library.js';
 import { icon } from '../../playground/icons.js';
-import { formatTime } from '../../playground/preview.js';
-import { esc } from '../../playground/ui.js';
+import { esc, formatTime } from '../../playground/ui.js';
 
 const SNAP = 0.05;
 

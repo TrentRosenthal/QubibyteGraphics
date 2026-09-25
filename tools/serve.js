@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Static file server for the playground, the embed demo, and end-to-end
+ * Static file server for the editor, the embed demo, and end-to-end
  * tests. Serves the repository root with correct MIME types (module scripts
- * and WebAssembly need them) and CORS headers so the sandboxed iframe
+ * need them) and CORS headers so the sandboxed iframe
  * fallback, whose origin is opaque, can still load engine modules and fonts.
  *
  * Usage: node tools/serve.js [--port 8080] [--root .]

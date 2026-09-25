@@ -72,3 +72,15 @@ export function download(blob, name) {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
+
+/**
+ * Format seconds as m:ss.cc.
+ * @param {number} t
+ * @returns {string}
+ */
+export function formatTime(t) {
+  const s = Math.max(0, t);
+  const m = Math.floor(s / 60);
+  const rest = s - m * 60;
+  return `${m}:${rest.toFixed(2).padStart(5, '0')}`;
+}

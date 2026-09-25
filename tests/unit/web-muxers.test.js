@@ -4,7 +4,6 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { MP4Muxer } from '../../src/playground/export/mp4.js';
 import { WebMMuxer } from '../../src/playground/export/webm.js';
 
 const hasFFmpeg = spawnSync('ffmpeg', ['-version']).status === 0 && spawnSync('ffprobe', ['-version']).status === 0;
@@ -26,75 +25,6 @@ function probe(file) {
   return JSON.parse(r.stdout).streams;
 }
 
-/** Split an Annex B stream into NAL units. */
-function nalUnits(bytes) {
-  const starts = [];
-  for (let i = 0; i + 3 < bytes.length; i++) {
-    if (bytes[i] === 0 && bytes[i + 1] === 0 && (bytes[i + 2] === 1 || (bytes[i + 2] === 0 && bytes[i + 3] === 1))) {
-      const len = bytes[i + 2] === 1 ? 3 : 4;
-      starts.push([i, i + len]);
-      i += len - 1;
-    }
-  }
-  return starts.map(([, s], k) => bytes.subarray(s, k + 1 < starts.length ? starts[k + 1][0] : bytes.length));
-}
-
-/** Access units (AVC length-prefixed) and the avcC record from an Annex B H.264 stream with AUD NALs. */
-function annexBToAvc(bytes) {
-  let sps = null;
-  let pps = null;
-  const frames = [];
-  let cur = null;
-  for (const nal of nalUnits(bytes)) {
-    const type = nal[0] & 0x1f;
-    if (type === 9) {
-      cur = { nals: [], key: false };
-      frames.push(cur);
-    } else if (type === 7) sps = nal;
-    else if (type === 8) pps = nal;
-    else if (cur) {
-      cur.nals.push(nal);
-      if (type === 5) cur.key = true;
-    }
-  }
-  const avcC = new Uint8Array([1, sps[1], sps[2], sps[3], 0xff, 0xe1, sps.length >> 8, sps.length & 0xff, ...sps, 1, pps.length >> 8, pps.length & 0xff, ...pps]);
-  return {
-    avcC,
-    frames: frames.filter((f) => f.nals.length).map((f) => {
-      const size = f.nals.reduce((n, x) => n + 4 + x.length, 0);
-      const out = new Uint8Array(size);
-      const v = new DataView(out.buffer);
-      let o = 0;
-      for (const n of f.nals) {
-        v.setUint32(o, n.length);
-        out.set(n, o + 4);
-        o += 4 + n.length;
-      }
-      return { data: out, key: f.key };
-    }),
-  };
-}
-
-/** Raw AAC frames and the AudioSpecificConfig from an ADTS stream. */
-function adtsFrames(bytes) {
-  const frames = [];
-  let asc = null;
-  for (let i = 0; i + 7 <= bytes.length;) {
-    const profile = bytes[i + 2] >> 6;
-    const sf = (bytes[i + 2] >> 2) & 0xf;
-    const ch = ((bytes[i + 2] & 1) << 2) | (bytes[i + 3] >> 6);
-    const len = ((bytes[i + 3] & 3) << 11) | (bytes[i + 4] << 3) | (bytes[i + 5] >> 5);
-    const header = bytes[i + 1] & 1 ? 7 : 9;
-    if (!asc) {
-      const v = ((profile + 1) << 11) | (sf << 7) | (ch << 3);
-      asc = new Uint8Array([v >> 8, v & 0xff]);
-    }
-    frames.push(bytes.slice(i + header, i + len));
-    i += len;
-  }
-  return { asc, frames };
-}
-
 /** VP9 frames and keyframe flags from an IVF file. */
 function ivfFrames(bytes) {
   const v = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -109,39 +39,6 @@ function ivfFrames(bytes) {
   }
   return out;
 }
-
-test('MP4 muxer writes H.264 and AAC that ffprobe reads frame for frame', { skip }, () => {
-  const dir = mkdtempSync(join(tmpdir(), 'qg-mp4-'));
-  try {
-    ffmpeg(['-f', 'lavfi', '-i', `testsrc2=size=${W}x${H}:rate=${FPS}`, '-frames:v', String(FRAMES), '-c:v', 'libx264', '-profile:v', 'baseline', '-g', '15', '-bf', '0', '-x264-params', 'aud=1', '-pix_fmt', 'yuv420p', '-f', 'h264', join(dir, 'v.h264')]);
-    ffmpeg(['-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=48000', '-t', String(FRAMES / FPS), '-c:a', 'aac', '-ac', '1', '-f', 'adts', join(dir, 'a.aac')]);
-    const { avcC, frames } = annexBToAvc(new Uint8Array(readFileSync(join(dir, 'v.h264'))));
-    assert.equal(frames.length, FRAMES);
-    const { asc, frames: aac } = adtsFrames(new Uint8Array(readFileSync(join(dir, 'a.aac'))));
-    const mux = new MP4Muxer({ width: W, height: H, fps: FPS, audio: { sampleRate: 48000, channels: 1 } });
-    frames.forEach((f, i) => mux.addVideoChunk(f.data, { timestamp: (i * 1e6) / FPS, key: f.key }, i === 0 ? { description: avcC } : undefined));
-    aac.forEach((f, i) => mux.addAudioChunk(f, { timestamp: (i * 1024 * 1e6) / 48000, duration: (1024 * 1e6) / 48000 }, i === 0 ? { description: asc } : undefined));
-    const bytes = mux.finalize();
-    assert.equal(String.fromCharCode(...bytes.subarray(4, 8)), 'ftyp');
-    assert.equal(String.fromCharCode(...bytes.subarray(36, 40)), 'moov', 'moov comes before mdat (fast start)');
-    const file = join(dir, 'out.mp4');
-    writeFileSync(file, bytes);
-    const streams = probe(file);
-    const v = streams.find((s) => s.codec_type === 'video');
-    const a = streams.find((s) => s.codec_type === 'audio');
-    assert.equal(v.codec_name, 'h264');
-    assert.equal(v.width, W);
-    assert.equal(v.height, H);
-    assert.equal(Number(v.nb_read_frames), FRAMES);
-    assert.equal(a.codec_name, 'aac');
-    assert.equal(Number(a.sample_rate), 48000);
-    const decode = spawnSync('ffmpeg', ['-v', 'error', '-i', file, '-f', 'null', '-'], { encoding: 'utf8' });
-    assert.equal(decode.status, 0);
-    assert.equal(decode.stderr.trim(), '', 'decodes without errors');
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
-});
 
 test('WebM muxer writes VP9 SimpleBlocks with cues that ffprobe reads frame for frame', { skip }, () => {
   const dir = mkdtempSync(join(tmpdir(), 'qg-webm-'));
@@ -168,4 +65,45 @@ test('WebM muxer writes VP9 SimpleBlocks with cues that ffprobe reads frame for 
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test('a transparent WebM carries a second VP9 stream of alpha in BlockAdditions that libvpx decodes', { skip }, () => {
+  const dir = mkdtempSync(join(tmpdir(), 'qg-webm-alpha-'));
+  try {
+    const vp9 = ['-c:v', 'libvpx-vp9', '-g', '20', '-auto-alt-ref', '0', '-deadline', 'realtime', '-cpu-used', '8', '-b:v', '2M', '-f', 'ivf'];
+    ffmpeg(['-f', 'lavfi', '-i', `testsrc2=size=${W}x${H}:rate=${FPS}`, '-frames:v', String(FRAMES), ...vp9, join(dir, 'c.ivf')]);
+    // The alpha stream: its luma plane is the alpha, transparent on the left half, opaque on the right.
+    ffmpeg(['-f', 'lavfi', '-i', `nullsrc=size=${W}x${H}:rate=${FPS},format=yuv420p,geq=lum='if(lt(X,${W / 2}),0,255)':cb=128:cr=128`, '-frames:v', String(FRAMES), ...vp9, join(dir, 'a.ivf')]);
+    const color = ivfFrames(new Uint8Array(readFileSync(join(dir, 'c.ivf'))));
+    const alpha = ivfFrames(new Uint8Array(readFileSync(join(dir, 'a.ivf'))));
+    assert.equal(color.length, FRAMES);
+    assert.equal(alpha.length, FRAMES);
+    const mux = new WebMMuxer({ width: W, height: H, fps: FPS, codec: 'vp9', alpha: true });
+    color.forEach((f, i) => mux.addVideoChunk(f.data, { timestamp: (i * 1e6) / FPS, key: f.key, alpha: alpha[i].data }));
+    const file = join(dir, 'alpha.webm');
+    writeFileSync(file, mux.finalize());
+    const [v] = probe(file);
+    assert.equal(Number(v.nb_read_frames), FRAMES);
+    const tags = spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'stream_tags=alpha_mode', '-of', 'csv=p=0', file], { encoding: 'utf8' });
+    assert.equal(tags.stdout.trim(), '1');
+    for (const at of ['0', '1']) {
+      const px = spawnSync('ffmpeg', ['-v', 'error', '-c:v', 'libvpx-vp9', '-ss', at, '-i', file, '-frames:v', '1', '-f', 'rawvideo', '-pix_fmt', 'rgba', '-'], { maxBuffer: 1 << 24 });
+      assert.equal(px.status, 0, String(px.stderr));
+      const rgba = px.stdout;
+      assert.ok(rgba[(H / 2 * W + 10) * 4 + 3] < 8, `left half is transparent at ${at}s`);
+      assert.ok(rgba[(H / 2 * W + W - 10) * 4 + 3] > 247, `right half is opaque at ${at}s`);
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('browser video codecs are tried best first: H.264 then AV1 then VP9 for MP4, VP9 then VP8 for WebM', async () => {
+  const { videoCandidates } = await import('../../src/playground/export/encode.js');
+  const mp4 = videoCandidates('mp4', 1920, 1080).map((c) => c.mux);
+  assert.deepEqual([...new Set(mp4)], ['avc', 'av1', 'vp9']);
+  assert.equal(videoCandidates('mp4', 1920, 1080)[0].codec, 'avc1.640028');
+  assert.deepEqual([...new Set(videoCandidates('webm', 640, 360).map((c) => c.mux))], ['vp9', 'vp8', 'av1']);
+  // Alpha needs a codec libvpx can carry as a second stream, so AV1 is not offered.
+  assert.deepEqual([...new Set(videoCandidates('webm-alpha', 640, 360).map((c) => c.mux))], ['vp9', 'vp8']);
 });

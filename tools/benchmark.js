@@ -18,10 +18,8 @@ const { values } = parseArgs({ options: { frames: { type: 'string' } } });
 const FRAMES = Number(values.frames ?? 60);
 const CASES = [
   ['09-taylor-series', {}],
-  ['20-grover-explainer', {}],
   ['22-bell-state', {}],
   ['40-platonic-solids', {}],
-  ['41-surface-plot', {}],
   ['30-pythagoras-boards', { board: 'chalkboard' }],
 ];
 

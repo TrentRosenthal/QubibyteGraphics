@@ -1,23 +1,21 @@
 /**
  * Browser export, run inside the scene sandbox. The scene is rebuilt at the
  * export size and frame rate, and frame n is sampled at `scene.frameTime(n)`,
- * the same time the preview shows for that frame. Video goes through
- * WebCodecs and our own muxers when the browser has the encoder, and
- * through ffmpeg.wasm otherwise.
+ * the same time the preview shows for that frame. Video is encoded with
+ * WebCodecs and muxed with mp4-muxer and webm-muxer; a transparent WebM
+ * carries its alpha as a second VP9 or VP8 stream in BlockAdditions, which
+ * our own WebM muxer writes.
  * @module playground/export/encode
  */
 
-/* global AudioEncoder, AudioData */
-
-import { sampleFrame, renderFrame, renderSVG, synthesize, encodeWav } from '../../index.js';
+import { sampleFrame, renderFrame, renderSVG } from '../../index.js';
 import { createCanvas } from '../../core/platform.js';
 import { canvasToBlob } from '../runtime-core.js';
-import { MP4Muxer } from './mp4.js';
-import { WebMMuxer } from './webm.js';
+import { Muxer as Mp4Muxer, ArrayBufferTarget as Mp4Target } from '../../../vendor/mp4-muxer/mp4-muxer.mjs';
+import { Muxer as WebmMuxer, ArrayBufferTarget as WebmTarget } from '../../../vendor/webm-muxer/webm-muxer.mjs';
+import { WebMMuxer as AlphaWebMMuxer } from './webm.js';
 import { GifEncoder, buildPalette } from './gif.js';
 import { encodePNG, assembleAPNG } from './apng.js';
-
-const SAMPLE_RATE = 48000;
 
 const MIME = {
   png: 'image/png', svg: 'image/svg+xml', mp4: 'video/mp4', webm: 'video/webm', 'webm-alpha': 'video/webm', gif: 'image/gif', apng: 'image/apng',
@@ -51,125 +49,162 @@ function vp9Codec(w, h) {
   return `vp09.00.${level}.08`;
 }
 
+function av1Codec(w, h) {
+  const px = w * h;
+  const level = px <= 2359296 ? '08' : px <= 8912896 ? '12' : '16';
+  return `av01.0.${level}M.08`;
+}
+
+/**
+ * Video codecs to try for a format, best first. `mux` is the codec name the
+ * container writer uses.
+ * @param {string} format
+ * @param {number} W
+ * @param {number} H
+ * @returns {Array<{codec: string, mux: string, name: string}>}
+ */
+export function videoCandidates(format, W, H) {
+  if (format === 'mp4') {
+    return [
+      ...avcCodecs(W, H).map((codec) => ({ codec, mux: 'avc', name: 'H.264' })),
+      { codec: av1Codec(W, H), mux: 'av1', name: 'AV1' },
+      { codec: vp9Codec(W, H), mux: 'vp9', name: 'VP9' },
+    ];
+  }
+  const vp = [{ codec: vp9Codec(W, H), mux: 'vp9', name: 'VP9' }, { codec: 'vp09.00.10.08', mux: 'vp9', name: 'VP9' }, { codec: 'vp8', mux: 'vp8', name: 'VP8' }];
+  return format === 'webm-alpha' ? vp : [...vp, { codec: av1Codec(W, H), mux: 'av1', name: 'AV1' }];
+}
+
 function copyChunk(chunk) {
   const b = new Uint8Array(chunk.byteLength);
   chunk.copyTo(b);
   return b;
 }
 
-/**
- * Audio for the export: the scene's tone and click events synthesized to
- * mono PCM, with event times mapped to output time.
- * @param {any} scene
- * @param {string[]} notes
- * @returns {Float32Array|null}
- */
-function sceneAudio(scene, notes) {
-  if (scene.audio.some((e) => e.kind === 'file')) notes.push('Audio files attached with scene.sound() are mixed by the CLI; browser exports include synthesized tones and clicks only.');
-  const events = scene.audio.filter((e) => e.kind === 'tone' || e.kind === 'click').map((e) => ({ ...e, time: scene.sceneToOutputTime(e.time) }));
-  if (!events.length) return null;
-  return synthesize(events, scene.duration, SAMPLE_RATE);
-}
-
-async function encodeAudio(samples, codec, muxer, notes) {
-  if (typeof AudioEncoder === 'undefined') return false;
-  const config = { codec, sampleRate: SAMPLE_RATE, numberOfChannels: 1, bitrate: 128000 };
-  let ok;
+async function supported(Encoder, config) {
   try {
-    ok = (await AudioEncoder.isConfigSupported(config)).supported;
+    return (await Encoder.isConfigSupported(config)).supported === true;
   } catch {
-    ok = false;
-  }
-  if (!ok) return false;
-  let failure = null;
-  const enc = new AudioEncoder({
-    output: (chunk, meta) => muxer.addAudioChunk(copyChunk(chunk), { timestamp: chunk.timestamp, duration: chunk.duration ?? 0 }, meta && meta.decoderConfig),
-    error: (e) => {
-      failure = e;
-    },
-  });
-  enc.configure(config);
-  const step = 4800;
-  for (let i = 0; i < samples.length; i += step) {
-    const n = Math.min(step, samples.length - i);
-    const data = new AudioData({ format: 'f32', sampleRate: SAMPLE_RATE, numberOfFrames: n, numberOfChannels: 1, timestamp: Math.round((i / SAMPLE_RATE) * 1e6), data: samples.slice(i, i + n) });
-    enc.encode(data);
-    data.close();
-  }
-  await enc.flush();
-  enc.close();
-  if (failure) {
-    notes.push(`Audio encoding failed (${failure.message}); the video is silent.`);
     return false;
   }
-  return true;
 }
 
 /**
- * Encode video frames with WebCodecs into our muxers. Returns null when the
- * browser has no encoder for the configuration, so the caller can fall back.
+ * Browser exports are silent: audio blocks play files, which the CLI mixes.
+ * @param {any} scene
+ * @param {string[]} notes
  */
-async function webCodecsVideo(ctx) {
-  const { format, W, H, fps, N, draw, canvas, core, progress, samples, notes } = ctx;
-  if (typeof VideoEncoder === 'undefined' || typeof VideoFrame === 'undefined') return null;
-  const alpha = format === 'webm-alpha';
-  const codecs = format === 'mp4' ? avcCodecs(W, H) : [vp9Codec(W, H), 'vp09.00.10.08'];
-  let config = null;
-  for (const codec of codecs) {
-    const c = { codec, width: W, height: H, bitrate: Math.round(Math.min(40e6, W * H * fps * 0.09)), framerate: fps, alpha: alpha ? 'keep' : 'discard', latencyMode: 'quality' };
-    if (format === 'mp4') c.avc = { format: 'avc' };
-    try {
-      if ((await VideoEncoder.isConfigSupported(c)).supported) {
-        config = c;
-        break;
-      }
-    } catch {
-      config = null;
-    }
+function noteAudio(scene, notes) {
+  if (scene.audio.length) notes.push('Audio is mixed by the qgfx CLI; browser exports are silent.');
+}
+
+function videoConfig(c, W, H, fps, alpha) {
+  const config = { codec: c.codec, width: W, height: H, bitrate: Math.round(Math.min(40e6, W * H * fps * 0.09)), framerate: fps, alpha: alpha ? 'keep' : 'discard', latencyMode: 'quality' };
+  if (c.mux === 'avc') config.avc = { format: 'avc' };
+  return config;
+}
+
+/** The first candidate the browser's VideoEncoder accepts, with its config. */
+async function pickVideo(format, W, H, fps, alpha) {
+  for (const c of videoCandidates(format, W, H)) {
+    const config = videoConfig(c, W, H, fps, alpha);
+    if (await supported(VideoEncoder, config)) return { ...c, config };
   }
-  if (!config) return null;
-  let audioCodec = null;
-  if (samples && typeof AudioEncoder !== 'undefined') {
-    const codec = format === 'mp4' ? 'mp4a.40.2' : 'opus';
-    try {
-      if ((await AudioEncoder.isConfigSupported({ codec, sampleRate: SAMPLE_RATE, numberOfChannels: 1, bitrate: 128000 })).supported) audioCodec = codec;
-    } catch {
-      audioCodec = null;
-    }
-  }
-  if (samples && !audioCodec) notes.push(format === 'mp4' ? 'This browser has no AAC encoder, so the MP4 is silent. WebM carries the audio as Opus.' : 'This browser has no Opus encoder, so the video is silent.');
-  const audio = audioCodec ? { sampleRate: SAMPLE_RATE, channels: 1 } : null;
-  const muxer = format === 'mp4' ? new MP4Muxer({ width: W, height: H, fps, audio }) : new WebMMuxer({ width: W, height: H, fps, codec: 'vp9', alpha, audio });
-  let failure = null;
-  const enc = new VideoEncoder({
-    output: (chunk, meta) => {
-      const info = { timestamp: chunk.timestamp, duration: chunk.duration ?? undefined, key: chunk.type === 'key', alpha: meta && meta.alphaSideData ? new Uint8Array(meta.alphaSideData) : null };
-      muxer.addVideoChunk(copyChunk(chunk), info, meta && meta.decoderConfig);
-    },
-    error: (e) => {
-      failure = e;
-    },
-  });
-  enc.configure(config);
+  return null;
+}
+
+/**
+ * Run a VideoEncoder over every frame. `frame(n, timestamp)` returns the
+ * VideoFrame for frame n (or an array of frames, one per encoder).
+ */
+async function encodeFrames({ encoders, N, fps, frame, core, progress }) {
   const frameUs = 1e6 / fps;
+  const keyEvery = Math.max(1, Math.round(fps * 2));
   for (let n = 0; n < N; n++) {
     if (core.cancelled) {
-      enc.close();
+      for (const e of encoders) e.enc.close();
       throw aborted();
     }
-    if (failure) throw failure;
-    draw(n);
-    const vf = new VideoFrame(canvas, { timestamp: Math.round(n * frameUs), duration: Math.round(frameUs), alpha: alpha ? 'keep' : 'discard' });
-    enc.encode(vf, { keyFrame: n % Math.max(1, Math.round(fps * 2)) === 0 });
-    vf.close();
-    while (enc.encodeQueueSize > 3) await new Promise((r) => setTimeout(r, 1));
+    for (const e of encoders) if (e.failure) throw e.failure;
+    const frames = [].concat(frame(n, Math.round(n * frameUs), Math.round(frameUs)));
+    frames.forEach((vf, i) => {
+      encoders[i].enc.encode(vf, { keyFrame: n % keyEvery === 0 });
+      vf.close();
+    });
+    while (encoders.some((e) => e.enc.encodeQueueSize > 3)) await new Promise((r) => setTimeout(r, 1));
     progress({ stage: 'Encoding', done: n + 1, total: N });
   }
-  await enc.flush();
-  enc.close();
-  if (failure) throw failure;
-  if (audioCodec) await encodeAudio(samples, audioCodec, muxer, notes);
-  notes.push(`Encoded with WebCodecs (${config.codec}).`);
+  for (const e of encoders) {
+    await e.enc.flush();
+    e.enc.close();
+    if (e.failure) throw e.failure;
+  }
+}
+
+function makeEncoder(config, output) {
+  const e = { enc: null, failure: null };
+  e.enc = new VideoEncoder({ output, error: (err) => { e.failure = err; } });
+  e.enc.configure(config);
+  return e;
+}
+
+/** MP4 or opaque WebM through mp4-muxer or webm-muxer. */
+async function muxedVideo(ctx) {
+  const { format, W, H, fps, N, draw, canvas, core, progress, notes } = ctx;
+  const video = await pickVideo(format, W, H, fps, false);
+  if (!video) throw new Error(`This browser cannot encode ${format === 'mp4' ? 'MP4 (H.264, AV1, or VP9)' : 'WebM (VP9, VP8, or AV1)'} video with WebCodecs. Try PNG, GIF, or APNG, or render with the qgfx CLI.`);
+  if (format === 'mp4' && video.mux !== 'avc') notes.push(`This browser has no H.264 encoder, so the MP4 uses ${video.name}. It plays in current browsers and VLC; older players may need H.264 from the qgfx CLI.`);
+  const muxer = format === 'mp4'
+    ? new Mp4Muxer({ target: new Mp4Target(), video: { codec: video.mux, width: W, height: H, frameRate: fps }, fastStart: 'in-memory' })
+    : new WebmMuxer({ target: new WebmTarget(), video: { codec: `V_${video.mux.toUpperCase()}`, width: W, height: H, frameRate: fps } });
+  const enc = makeEncoder(video.config, (chunk, meta) => muxer.addVideoChunk(chunk, meta));
+  await encodeFrames({
+    encoders: [enc], N, fps, core, progress,
+    frame: (n, timestamp, duration) => {
+      draw(n);
+      return new VideoFrame(canvas, { timestamp, duration, alpha: 'discard' });
+    },
+  });
+  muxer.finalize();
+  notes.push(`Encoded with WebCodecs (${video.config.codec}).`);
+  return new Uint8Array(muxer.target.buffer);
+}
+
+/**
+ * Transparent WebM. When the encoder keeps alpha itself its side data is
+ * used; otherwise the alpha channel is encoded as a second stream whose
+ * luma plane is the alpha, the layout libvpx and browsers decode.
+ */
+async function alphaVideo(ctx) {
+  const { W, H, fps, N, draw, ctx2d, core, progress, notes } = ctx;
+  let video = await pickVideo('webm-alpha', W, H, fps, true);
+  const native = !!video;
+  if (!video) video = await pickVideo('webm-alpha', W, H, fps, false);
+  if (!video) throw new Error('This browser cannot encode VP9 or VP8 with WebCodecs, so it cannot export a transparent WebM. Try PNG or APNG, or render with the qgfx CLI.');
+  const muxer = new AlphaWebMMuxer({ width: W, height: H, fps, codec: video.mux, alpha: true });
+  const color = [];
+  const alphaByTime = new Map();
+  const encoders = [makeEncoder(video.config, (chunk, meta) => color.push({ chunk: copyChunk(chunk), timestamp: chunk.timestamp, key: chunk.type === 'key', side: meta && meta.alphaSideData ? new Uint8Array(meta.alphaSideData) : null, config: meta && meta.decoderConfig }))];
+  if (!native) encoders.push(makeEncoder({ ...video.config, alpha: 'discard' }, (chunk) => alphaByTime.set(chunk.timestamp, copyChunk(chunk))));
+  const ySize = W * H;
+  const cSize = (W / 2) * (H / 2);
+  await encodeFrames({
+    encoders, N, fps, core, progress,
+    frame: (n, timestamp, duration) => {
+      draw(n);
+      const rgba = ctx2d.getImageData(0, 0, W, H).data;
+      if (native) return new VideoFrame(rgba, { format: 'RGBA', codedWidth: W, codedHeight: H, timestamp, duration });
+      const planes = new Uint8Array(ySize + 2 * cSize);
+      for (let i = 0; i < ySize; i++) planes[i] = rgba[i * 4 + 3];
+      planes.fill(128, ySize);
+      return [
+        new VideoFrame(rgba, { format: 'RGBX', codedWidth: W, codedHeight: H, timestamp, duration }),
+        new VideoFrame(planes, { format: 'I420', codedWidth: W, codedHeight: H, timestamp, duration, colorSpace: { fullRange: true, matrix: 'bt709', primaries: 'bt709', transfer: 'bt709' } }),
+      ];
+    },
+  });
+  for (const c of color) muxer.addVideoChunk(c.chunk, { timestamp: c.timestamp, key: c.key, alpha: native ? c.side : alphaByTime.get(c.timestamp) ?? null }, c.config);
+  notes.push(`Encoded with WebCodecs (${video.config.codec}), alpha ${native ? 'from the encoder' : 'as a second stream'}.`);
   return muxer.finalize();
 }
 
@@ -201,7 +236,7 @@ export async function exportScene(core, o, progress) {
   const theme = core.themeFor(scene);
   const transparent = format === 'webm-alpha' || (!!o.transparent && (format === 'png' || format === 'svg' || format === 'apng'));
   const canvas = createCanvas(W, H);
-  const ctx = canvas.getContext('2d', { willReadFrequently: format === 'gif' || format === 'apng' });
+  const ctx = canvas.getContext('2d', { willReadFrequently: format === 'gif' || format === 'apng' || format === 'webm-alpha' });
   const draw = (n) => renderFrame(ctx, sampleFrame(scene, scene.frameTime(n), theme), { transparent, assets: scene.assets });
   const notes = [];
   const N = scene.frameCount;
@@ -250,24 +285,11 @@ export async function exportScene(core, o, progress) {
     return result(assembleAPNG(pngs, { fps }), N, 'APNG assembler');
   }
 
-  const samples = sceneAudio(scene, notes);
-  const bytes = await webCodecsVideo({ format, W, H, fps, N, draw, canvas, core, progress, samples, notes });
-  if (bytes) return result(bytes, N, 'WebCodecs');
-
-  const why = format === 'mp4' ? 'This browser has no WebCodecs H.264 encoder, so ffmpeg.wasm encoded the file with x264.' : format === 'webm-alpha' ? 'This browser cannot encode VP9 with alpha in WebCodecs, so ffmpeg.wasm encoded VP8 with alpha.' : 'This browser has no WebCodecs VP9 encoder, so ffmpeg.wasm encoded VP8.';
-  notes.push(why);
-  const { encodeWithFFmpeg } = await import('./ffmpeg.js');
-  const out = await encodeWithFFmpeg({
-    format,
-    fps,
-    frameCount: N,
-    wav: samples ? encodeWav(samples, SAMPLE_RATE) : null,
-    frame: async (n) => {
-      draw(n);
-      return new Uint8Array(await (await canvasToBlob(canvas, 'image/png')).arrayBuffer());
-    },
-    onProgress: progress,
-    cancelled: () => core.cancelled,
-  });
-  return result(out, N, 'ffmpeg.wasm');
+  if (typeof VideoEncoder === 'undefined' || typeof VideoFrame === 'undefined') {
+    throw new Error('This browser has no WebCodecs video encoder. Export PNG, GIF, or APNG here, or render video with the qgfx CLI.');
+  }
+  noteAudio(scene, notes);
+  const job = { format, W, H, fps, N, draw, canvas, ctx2d: ctx, core, progress, notes };
+  const bytes = format === 'webm-alpha' ? await alphaVideo(job) : await muxedVideo(job);
+  return result(bytes, N, 'WebCodecs');
 }
