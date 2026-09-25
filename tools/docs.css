@@ -110,22 +110,10 @@ th { color: var(--text-muted); font-weight: var(--weight-medium); }
 .recipe { border-top: 1px solid var(--border); }
 .recipe:first-of-type { border-top: 0; }
 
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--space-6); margin-top: var(--space-6); }
-.card { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--surface); }
-.card img, .card .noposter { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: var(--bg-sunken); }
-.card .meta { padding: var(--space-3) var(--space-4) var(--space-4); }
-.card h2 { font-size: 16px; margin: 0 0 var(--space-1); }
-.card p { margin: 0 0 var(--space-3); color: var(--text-muted); font-size: var(--text-md); }
-.card .links { display: flex; gap: var(--space-4); font-size: var(--text-md); }
-
 .sym { padding: var(--space-3) 0; border-bottom: 1px solid var(--border); }
 .sym p { margin: var(--space-1) 0 0; color: var(--text-muted); font-size: var(--text-md); }
 .sym .kind { color: var(--text-faint); font-size: var(--text-sm); }
 .sym code { background: none; padding: 0; }
-
-.sheet { margin: var(--space-6) 0; }
-.sheet img { width: 100%; height: auto; border-radius: var(--radius-lg); border: 1px solid var(--border); }
-.sheet figcaption { color: var(--text-muted); font-size: var(--text-md); margin-top: var(--space-2); }
 
 footer {
   display: flex;

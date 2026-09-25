@@ -1,7 +1,7 @@
 /**
- * Playground app shell: top bar, Code mode (code editor, preview, gallery,
- * inspector), the Editor mode switch, permalinks, saving, the export panel,
- * and the shortcut sheet. User code runs only in the sandboxed runtime.
+ * Playground app shell: top bar, the Editor and Code modes (code editor,
+ * preview, inspector), permalinks, saving, the export panel, and the
+ * shortcut sheet. User code runs only in the sandboxed runtime.
  * @module playground/app
  */
 
@@ -13,7 +13,6 @@ import { Preview } from './preview.js';
 import { CodeEditor } from './editor/code-editor.js';
 import { createCompletions } from './editor/completions.js';
 import { encodePermalink, decodePermalink } from './permalink.js';
-import { mountGallery } from './gallery.js';
 import { Inspector } from './inspector.js';
 import { ExportPanel } from './export/panel.js';
 import { mountShortcuts } from './shortcuts.js';
@@ -87,7 +86,6 @@ class App {
     this.preview = new Preview({ runtime: this.runtime, stage: $('#code-stage'), frame: $('#code-frame'), caption: $('#code-caption'), transport: $('#code-transport'), controls: $('#code-controls'), status: $('#code-status') });
     this.inspector = new Inspector($('#inspector-panel'), $('#pick-outline'), this.runtime);
     this.preview.addEventListener('pick', async (e) => {
-      this.setSide('inspector');
       await this.inspector.pick(e.detail.x, e.detail.y);
     });
     this.preview.addEventListener('time', () => {
@@ -104,21 +102,8 @@ class App {
     mountShortcuts($('#shortcuts-panel'), () => this.toggleShortcuts(false));
     this.bindChrome();
 
-    this.gallery = await mountGallery($('#gallery-panel'), {
-      onOpen: (ex, source) => {
-        this.state.example = ex.file;
-        this.state.name = ex.name.replace(/^\d+-/, '');
-        this.setSource('js');
-        this.editor.value = source;
-        this.state.js = source;
-        this.gallery.setCurrent(ex.file);
-        this.run();
-      },
-    });
-
     const restored = await this.restore();
     if (restored === 'doc') return;
-    this.gallery.setCurrent(this.state.src === 'js' && !this.fromLink ? this.state.example : null);
     await this.run();
     // Open in the visual editor unless a code or Qubi link was opened, the
     // page asks for a mode (?mode=code), or the last session ended in Code.
@@ -164,7 +149,6 @@ class App {
       this.run();
     }));
     document.querySelectorAll('#qubi-view [data-view]').forEach((b) => b.addEventListener('click', () => this.setQubiView(b.dataset.view, true)));
-    document.querySelectorAll('.side-pane [data-side]').forEach((b) => b.addEventListener('click', () => this.setSide(b.dataset.side)));
     $('#run-btn').addEventListener('click', () => this.run());
     $('#share-btn').addEventListener('click', () => this.share());
     $('#ui-theme-btn').addEventListener('click', () => {
@@ -232,12 +216,6 @@ class App {
     this.customThemes = this.customThemes.filter((t) => t.id !== theme.id).concat([theme]);
     writeJSON(THEME_STORE, this.customThemes);
     this.fillThemeSelect();
-  }
-
-  setSide(which) {
-    for (const b of document.querySelectorAll('.side-pane [data-side]')) b.setAttribute('aria-selected', String(b.dataset.side === which));
-    $('#gallery-panel').hidden = which !== 'gallery';
-    $('#inspector-panel').hidden = which !== 'inspector';
   }
 
   /** @param {'js'|'qubi'} src */

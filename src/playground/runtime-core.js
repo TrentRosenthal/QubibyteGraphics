@@ -637,7 +637,7 @@ export class RuntimeCore {
   }
 
   /**
-   * Render one frame at a size to an image blob (gallery thumbnails, stills).
+   * Render one frame at a size to an image blob (stills and previews).
    * @param {{t?: number, width?: number, format?: string}} m
    * @returns {Promise<Blob>}
    */

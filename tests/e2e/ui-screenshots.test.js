@@ -29,7 +29,6 @@ async function page(w, h, scheme = 'dark') {
   await o.page.addInitScript(() => localStorage.clear());
   await o.page.goto(`${env.url}index.html?mode=code`);
   await o.page.waitForFunction(() => /Frame \d+ of [1-9]/.test(document.querySelector('.frame-readout')?.textContent || ''), null, { timeout: 30000 });
-  await o.page.waitForFunction(() => !document.querySelector('.gallery-thumb.is-loading'), null, { timeout: 60000 }).catch(() => {});
   return o;
 }
 

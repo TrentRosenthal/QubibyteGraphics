@@ -37,7 +37,6 @@
     "lint:vocab": "node tools/lint-vocab.js",
     "build": "node tools/bundle.js",
     "build:docs": "node tools/build-docs.js",
-    "gallery": "node tools/render-gallery.js",
     "size": "node tools/size-budget.js",
     "serve": "node tools/serve.js",
     "test:e2e": "QGFX_E2E=1 node --test --test-concurrency=1 \"tests/e2e/**/*.test.js\"",

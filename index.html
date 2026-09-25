@@ -22,8 +22,8 @@
         <span class="wordmark-text">Qubibyte Graphics</span>
       </a>
       <div class="seg mode-switch" role="tablist" aria-label="Mode">
-        <button type="button" role="tab" id="tab-code" aria-selected="true" aria-controls="mode-code" data-mode="code">Code</button>
         <button type="button" role="tab" id="tab-editor" aria-selected="false" aria-controls="mode-editor" data-mode="editor">Editor</button>
+        <button type="button" role="tab" id="tab-code" aria-selected="true" aria-controls="mode-code" data-mode="code">Code</button>
       </div>
     </div>
     <div class="topbar-right">
@@ -102,11 +102,9 @@
 
       <aside class="pane side-pane">
         <div class="tabs" role="tablist" aria-label="Side panel">
-          <button type="button" role="tab" id="side-gallery" aria-selected="true" aria-controls="gallery-panel" data-side="gallery">Gallery</button>
-          <button type="button" role="tab" id="side-inspector" aria-selected="false" aria-controls="inspector-panel" data-side="inspector">Inspector</button>
+          <button type="button" role="tab" id="side-inspector" aria-selected="true" aria-controls="inspector-panel">Inspector</button>
         </div>
-        <div class="panel-body" id="gallery-panel" role="tabpanel" aria-labelledby="side-gallery"></div>
-        <div class="panel-body" id="inspector-panel" role="tabpanel" aria-labelledby="side-inspector" hidden></div>
+        <div class="panel-body" id="inspector-panel" role="tabpanel" aria-labelledby="side-inspector"></div>
       </aside>
     </section>
 

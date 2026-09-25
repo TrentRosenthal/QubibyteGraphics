@@ -1,19 +1,17 @@
 #!/usr/bin/env node
 /**
- * Build the static documentation site into docs/site: an overview, the
- * cookbook (docs/cookbook/*.md), the gallery with open-in-playground links,
- * the API reference generated from JSDoc, the Qubi reference and standard
- * library, the theme sheets, and the quality log. Plain HTML that reads the
+ * Build the static documentation site into docs/site: an overview, the Qubi
+ * reference and standard library, the cookbook (docs/cookbook/*.md), and
+ * the API reference generated from JSDoc. Plain HTML that reads the
  * playground's design tokens; no client script is needed to read it.
  *
  *   node tools/build-docs.js
  */
 
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync, rmSync } from 'node:fs';
-import { join, basename } from 'node:path';
+import { join } from 'node:path';
 import { PROJECT } from '../src/config.js';
 import { buildIndexes } from './build-api-index.js';
-import { encodePermalink } from '../src/playground/permalink.js';
 
 const OUT = 'docs/site';
 rmSync(OUT, { recursive: true, force: true });
@@ -121,12 +119,9 @@ export function markdown(src) {
 
 const NAV = [
   ['index.html', 'Overview'],
-  ['cookbook.html', 'Cookbook'],
-  ['gallery.html', 'Gallery'],
-  ['api.html', 'API'],
   ['qubi.html', 'Qubi'],
-  ['themes.html', 'Themes'],
-  ['quality.html', 'Quality'],
+  ['cookbook.html', 'Cookbook'],
+  ['api.html', 'API'],
 ];
 
 function page(file, title, body, opts = {}) {
@@ -145,7 +140,7 @@ function page(file, title, body, opts = {}) {
 <header class="top">
   <a class="brand" href="index.html">${esc(PROJECT.name)}</a>
   <nav class="main">${nav}</nav>
-  <a class="play" href="${ROOT}index.html">Open the playground</a>
+  <a class="play" href="${ROOT}index.html">Open the editor</a>
 </header>
 <div class="layout${toc ? ' with-toc' : ''}">
 ${toc}
@@ -173,22 +168,7 @@ const recipeHtml = recipes.map((f) => {
 });
 page('cookbook.html', 'Cookbook', `<h1>Cookbook</h1>\n${recipeHtml.map((r) => r.html).join('\n')}`, { toc: recipeHtml.flatMap((r) => r.headings.filter((h) => h.level === 2)) });
 
-// Gallery, with a permalink that opens each example's source in the playground.
-const { api, gallery } = buildIndexes();
-const cards = [];
-for (const ex of gallery.examples) {
-  const poster = `docs/renders/gallery/${ex.name}.png`;
-  const source = readFileSync(ex.file, 'utf8');
-  // The index takes the comment just above the default export; fall back to the first comment block.
-  if (!ex.summary) {
-    const m = /^((?:\/\/.*\n)+)/m.exec(source.replace(/^import.*\n|^export const config.*\n|^\n/gm, ''));
-    if (m) ex.summary = m[1].replace(/^\/\/\s?/gm, '').replace(/\s+/g, ' ').trim();
-  }
-  const link = `${ROOT}index.html${await encodePermalink('code', source)}`;
-  const img = existsSync(poster) ? `<img src="${ROOT}${poster}" alt="${esc(ex.title)}, poster frame" loading="lazy" width="480" height="270">` : '<div class="noposter"></div>';
-  cards.push(`<article class="card">${img}<div class="meta"><h2>${esc(ex.title)}</h2><p>${esc(ex.summary)}</p><div class="links"><a href="${link}">Open in playground</a><a href="${ROOT}${ex.file}">Source</a></div></div></article>`);
-}
-page('gallery.html', 'Gallery', `<h1>Gallery</h1><p class="lede">${gallery.examples.length} scenes, each rendered and graded against the quality rubric. Open any of them in the playground to edit and re-render.</p><div class="grid">${cards.join('')}</div>`);
+const { api } = buildIndexes();
 
 // API reference, grouped by module.
 const byModule = new Map();
@@ -213,14 +193,5 @@ const qref = markdown(readFileSync('docs/qubi-reference.md', 'utf8'));
 const qstd = existsSync('docs/qubi-stdlib.md') ? markdown(readFileSync('docs/qubi-stdlib.md', 'utf8').replace(/^# /m, '## ')) : { html: '', headings: [] };
 page('qubi.html', 'Qubi', `${qref.html}\n${qstd.html}`, { toc: [...qref.headings, ...qstd.headings].filter((h) => h.level === 2) });
 
-// Themes.
-const themeSheets = existsSync('docs/renders/themes') ? readdirSync('docs/renders/themes').filter((f) => f.endsWith('.png')).sort() : [];
-page('themes.html', 'Themes', `<h1>Themes</h1><p class="lede">Every built-in theme drawing the same five reference scenes. Set one with <code>config.theme</code> or <code>--theme</code>.</p>${themeSheets.map((f) => `<figure class="sheet"><img src="${ROOT}docs/renders/themes/${f}" alt="${esc(basename(f, '.png'))} theme, five reference scenes" loading="lazy"><figcaption>${esc(basename(f, '.png'))}</figcaption></figure>`).join('')}`);
-
-// Quality: the rubric and the log.
-const rubric = markdown(readFileSync('docs/QUALITY.md', 'utf8'));
-const log = markdown(readFileSync('docs/QUALITY_LOG.md', 'utf8').replace(/^# /m, '## '));
-page('quality.html', 'Quality', `${rubric.html}\n${log.html}`, { toc: [...rubric.headings, ...log.headings].filter((h) => h.level === 2) });
-
 writeFileSync(join(OUT, 'docs.css'), readFileSync('tools/docs.css', 'utf8'));
-console.log(`Built ${NAV.length} pages into ${OUT}: ${recipes.length} recipes, ${gallery.examples.length} gallery scenes, ${api.exports.length} exports.`);
+console.log(`Built ${NAV.length} pages into ${OUT}: ${recipes.length} recipes, ${api.exports.length} exports.`);

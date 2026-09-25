@@ -9,7 +9,7 @@ const out = 'out/pages';
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
 
-const entries = ['index.html', 'src', 'styles', 'vendor', 'examples', 'dist', 'docs/site', 'docs/renders'];
+const entries = ['index.html', 'src', 'styles', 'vendor', 'examples', 'dist', 'docs/site'];
 for (const e of entries) {
   if (!existsSync(e)) continue;
   // Skip local render caches and other dot folders; they are never part of the site.

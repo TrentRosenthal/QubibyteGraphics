@@ -1,6 +1,6 @@
 # Progress
 
-Status against the definition of done, kept current with each commit batch. "Done" means built, tested, rendered where visual, and graded in `docs/QUALITY_LOG.md`.
+Status against the definition of done, kept current with each commit batch. The focus is the visual editor and the quantum views; Code mode is the secondary path. The example gallery and theme sheets were retired (see `docs/DECISIONS.md`).
 
 ## Definition of done
 
@@ -11,10 +11,8 @@ Status against the definition of done, kept current with each commit batch. "Don
 | Narrated Grover and QFT explainers | Done | `examples/20-grover-explainer.js`, `examples/21-qft-explainer.js`, `src/quantum/explainers.js` |
 | Editor Qubi block wired to Bloch, state, and unitary views | Done: wires carry state and unitary out of a Qubi block; dragging the Bloch handle writes RY and RZ back into the program (covered by an e2e test) | `src/editor/blocks.js`, `src/editor/ui/`, `docs/renders/ui-editor-wires-*.png` |
 | Single-expression math animations | Done: derivatives, integrals, equations, matrix products, eigenvectors | `src/explainers/derivation.js`, examples 11 to 14 and 18 |
-| Clean, whiteboard, and chalkboard from one switch | Done | `examples/30-pythagoras-boards.js` with `--board` |
-| 40 graded gallery examples | Done: 42 | `examples/`, `docs/renders/gallery/`, `docs/QUALITY_LOG.md` |
-| Every theme renders five reference scenes, graded | Done: 19 themes | `tools/render-themes.js`, `docs/renders/themes/` |
-| User images as object, texture, and background | Done | `examples/50-images.js`, `ImagePlane3D`, `imageBackground` |
+| Clean, whiteboard, and chalkboard from one switch | Done: a board keeps the theme's colors | `examples/30-pythagoras-boards.js` with `--board`, board picker in the top bar |
+| User images as object, texture, and background | Done | `ImageNode`, `ImagePlane3D`, `imageBackground`, `docs/cookbook/06-images.md` |
 
 ## By area
 
@@ -30,8 +28,8 @@ Status against the definition of done, kept current with each commit batch. "Don
 | Themes and palette helper | Done: 19 themes |
 | Boards | Done: chalkboard, whiteboard, paper, blueprint, erase, page turns |
 | Export | Done in Node: MP4, HEVC, WebM with alpha, AV1, ProRes, MKV, GIF, APNG, WebP, sequences, PDF, animated SVG, Lottie, SRT, audio |
-| Playground, visual editor, embed, browser export | Done: playground with Qubi diagnostics and permalinks, block editor with wires and timeline, `<qubibyte-scene>` element, and PNG, MP4, WebM (with alpha), GIF, and APNG export in the browser |
-| Documentation site | Done: `tools/build-docs.js` builds overview, cookbook, gallery with open-in-playground links, API reference, Qubi, themes, and quality pages |
+| Visual editor, code mode, embed, browser export | Done: block editor with wires and timeline (the default view), code mode with Qubi diagnostics and permalinks, `<qubibyte-scene>` element, and PNG, MP4, WebM (with alpha), GIF, and APNG export in the browser |
+| Documentation site | Done: `tools/build-docs.js` builds overview, Qubi, cookbook, and API reference pages |
 
 ## Known gaps
 

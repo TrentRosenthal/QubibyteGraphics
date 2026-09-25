@@ -56,7 +56,6 @@ test('the playground loads without console errors and plays the default example'
   assert.equal(await page.textContent('.ftotal'), '450');
   const shot = await pixels(page.locator('#code-frame'));
   assert.ok(shot.distinct > 20, 'the preview draws the scene');
-  assert.ok(await page.locator('.gallery-item').count() >= 2);
   assert.deepEqual(errors, []);
   await context.close();
 });

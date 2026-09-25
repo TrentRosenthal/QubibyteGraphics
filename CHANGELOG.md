@@ -33,4 +33,4 @@ First release.
 
 ### Output
 - `qgfx` CLI: MP4, HEVC, WebM with alpha, AV1, ProRes, MKV, GIF, APNG, WebP, image sequences, PDF, animated SVG, Lottie, SRT captions, and audio; chunked renders that resume.
-- 42 graded gallery examples, theme sheets, golden-image tests, and a static documentation site.
+- Quantum example scenes, golden-image tests, and a static documentation site.

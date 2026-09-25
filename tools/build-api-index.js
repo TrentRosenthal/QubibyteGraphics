@@ -1,19 +1,15 @@
 #!/usr/bin/env node
 /**
- * Build the playground's completion index and gallery list.
- *
- * - `src/playground/api-index.json`: every name exported from src/index.js
- *   with its kind, signature, and the first sentence of its JSDoc; the Qubi
- *   standard library calls with their signatures from docs/qubi-stdlib.md.
- * - `src/playground/gallery.json`: the example scenes with their titles,
- *   summaries, and poster thumbnails from docs/renders/gallery/<name>.png
- *   when present.
+ * Build the playground's completion index, `src/playground/api-index.json`:
+ * every name exported from src/index.js with its kind, signature, and the
+ * first sentence of its JSDoc, and the Qubi standard library calls with
+ * their signatures from docs/qubi-stdlib.md.
  *
  * Usage: node tools/build-api-index.js [--check]
- * With --check it fails when the committed files are out of date.
+ * With --check it fails when the committed file is out of date.
  */
-import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
-import { dirname, join, resolve, relative, basename } from 'node:path';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { dirname, join, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -127,29 +123,6 @@ function stdlibIndex() {
   return out;
 }
 
-const ACRONYMS = new Set(['qft', 'ghz', 'bv', 'svg', '3d', 'ode', 'pde', 'fft', 'qpe']);
-
-function galleryIndex() {
-  const dir = join(ROOT, 'examples');
-  const files = readdirSync(dir).filter((f) => f.endsWith('.js')).sort();
-  return files.map((f) => {
-    const src = readFileSync(join(dir, f), 'utf8');
-    const name = basename(f, '.js');
-    const doc = /^\s*\/\*\*([\s\S]*?)\*\//.exec(src);
-    const lineDoc = /((?:^\/\/[^\n]*\n)+)export default/m.exec(src);
-    // Otherwise the first line-comment block after the imports and the config.
-    const body = src.replace(/^\s*import[\s\S]*?from\s*['"][^'"]+['"];?\s*$/gm, '').replace(/^export const config[^\n]*\n/m, '');
-    const firstBlock = /((?:^\/\/[^\n]*\n)+)/m.exec(body);
-    const commentText = (m) => firstSentence(m[1].replace(/^\/\/\s?/gm, ''));
-    const summary = doc ? firstSentence(doc[1]) : lineDoc ? commentText(lineDoc) : firstBlock ? commentText(firstBlock) : '';
-    const words = name.replace(/^\d+-/, '').split('-');
-    const title = words.map((w, i) => (ACRONYMS.has(w) ? w.toUpperCase() : i === 0 ? w[0].toUpperCase() + w.slice(1) : w)).join(' ');
-    const thumb = `docs/renders/gallery/${name}.png`;
-    const poster = /posterTime:\s*([\d.]+)/.exec(src);
-    return { file: `examples/${f}`, name, title, summary, posterTime: poster ? Number(poster[1]) : null, thumbnail: existsSync(join(ROOT, thumb)) ? thumb : null };
-  });
-}
-
 /**
  * Public methods of the Scene class, for completions after `scene.`.
  * @returns {Array<{name: string, signature: string, summary: string}>}
@@ -173,7 +146,7 @@ function sceneMembers() {
 
 /**
  * Build both indexes.
- * @returns {{api: any, gallery: any}}
+ * @returns {{api: any}}
  */
 export function buildIndexes() {
   const decl = declarations(join(ROOT, 'src/index.js'));
@@ -184,14 +157,13 @@ export function buildIndexes() {
     }
     return { name, ...d };
   }).sort((a, b) => a.name.localeCompare(b.name));
-  return { api: { exports, scene: sceneMembers(), qubi: { stdlib: stdlibIndex() } }, gallery: { examples: galleryIndex() } };
+  return { api: { exports, scene: sceneMembers(), qubi: { stdlib: stdlibIndex() } } };
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const { api, gallery } = buildIndexes();
+  const { api } = buildIndexes();
   const files = [
     ['src/playground/api-index.json', JSON.stringify(api, null, 1) + '\n'],
-    ['src/playground/gallery.json', JSON.stringify(gallery, null, 2) + '\n'],
   ];
   if (process.argv.includes('--check')) {
     const stale = files.filter(([f, text]) => !existsSync(join(ROOT, f)) || readFileSync(join(ROOT, f), 'utf8') !== text).map(([f]) => f);
@@ -202,6 +174,6 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     console.log('API index is up to date.');
   } else {
     for (const [f, text] of files) writeFileSync(join(ROOT, f), text);
-    console.log(`Wrote ${api.exports.length} exports, ${api.qubi.stdlib.length} Qubi calls, ${gallery.examples.length} examples.`);
+    console.log(`Wrote ${api.exports.length} exports, ${api.qubi.stdlib.length} Qubi calls.`);
   }
 }

@@ -9,14 +9,15 @@ import { blockLibrary } from '../blocks.js';
 import { icon } from '../../playground/icons.js';
 import { esc } from '../../playground/ui.js';
 
+// Quantum first: the editor is built around Qubi programs and their views.
 const CATEGORIES = [
-  ['shapes', 'Shapes'],
-  ['text', 'Text and math'],
-  ['plots', 'Plots'],
-  ['3d', '3D'],
-  ['board', 'Board'],
   ['quantum', 'Quantum'],
+  ['3d', '3D'],
+  ['text', 'Text and math'],
+  ['shapes', 'Shapes'],
+  ['plots', 'Plots'],
   ['data', 'Data'],
+  ['board', 'Board'],
   ['media', 'Media'],
 ];
 
