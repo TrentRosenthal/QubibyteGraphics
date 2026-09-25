@@ -1,0 +1,68 @@
+{
+  "name": "qubibyte-graphics",
+  "version": "0.1.0",
+  "description": "Programmatic animation engine for math, quantum circuits, and explainers. Qubi is the first-class quantum input format.",
+  "license": "MIT",
+  "type": "module",
+  "main": "src/index.js",
+  "module": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./qubi": "./src/qubi/index.js",
+    "./quantum": "./src/quantum/index.js",
+    "./math": "./src/math/index.js"
+  },
+  "bin": {
+    "qgfx": "cli/qgfx.js"
+  },
+  "files": [
+    "src",
+    "cli",
+    "vendor",
+    "styles",
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test tests/",
+    "test:unit": "node --test tests/unit/",
+    "test:parser": "node --test tests/parser/",
+    "test:golden": "node --test tests/golden/",
+    "test:export": "node --test tests/export/",
+    "coverage": "c8 --reporter=text --reporter=text-summary node --test tests/",
+    "lint": "eslint . && node tools/lint-slop.js && node tools/lint-vocab.js",
+    "lint:slop": "node tools/lint-slop.js",
+    "lint:vocab": "node tools/lint-vocab.js",
+    "build": "node tools/bundle.js",
+    "build:docs": "node tools/build-docs.js",
+    "gallery": "node cli/qgfx.js gallery",
+    "size": "node tools/size-budget.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "0.1.100"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "c8": "12.0.0",
+    "esbuild": "0.28.2",
+    "eslint": "10.11.0",
+    "playwright-core": "1.63.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TrentRosenthal/QubibyteGraphics"
+  },
+  "keywords": [
+    "animation",
+    "math",
+    "quantum",
+    "qubi",
+    "canvas",
+    "svg",
+    "video"
+  ]
+}

@@ -1,0 +1,35 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - name: Publish (dry run until NPM_PUBLISH is set to "true")
+        run: |
+          if [ "${{ vars.NPM_PUBLISH }}" = "true" ]; then npm publish --access public; else npm publish --dry-run --access public; fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/qubibyte-graphics.min.js
+            dist/qubibyte-graphics.min.js.map
+          generate_release_notes: false
+          body_path: docs/release-notes.md
