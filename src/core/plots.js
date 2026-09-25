@@ -280,9 +280,13 @@ export function marchingSquares(F, xr, yr, nx, ny, level = 0) {
   const ys = Array.from({ length: ny + 1 }, (_, j) => y0 + j * dy);
   for (let j = 0; j <= ny; j++) for (let i = 0; i <= nx; i++) {
     const z = F(xs[i], ys[j]) - level;
-    // Values exactly on the level are nudged so contours never pass through grid vertices.
-    v[j * (nx + 1) + i] = Number.isFinite(z) ? (z === 0 ? 1e-12 : z) : NaN;
+    v[j * (nx + 1) + i] = Number.isFinite(z) ? z : NaN;
   }
+  // Values on the level (within rounding) are nudged so contours never pass through grid vertices.
+  let scale = 0;
+  for (const z of v) if (Number.isFinite(z)) scale = Math.max(scale, Math.abs(z));
+  const nudge = (scale || 1) * 1e-9;
+  for (let k = 0; k < v.length; k++) if (Math.abs(v[k]) < nudge) v[k] = nudge;
   const at = (i, j) => v[j * (nx + 1) + i];
   const segs = [];
   const interp = (xa, ya, va, xb, yb, vb) => {
