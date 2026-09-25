@@ -10,7 +10,7 @@
 
 import * as M from './mat4.js';
 import { faceNormals, meshEdges, meshBounds } from './geometry.js';
-import { POLY, SEG, PT, planeOf, eyeSide, orderScene, buildBSP, splitPrim } from './order.js';
+import { POLY, SEG, PT, planeOf, eyeSide, orderScene, splitPrim } from './order.js';
 import { material as makeMaterial, presetMaterial, shade, softenColor, AlphaColor } from './materials.js';
 import { diffuseAt, specularAt } from './lighting.js';
 import { hull2D } from './object3d.js';
@@ -18,8 +18,6 @@ import { ColorMix } from '../core/node.js';
 import { mix, parseColor } from '../core/color.js';
 import { hashSeed } from '../core/random.js';
 import { pathBounds } from '../core/path.js';
-
-const bspCache = new WeakMap();
 
 let textModule = null;
 let textLoading = null;
@@ -402,6 +400,7 @@ function buildMeshUnit(unit, input, ctx, cam, eps, viewDir) {
     W[i * 3 + 2] = Mw[2] * x + Mw[6] * y + Mw[10] * z + Mw[14];
   }
   const nf = mesh.faces.length;
+  const flip = Mw[0] * (Mw[5] * Mw[10] - Mw[9] * Mw[6]) - Mw[4] * (Mw[1] * Mw[10] - Mw[9] * Mw[2]) + Mw[8] * (Mw[1] * Mw[6] - Mw[5] * Mw[2]) < 0;
   const planes = new Array(nf);
   const front = new Uint8Array(nf);
   let hasFront = false;
@@ -413,7 +412,8 @@ function buildMeshUnit(unit, input, ctx, cam, eps, viewDir) {
       p[k * 3 + 1] = W[face[k] * 3 + 1];
       p[k * 3 + 2] = W[face[k] * 3 + 2];
     }
-    planes[f] = planeOf(p);
+    const pl = planeOf(p);
+    planes[f] = flip ? [-pl[0], -pl[1], -pl[2], -pl[3]] : pl;
     planes[f].pts = p;
     if (eyeSide(planes[f], cam.eyeH) > 0) {
       front[f] = 1;
@@ -424,7 +424,6 @@ function buildMeshUnit(unit, input, ctx, cam, eps, viewDir) {
   const facesDrawn = fillAlpha * unit.opacity > 0.003;
   const opaque = !mat.rim && fillAlpha * unit.opacity >= 0.995;
   const cull = facesDrawn && opaque && mesh.closed;
-  const det = Mw[0] * (Mw[5] * Mw[10] - Mw[9] * Mw[6]) - Mw[4] * (Mw[1] * Mw[10] - Mw[9] * Mw[2]) + Mw[8] * (Mw[1] * Mw[6] - Mw[5] * Mw[2]);
   let cx = 0;
   let cy = 0;
   let cz = 0;
@@ -441,7 +440,7 @@ function buildMeshUnit(unit, input, ctx, cam, eps, viewDir) {
   const U = {
     unit, id: unit.id, mat, convex: mesh.convex && mesh.closed, closed: mesh.closed, cull, hasFront, planes, front,
     worldPos: W, edges: meshEdges(mesh), center, inR: Math.max(0, inR), outR, M: Mw, polyCount: 0, facePrims: [], wireSegs: [],
-    detSign: det < 0 ? -1 : 1, bsp: null, faceStyles: new Array(nf), facesDrawn, opaque,
+    faceStyles: new Array(nf), facesDrawn, opaque,
   };
   const baseColor = resolveFill(unit.fill, ctx);
   const capColor = unit.capFaces ? resolveFill(unit.capColor ?? 'accent', ctx) : null;
@@ -486,55 +485,27 @@ function buildMeshUnit(unit, input, ctx, cam, eps, viewDir) {
     U.faceStyles[f] = s;
     return s;
   };
-  U.faceWorld = (y) => {
-    if (y.whole && U.facePrims.length && U.byFace[y.f]) return U.byFace[y.f];
-    const p = new Array(y.p.length);
-    for (let i = 0; i < y.p.length; i += 3) {
-      const q = M.transformPoint(Mw, [y.p[i], y.p[i + 1], y.p[i + 2]]);
-      p[i] = q[0];
-      p[i + 1] = q[1];
-      p[i + 2] = q[2];
-    }
-    return { k: POLY, p, u: U, f: y.f, pl: planes[y.f], whole: false, s: styleOf(y.f) };
-  };
-  U.byFace = new Array(nf);
   if (facesDrawn) {
     for (let f = 0; f < nf; f++) {
       if (cull && !front[f]) continue;
-      const x = { k: POLY, p: planes[f].pts, u: U, f, pl: planes[f], whole: true, s: styleOf(f) };
-      U.facePrims.push(x);
-      U.byFace[f] = x;
+      const pl = planes[f];
+      const pts = pl.pts;
+      let dev = 0;
+      let diam = 0;
+      if (pts.length > 9) {
+        for (let k = 0; k < pts.length; k += 3) {
+          dev = Math.max(dev, Math.abs(pl[0] * pts[k] + pl[1] * pts[k + 1] + pl[2] * pts[k + 2] - pl[3]));
+          diam = Math.max(diam, Math.abs(pts[k] - pts[0]) + Math.abs(pts[k + 1] - pts[1]) + Math.abs(pts[k + 2] - pts[2]));
+        }
+      }
+      if (dev > 0.03 * diam) {
+        for (let k = 3; k + 3 < pts.length; k += 3) {
+          const tri = [pts[0], pts[1], pts[2], pts[k], pts[k + 1], pts[k + 2], pts[k + 3], pts[k + 4], pts[k + 5]];
+          U.facePrims.push({ k: POLY, p: tri, u: U, f, pl: planeOf(tri), whole: true, s: styleOf(f) });
+        }
+      } else U.facePrims.push({ k: POLY, p: pts, u: U, f, pl, whole: true, s: styleOf(f), dev: dev > eps ? dev * 1.001 : 0 });
     }
     U.polyCount = U.facePrims.length;
-    if (!U.convex && nf >= 12 && !unit.deformed) {
-      let tree = bspCache.get(mesh);
-      if (!tree) {
-        const b = meshBounds(mesh);
-        const size = Math.max(b.max[0] - b.min[0], b.max[1] - b.min[1], b.max[2] - b.min[2], 1e-9);
-        const list = mesh.faces.map((face, f) => {
-          const p = [];
-          for (const v of face) p.push(src[v * 3], src[v * 3 + 1], src[v * 3 + 2]);
-          return { k: POLY, p, u: null, f, pl: planeOf(p), whole: true, s: null };
-        });
-        tree = buildBSP(list, 1e-7 * size);
-        bspCache.set(mesh, tree);
-      }
-      const Minv = M.invert(Mw);
-      U.bsp = tree;
-      U.Minv = Minv;
-      const e = cam.eyeH;
-      if (e[3] > 0) {
-        const q = M.transformPoint(Minv, e);
-        U.eyeModel = [q[0], q[1], q[2], 1];
-        U.eyeModelPoint = q;
-        U.forwardModel = norm(M.transformDirection(Minv, cam.forward));
-      } else {
-        const d = M.transformDirection(Minv, e);
-        U.eyeModel = [d[0], d[1], d[2], 0];
-        U.eyeModelPoint = M.transformPoint(Minv, cam.eye);
-        U.forwardModel = norm(M.transformDirection(Minv, cam.forward));
-      }
-    }
   }
   U.edgeList = selectEdges(U, mesh, mat, unit, input, edgeCol);
   if (!facesDrawn) {

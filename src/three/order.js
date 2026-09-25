@@ -14,16 +14,15 @@
  *    (translucent only), inside, K's front faces, front. The split clips
  *    primitives against the cone planes and K's faces, so nothing is
  *    approximated.
- * 3. BSP trees. Remaining polygons are ordered by a BSP tree, built once
- *    per static mesh in model space (and reused every frame by moving the
- *    eye into model space) or per frame for deforming geometry. Primitives
- *    of other objects are inserted into the tree, split by its planes.
+ * 3. Occlusion graph. Remaining primitives that overlap on screen are
+ *    compared by depth range and by plane tests (Newell's tests); a
+ *    topological sort orders them. Only primitives that truly conflict
+ *    (intersecting faces, cyclic overlaps) form strongly connected
+ *    components, and only those are split, by a BSP tree over the component.
  *    Lines lying in a polygon's plane are drawn right after it, so wireframes
  *    and grids on surfaces never z-fight.
  * @module three/order
  */
-
-import { transformPoint } from './mat4.js';
 
 /** Primitive kinds. */
 export const POLY = 0;
@@ -400,110 +399,14 @@ function partitionConvex(K, others, cam, eps) {
   return { behind, inside, front };
 }
 
-function toModel(x, U) {
-  const p = x.p;
-  const q = new Array(p.length);
-  for (let i = 0; i < p.length; i += 3) {
-    const r = transformPoint(U.Minv, [p[i], p[i + 1], p[i + 2]]);
-    q[i] = r[0];
-    q[i + 1] = r[1];
-    q[i + 2] = r[2];
-  }
-  return { k: x.k, p: q, u: x.u, f: x.f, pl: x.pl, whole: x.whole, s: x.s, src: x.src, orig: x };
-}
-
-function toWorld(x, U) {
-  if (x.orig) return x.orig;
-  const p = x.p;
-  const q = new Array(p.length);
-  for (let i = 0; i < p.length; i += 3) {
-    const r = transformPoint(U.M, [p[i], p[i + 1], p[i + 2]]);
-    q[i] = r[0];
-    q[i + 1] = r[1];
-    q[i + 2] = r[2];
-  }
-  const y = { k: x.k, p: q, u: x.u, f: x.f, pl: x.pl, whole: false, s: x.s, src: x.src };
-  if (x.k === POLY && x.u !== U) y.pl = planeOf(q);
-  return y;
-}
-
-function orderWithCachedTree(U, others, cam, eps, ctx) {
-  const tree = U.bsp;
-  const eyeH = U.eyeModel;
-  const extra = new Map();
-  const bucket = (node, key) => {
-    let e = extra.get(node);
-    if (!e) {
-      e = { on: [], front: [], back: [] };
-      extra.set(node, e);
-    }
-    return e[key];
-  };
-  for (const x of others) {
-    const stack = [[tree, toModel(x, U)]];
-    while (stack.length) {
-      const [node, y] = stack.pop();
-      if (node.leaf) {
-        bucket(node, 'front').push(y);
-        continue;
-      }
-      const r = splitPrim(y, node.pl, eps);
-      if (r.on) {
-        bucket(node, 'on').push(y);
-        continue;
-      }
-      if (r.front) {
-        if (node.front) stack.push([node.front, r.front]);
-        else bucket(node, 'front').push(r.front);
-      }
-      if (r.back) {
-        if (node.back) stack.push([node.back, r.back]);
-        else bucket(node, 'back').push(r.back);
-      }
-    }
-  }
-  const out = [];
-  const frontSign = U.detSign;
-  const ownFace = (y) => (U.cull && eyeSide(y.pl, eyeH) * frontSign <= 0 ? null : U.faceWorld(y));
-  const worldList = (list) => list.map((y) => toWorld(y, U));
-  traverseBSP(
-    tree,
-    eyeH,
-    { eye: U.eyeModelPoint, forward: U.forwardModel },
-    out,
-    (node) => {
-      const res = [];
-      for (const y of node.on) {
-        const w = ownFace(y);
-        if (w) res.push(w);
-      }
-      const e = extra.get(node);
-      if (e && e.on.length) {
-        const polys = e.on.filter((y) => y.k === POLY);
-        const rest = e.on.filter((y) => y.k !== POLY);
-        for (const y of orderGroup(worldList(polys), cam, eps, ctx)) res.push(y);
-        for (const y of sortFarFirst(worldList(rest), cam)) res.push(y);
-      }
-      return res;
-    },
-    (node, key) => {
-      const e = extra.get(node);
-      if (!e || !e[key].length) return null;
-      return orderGroup(worldList(e[key]), cam, eps, ctx);
-    },
-  );
-  return out;
-}
-
 /**
  * Order the primitives of one group back to front.
  * @param {Prim[]} list
  * @param {any} cam camera state
  * @param {number} eps
- * @param {any} [ctx]
  * @returns {Prim[]}
  */
-export function orderGroup(list, cam, eps, ctx = {}) {
+export function orderGroup(list, cam, eps) {
   if (list.length <= 1) return list;
   const counts = new Map();
   let polys = 0;
@@ -514,11 +417,8 @@ export function orderGroup(list, cam, eps, ctx = {}) {
   }
   if (!polys) return sortFarFirst(list, cam);
   let K = null;
-  let cached = null;
   for (const [U, n] of counts) {
-    if (n !== U.polyCount) continue;
-    if (U.convex && U.hasFront && (!K || U.outR > K.outR)) K = U;
-    if (U.bsp && (!cached || U.polyCount > cached.polyCount)) cached = U;
+    if (n === U.polyCount && U.convex && U.hasFront && (!K || U.outR > K.outR)) K = U;
   }
   if (K) {
     const own = [];
@@ -529,20 +429,348 @@ export function orderGroup(list, cam, eps, ctx = {}) {
     if (!others.length) return back.concat(front);
     const part = partitionConvex(K, others, cam, eps);
     return [
-      ...orderGroup(part.behind, cam, eps, ctx),
+      ...orderGroup(part.behind, cam, eps),
       ...back,
-      ...orderGroup(part.inside, cam, eps, ctx),
+      ...orderGroup(part.inside, cam, eps),
       ...front,
-      ...orderGroup(part.front, cam, eps, ctx),
+      ...orderGroup(part.front, cam, eps),
     ];
   }
-  if (cached) {
-    const others = list.filter((x) => x.u !== cached || x.k !== POLY);
-    return orderWithCachedTree(cached, others, cam, eps, ctx);
+  return orderByGraph(list, cam, eps);
+}
+
+function projectPrim(x, cam) {
+  const m = cam.viewProj;
+  const p = x.p;
+  const pts = [];
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -Infinity;
+  let y1 = -Infinity;
+  let dmin = Infinity;
+  let dmax = -Infinity;
+  let ok = true;
+  for (let i = 0; i < p.length; i += 3) {
+    const X = p[i];
+    const Y = p[i + 1];
+    const Z = p[i + 2];
+    const d = (X - cam.eye[0]) * cam.forward[0] + (Y - cam.eye[1]) * cam.forward[1] + (Z - cam.eye[2]) * cam.forward[2];
+    if (d < dmin) dmin = d;
+    if (d > dmax) dmax = d;
+    const w = m[3] * X + m[7] * Y + m[11] * Z + m[15];
+    if (w <= 1e-9) {
+      ok = false;
+      continue;
+    }
+    const sx = (m[0] * X + m[4] * Y + m[8] * Z + m[12]) / w;
+    const sy = (m[1] * X + m[5] * Y + m[9] * Z + m[13]) / w;
+    pts.push(sx, sy);
+    if (sx < x0) x0 = sx;
+    if (sx > x1) x1 = sx;
+    if (sy < y0) y0 = sy;
+    if (sy > y1) y1 = sy;
   }
+  if (x.k === PT && ok) {
+    const r = 0.004;
+    x0 -= r;
+    x1 += r;
+    y0 -= r;
+    y1 += r;
+  }
+  if (!ok) {
+    x0 = y0 = -Infinity;
+    x1 = y1 = Infinity;
+  }
+  return { pts, ok, x0, y0, x1, y1, dmin, dmax };
+}
+
+function axesOf(pts, out) {
+  const n = pts.length / 2;
+  if (n === 1) return;
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    if (n === 2 && i === 1) break;
+    const ex = pts[j * 2] - pts[i * 2];
+    const ey = pts[j * 2 + 1] - pts[i * 2 + 1];
+    const L = Math.hypot(ex, ey);
+    if (L > 1e-12) out.push(-ey / L, ex / L);
+  }
+}
+
+function screenOverlap(a, b) {
+  if (!a.ok || !b.ok) return true;
+  if (a.x1 <= b.x0 || b.x1 <= a.x0 || a.y1 <= b.y0 || b.y1 <= a.y0) return false;
+  if (a.pts.length === 2 || b.pts.length === 2) return true;
+  const axes = [];
+  axesOf(a.pts, axes);
+  axesOf(b.pts, axes);
+  const tol = 1e-7;
+  for (let k = 0; k < axes.length; k += 2) {
+    const ax = axes[k];
+    const ay = axes[k + 1];
+    let amin = Infinity;
+    let amax = -Infinity;
+    let bmin = Infinity;
+    let bmax = -Infinity;
+    for (let i = 0; i < a.pts.length; i += 2) {
+      const v = a.pts[i] * ax + a.pts[i + 1] * ay;
+      if (v < amin) amin = v;
+      if (v > amax) amax = v;
+    }
+    for (let i = 0; i < b.pts.length; i += 2) {
+      const v = b.pts[i] * ax + b.pts[i + 1] * ay;
+      if (v < bmin) bmin = v;
+      if (v > bmax) bmax = v;
+    }
+    if (amax <= bmin + tol || bmax <= amin + tol) return false;
+  }
+  return true;
+}
+
+/**
+ * Where X lies relative to polygon A's plane, as seen from the eye:
+ * 'front' (eye side), 'behind', 'on' (coplanar), 'cross', or null when A is
+ * seen edge-on.
+ */
+function against(A, X, eyeH, eps) {
+  const es = eyeSide(A.pl, eyeH);
+  if (Math.abs(es) < eps) return null;
+  const sg = es > 0 ? 1 : -1;
+  const [nx, ny, nz, d] = A.pl;
+  if (A.dev) eps += A.dev;
+  let front = 0;
+  let back = 0;
+  const p = X.p;
+  for (let i = 0; i < p.length; i += 3) {
+    const v = (nx * p[i] + ny * p[i + 1] + nz * p[i + 2] - d) * sg;
+    if (v > eps) front++;
+    else if (v < -eps) back++;
+  }
+  if (front && back) return 'cross';
+  if (front) return 'front';
+  if (back) return 'behind';
+  return 'on';
+}
+
+/**
+ * Ordering relation between primitives i and j: -1 when i must be drawn
+ * first, 1 when j must, 0 when there is no constraint, 2 when they conflict
+ * (they intersect or overlap cyclically) and need splitting.
+ */
+function relation(A, B, sa, sb, ia, ib, cam, eps) {
+  if (sa.ok && sb.ok) {
+    if (sa.dmax < sb.dmin - eps) return 1;
+    if (sb.dmax < sa.dmin - eps) return -1;
+  }
+  if (!screenOverlap(sa, sb)) return 0;
+  const e = cam.eyeH;
+  let r = A.k === POLY ? against(A, B, e, eps) : null;
+  if (r === 'behind') return 1;
+  if (r === 'front') return -1;
+  if (r === 'on') {
+    if (B.k !== POLY) return -1;
+    return ia < ib ? -1 : 1;
+  }
+  r = B.k === POLY ? against(B, A, e, eps) : null;
+  if (r === 'behind') return -1;
+  if (r === 'front') return 1;
+  if (r === 'on') return A.k !== POLY ? 1 : ia < ib ? -1 : 1;
+  if (A.k !== POLY && B.k !== POLY) return 0;
+  if (r === null && A.k !== POLY) return 0;
+  return 2;
+}
+
+/**
+ * Newell-style ordering: constraints between screen-overlapping pairs from
+ * depth ranges and plane tests, a topological sort, and BSP splitting only
+ * inside strongly connected components (intersections and cycles).
+ * @param {Prim[]} list
+ * @param {any} cam
+ * @param {number} eps
+ * @returns {Prim[]}
+ */
+export function orderByGraph(list, cam, eps) {
+  const n = list.length;
+  const scr = list.map((x) => projectPrim(x, cam));
+  const succ = Array.from({ length: n }, () => []);
+  const G = Math.max(4, Math.min(256, Math.ceil(Math.sqrt(n) * 2.5)));
+  const lo = -1.6;
+  const span = 3.2;
+  const cellOf = (v) => Math.max(0, Math.min(G - 1, Math.floor(((v - lo) / span) * G)));
+  const cells = new Map();
+  const big = [];
+  const isBig = new Uint8Array(n);
+  const check = (a, b) => {
+    const r = relation(list[a], list[b], scr[a], scr[b], a, b, cam, eps);
+    if (r === -1) succ[a].push(b);
+    else if (r === 1) succ[b].push(a);
+    else if (r === 2) {
+      succ[a].push(b);
+      succ[b].push(a);
+    }
+  };
+  for (let i = 0; i < n; i++) {
+    const s = scr[i];
+    if (!s.ok) {
+      big.push(i);
+      isBig[i] = 1;
+      continue;
+    }
+    if (s.x1 < lo || s.y1 < lo || s.x0 > lo + span || s.y0 > lo + span) continue;
+    const cx0 = cellOf(s.x0);
+    const cx1 = cellOf(s.x1);
+    const cy0 = cellOf(s.y0);
+    const cy1 = cellOf(s.y1);
+    if ((cx1 - cx0 + 1) * (cy1 - cy0 + 1) > 1024) {
+      big.push(i);
+      isBig[i] = 1;
+      continue;
+    }
+    for (let cy = cy0; cy <= cy1; cy++) {
+      for (let cx = cx0; cx <= cx1; cx++) {
+        const key = cy * G + cx;
+        let cell = cells.get(key);
+        if (!cell) {
+          cell = [];
+          cells.set(key, cell);
+        }
+        for (const j of cell) {
+          const t = scr[j];
+          if (cellOf(Math.max(s.x0, t.x0)) === cx && cellOf(Math.max(s.y0, t.y0)) === cy) check(Math.min(i, j), Math.max(i, j));
+        }
+        cell.push(i);
+      }
+    }
+  }
+  for (const i of big) for (let j = 0; j < n; j++) if (j !== i && (!isBig[j] || j > i)) check(Math.min(i, j), Math.max(i, j));
+  const comp = tarjan(succ);
+  const nc = comp.count;
+  const members = Array.from({ length: nc }, () => []);
+  for (let i = 0; i < n; i++) members[comp.id[i]].push(i);
+  const csucc = Array.from({ length: nc }, () => new Set());
+  const indeg = new Int32Array(nc);
+  for (let i = 0; i < n; i++) {
+    for (const j of succ[i]) {
+      const a = comp.id[i];
+      const b = comp.id[j];
+      if (a !== b && !csucc[a].has(b)) {
+        csucc[a].add(b);
+        indeg[b]++;
+      }
+    }
+  }
+  const prio = new Float64Array(nc).fill(-Infinity);
+  for (let i = 0; i < n; i++) {
+    const d = (scr[i].dmin + scr[i].dmax) / 2;
+    if (d > prio[comp.id[i]]) prio[comp.id[i]] = d;
+  }
+  const heap = new Heap(prio);
+  for (let c = 0; c < nc; c++) if (!indeg[c]) heap.push(c);
   const out = [];
-  traverseBSP(buildBSP(list, eps), cam.eyeH, cam, out);
+  while (heap.size()) {
+    const c = heap.pop();
+    const mem = members[c];
+    if (mem.length === 1) out.push(list[mem[0]]);
+    else {
+      const sub = mem.map((i) => list[i]);
+      traverseBSP(buildBSP(sub, eps), cam.eyeH, cam, out);
+    }
+    for (const d of csucc[c]) if (--indeg[d] === 0) heap.push(d);
+  }
   return out;
+}
+
+function tarjan(succ) {
+  const n = succ.length;
+  const index = new Int32Array(n).fill(-1);
+  const low = new Int32Array(n);
+  const onStack = new Uint8Array(n);
+  const id = new Int32Array(n);
+  const stack = [];
+  let counter = 0;
+  let count = 0;
+  for (let s = 0; s < n; s++) {
+    if (index[s] >= 0) continue;
+    const work = [[s, 0]];
+    index[s] = low[s] = counter++;
+    stack.push(s);
+    onStack[s] = 1;
+    while (work.length) {
+      const top = work[work.length - 1];
+      const v = top[0];
+      if (top[1] < succ[v].length) {
+        const w = succ[v][top[1]++];
+        if (index[w] < 0) {
+          index[w] = low[w] = counter++;
+          stack.push(w);
+          onStack[w] = 1;
+          work.push([w, 0]);
+        } else if (onStack[w] && index[w] < low[v]) low[v] = index[w];
+      } else {
+        work.pop();
+        if (work.length) {
+          const u = work[work.length - 1][0];
+          if (low[v] < low[u]) low[u] = low[v];
+        }
+        if (low[v] === index[v]) {
+          let w;
+          do {
+            w = stack.pop();
+            onStack[w] = 0;
+            id[w] = count;
+          } while (w !== v);
+          count++;
+        }
+      }
+    }
+  }
+  return { id, count };
+}
+
+class Heap {
+  constructor(prio) {
+    this.prio = prio;
+    this.a = [];
+  }
+
+  size() {
+    return this.a.length;
+  }
+
+  push(i) {
+    const a = this.a;
+    const p = this.prio;
+    a.push(i);
+    let c = a.length - 1;
+    while (c > 0) {
+      const q = (c - 1) >> 1;
+      if (p[a[q]] >= p[a[c]]) break;
+      [a[q], a[c]] = [a[c], a[q]];
+      c = q;
+    }
+  }
+
+  pop() {
+    const a = this.a;
+    const p = this.prio;
+    const top = a[0];
+    const last = a.pop();
+    if (a.length) {
+      a[0] = last;
+      let c = 0;
+      for (;;) {
+        const l = 2 * c + 1;
+        const r = l + 1;
+        let m = c;
+        if (l < a.length && p[a[l]] > p[a[m]]) m = l;
+        if (r < a.length && p[a[r]] > p[a[m]]) m = r;
+        if (m === c) break;
+        [a[m], a[c]] = [a[c], a[m]];
+        c = m;
+      }
+    }
+    return top;
+  }
 }
 
 class UnionFind {
@@ -689,42 +917,17 @@ function topoGroups(ordered, boxes, cam, eps) {
     }
     active.push(i);
   }
-  const heap = [];
-  const push = (i) => {
-    heap.push(i);
-    let c = heap.length - 1;
-    while (c > 0) {
-      const p = (c - 1) >> 1;
-      if (sb[heap[p]].depth >= sb[heap[c]].depth) break;
-      [heap[p], heap[c]] = [heap[c], heap[p]];
-      c = p;
-    }
-  };
-  const pop = () => {
-    const top = heap[0];
-    const last = heap.pop();
-    if (heap.length) {
-      heap[0] = last;
-      let c = 0;
-      for (;;) {
-        const l = 2 * c + 1;
-        const r = l + 1;
-        let m = c;
-        if (l < heap.length && sb[heap[l]].depth > sb[heap[m]].depth) m = l;
-        if (r < heap.length && sb[heap[r]].depth > sb[heap[m]].depth) m = r;
-        if (m === c) break;
-        [heap[m], heap[c]] = [heap[c], heap[m]];
-        c = m;
-      }
-    }
-    return top;
-  };
+  const prio = new Float64Array(n);
+  for (let i = 0; i < n; i++) prio[i] = sb[i].depth;
+  const heap = new Heap(prio);
+  const push = (i) => heap.push(i);
+  const pop = () => heap.pop();
   for (let i = 0; i < n; i++) if (!indeg[i]) push(i);
   const done = new Uint8Array(n);
   const out = [];
   let emitted = 0;
   while (emitted < n) {
-    if (!heap.length) {
+    if (!heap.size()) {
       let best = -1;
       for (let i = 0; i < n; i++) if (!done[i] && (best < 0 || sb[i].depth > sb[best].depth)) best = i;
       indeg[best] = 0;

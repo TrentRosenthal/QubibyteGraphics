@@ -65,11 +65,11 @@ export function hemisphereLight(intensity = 0.35, ground = 0.35, up = [0, 0, 1])
  */
 export const LIGHT_PRESETS = {
   studio: () => [
-    directionalLight([-0.55, 0.62, 0.56], 0.62, { space: 'camera', specular: 1 }),
-    directionalLight([0.75, -0.05, 0.66], 0.22, { space: 'camera', specular: 0.25 }),
-    directionalLight([0.25, 0.55, -0.8], 0.28, { space: 'camera', specular: 0.4 }),
-    hemisphereLight(0.3, 0.45),
-    ambientLight(0.14),
+    directionalLight([-0.5, 0.65, 0.58], 0.78, { space: 'camera', specular: 1 }),
+    directionalLight([0.8, 0.05, 0.6], 0.2, { space: 'camera', specular: 0.2 }),
+    directionalLight([0.3, 0.6, -0.75], 0.3, { space: 'camera', specular: 0.5 }),
+    hemisphereLight(0.2, 0.3),
+    ambientLight(0.1),
   ],
   blackboard: () => [ambientLight(1)],
   blueprint: () => [ambientLight(1)],
