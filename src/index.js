@@ -63,3 +63,4 @@ export { registerPreload, preload } from './core/scene.js';
 export { FORMATS, PRESETS, RESOLUTIONS, parseResolution } from './export/formats.js';
 export { toSRT } from './export/srt.js';
 export { synthesize, encodeWav } from './export/audio.js';
+export { placeLabels } from './core/labels.js';
