@@ -319,7 +319,7 @@ async function productWalkthrough(scene, req, opts) {
       term.moveTo([0, -1.75]);
       const fast = !first;
       await scene.play(fadeIn(rb), fadeIn(cb), fadeIn(term, { shift: [0, 0.1] }), { duration: fast ? 0.35 : 0.6 });
-      if (first) await narration.say(`Row ${cell.i + 1} of the left matrix meets column ${cell.j + 1} of the right: multiply matching entries and add.`);
+      if (first) await narration.say('Each entry takes one row of the left matrix and one column of the right: multiply matching entries and add.');
       await scene.play(vc.entry(cell.i, cell.j).animate.set('opacity', 1), { duration: fast ? 0.3 : 0.6 });
       await scene.wait(fast ? 0.25 : 0.8);
       await scene.play(fadeOut(rb), fadeOut(cb), fadeOut(term), { duration: fast ? 0.25 : 0.4 });
