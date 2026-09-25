@@ -23,3 +23,8 @@ Every rendered visual is graded against `docs/QUALITY.md` (criteria a to g, 1 to
 | 30-pythagoras-boards (clean) | 50, 100 | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Classic rearrangement proof figure (Wikipedia, Pythagorean theorem): same two panels, animated between them. |
 | 30-pythagoras-boards (chalkboard) | 50, 100 | 4 | 5 | 4 | 5 | 5 | 4 | 4 | A lecture chalkboard photo: hatching and grain read as chalk; labels now wipe a band of hatching so they stay legible. |
 | 30-pythagoras-boards (whiteboard) | 75, 100 | 4 | 5 | 4 | 5 | 5 | 4 | 4 | Marker whiteboard: same scene from the one --board switch; a faint surface halo under writing keeps labels clear of hatching. |
+| 11-derivative | 100 | 4 | 4 | 5 | 4 | 5 | 4 | 4 | 3Blue1Brown calculus derivations: steps morph token by token with the rule narrated; the reference color-codes the factors of the product rule, ours keeps one ink color. |
+| 12-definite-integral | 100 | 4 | 4 | 5 | 4 | 5 | 4 | 4 | Textbook integration by parts: the problem stays pinned while later steps scroll; substituted values now print with explicit coefficients. |
+| 13-matrix-product | 25, 100 | 4 | 5 | 5 | 4 | 5 | 4 | 4 | Khan Academy matrix multiplication walkthrough: same row and column highlighting with the dot product written out below. |
+| 14-eigenvectors-solved | 100 | 4 | 4 | 5 | 4 | 5 | 4 | 4 | 3Blue1Brown eigenvectors chapter plus the algebra beside it; the plane now clips its transformed grid to its own box. |
+| 18-quadratic | 100 | 4 | 4 | 5 | 4 | 5 | 4 | 4 | Textbook quadratic formula solution; each line is written, not chained with equals signs, since each is an equation. |

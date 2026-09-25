@@ -87,8 +87,10 @@ function joinFactors(parts) {
 }
 
 class Printer {
-  constructor(marks) {
+  constructor(marks, opts = {}) {
     this.marks = marks;
+    // Explicit mode keeps a coefficient of 1 and a cdot after every number, for substituted values.
+    this.explicit = !!opts.explicit;
   }
 
   wrap(e, s) {
@@ -145,8 +147,14 @@ class Printer {
         return;
       }
       const neg = negated(t);
-      if (neg) out += ' - ' + this.wrap(t, this.termBody(neg, t));
-      else out += ' + ' + this.print(t);
+      if (neg) {
+        const body = this.termBody(neg, t);
+        // A subtracted term that is itself negative keeps its sign inside parentheses: x - (-\cos x).
+        out += ' - ' + this.wrap(t, clean(body).startsWith('-') ? paren(body) : body);
+      } else {
+        const body = this.print(t);
+        out += clean(body).startsWith('-') ? ' + ' + paren(body) : ' + ' + body;
+      }
     });
     return out;
   }
@@ -204,6 +212,7 @@ class Printer {
     const coeffMarked = (s) => (coeffNode && this.marks ? START + coeffNode.id + MID + s + END : s);
     if (cd === 1n && denParts.length === 0) {
       const parts = [];
+      if (this.explicit && coeffNode && numParts.length) return sign + [coeffMarked(cn.toString()), ...numParts].join(' \\cdot ');
       if (cn !== 1n || numParts.length === 0) parts.push(coeffMarked(cn.toString()));
       return sign + joinFactors([...parts, ...numParts]);
     }
@@ -393,10 +402,11 @@ function negated(t) {
 /**
  * Render an expression as LaTeX.
  * @param {Expr} e
+ * @param {{explicit?: boolean}} [opts] explicit: keep coefficients of 1 and write a cdot after numbers (for substituted values)
  * @returns {string}
  */
-export function toLatex(e) {
-  return new Printer(false).print(e);
+export function toLatex(e, opts = {}) {
+  return new Printer(false, opts).print(e);
 }
 
 /**

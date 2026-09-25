@@ -57,7 +57,7 @@ export function matrixPath(A, u, mode = 'linear', from = [1, 0, 0, 1]) {
  */
 export class TransformPlane extends Node {
   /**
-   * @param {Record<string, any>} [props] range (grid half-extent in data units, default 7 x 4), unit (world units per data unit, default 1), square (show the unit square), basis (show i-hat and j-hat, default true), vectors (extra vectors [[x, y, color], ...])
+   * @param {Record<string, any>} [props] range (grid half-extent in data units, default 7 x 4), unit (world units per data unit, default 1), square (show the unit square), basis (show i-hat and j-hat, default true), vectors (extra vectors [[x, y, color], ...]), clip (keep the transformed grid inside the range box)
    */
   constructor(props = {}) {
     super('transformPlane', { stroke: 'accent', ...pick(props) });
@@ -71,6 +71,7 @@ export class TransformPlane extends Node {
     this.showBasis = props.basis ?? true;
     this.vectors = props.vectors ?? [];
     this.mode = props.mode ?? 'linear';
+    this.clip = props.clip ?? false;
   }
 
   /** Current matrix [a, b, c, d]. @returns {number[]} */
@@ -122,15 +123,26 @@ export class TransformPlane extends Node {
     for (let x = -W; x <= W; x++) bgGrid.moveTo(x * u, -H * u).lineTo(x * u, H * u);
     for (let y = -H; y <= H; y++) bgGrid.moveTo(-W * u, y * u).lineTo(W * u, y * u);
     push(bgGrid.build(), 'grid', th.stroke.grid, 0.8, 'bg');
-    // Transformed grid: extend beyond the frame so the edges never show.
-    const ext = 3;
-    const g = new PathBuilder();
-    for (let x = -W * ext; x <= W * ext; x++) g.moveTo(x, -H * ext).lineTo(x, H * ext);
-    for (let y = -H * ext; y <= H * ext; y++) g.moveTo(-W * ext, y).lineTo(W * ext, y);
-    const grid = transformPath(g.build(), lin);
-    push(grid, 'accent', 2, 0.45, 'grid');
-    const axes = transformPath(polyPath([[-W * ext, 0], [W * ext, 0]]), lin);
-    const axes2 = transformPath(polyPath([[0, -H * ext], [0, H * ext]]), lin);
+    // Transformed grid: extend well beyond the range so the edges never
+    // show, or clip it to the range box when the plane shares the frame.
+    const ext = this.clip ? 12 : 3;
+    const box = [-W * u, W * u, -H * u, H * u];
+    const segments = (list) => {
+      const pb = new PathBuilder();
+      for (const [x0, y0, x1, y1] of list) {
+        const a = [lin[0] * x0 + lin[2] * y0, lin[1] * x0 + lin[3] * y0];
+        const b = [lin[0] * x1 + lin[2] * y1, lin[1] * x1 + lin[3] * y1];
+        const seg = this.clip ? clipSegment(a, b, box) : [a, b];
+        if (seg) pb.moveTo(seg[0][0], seg[0][1]).lineTo(seg[1][0], seg[1][1]);
+      }
+      return pb.build();
+    };
+    const lines = [];
+    for (let x = -W * ext; x <= W * ext; x++) lines.push([x, -H * ext, x, H * ext]);
+    for (let y = -H * ext; y <= H * ext; y++) lines.push([-W * ext, y, W * ext, y]);
+    push(segments(lines), 'accent', 2, 0.45, 'grid');
+    const axes = segments([[-W * ext, 0, W * ext, 0]]);
+    const axes2 = segments([[0, -H * ext, 0, H * ext]]);
     push(axes, 'ink', 2.6, 0.9, 'axisX');
     push(axes2, 'ink', 2.6, 0.9, 'axisY');
     if (this.showSquare) {
@@ -159,6 +171,33 @@ export class TransformPlane extends Node {
     this.vectors.forEach(([x, y, color], i) => arrow(x, y, color ?? 'ink', `v${i}`));
     pushPathItem(this, circlePath(0, 0, 0.06), c, { fillColor: 'ink', strokeColor: null, strokeWidth: 0, meta: { ...this.meta, part: 'origin', solidFill: true } });
   }
+}
+
+/**
+ * Clip a segment to an axis-aligned box (Liang-Barsky).
+ * @param {number[]} a
+ * @param {number[]} b
+ * @param {number[]} box [xMin, xMax, yMin, yMax]
+ * @returns {number[][]|null}
+ */
+function clipSegment(a, b, box) {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  let t0 = 0;
+  let t1 = 1;
+  const p = [-dx, dx, -dy, dy];
+  const q = [a[0] - box[0], box[1] - a[0], a[1] - box[2], box[3] - a[1]];
+  for (let i = 0; i < 4; i++) {
+    if (Math.abs(p[i]) < 1e-12) {
+      if (q[i] < 0) return null;
+      continue;
+    }
+    const r = q[i] / p[i];
+    if (p[i] < 0) t0 = Math.max(t0, r);
+    else t1 = Math.min(t1, r);
+    if (t0 > t1) return null;
+  }
+  return [[a[0] + t0 * dx, a[1] + t0 * dy], [a[0] + t1 * dx, a[1] + t1 * dy]];
 }
 
 function trim(path, f) {

@@ -17,6 +17,7 @@ export {
 } from './core/shapes.js';
 export { TransformPlane, ApplyMatrix, applyMatrix, matrixPath, polar2 } from './explainers/linear.js';
 export { Epicycles, epicycleCoefficients } from './explainers/fourier.js';
+export { explainMath, parseMathRequest, derivationFor, MatrixView } from './explainers/derivation.js';
 export {
   Animation, AnimationGroup, Succession, Wait, PropertyAnimation, stagger, lagStart, succession, parallel,
   Create, create, write, Uncreate, uncreate, unwrite, FadeIn, fadeIn, FadeOut, fadeOut,

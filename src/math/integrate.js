@@ -953,7 +953,9 @@ export function integrateDefinite(expr, variable, lower, upper) {
     steps.push(makeStep(bracket(F, A, B), 'Evaluate the antiderivative at the limits'));
     const Fb = substitute(F, { [x]: B });
     const Fa = substitute(F, { [x]: A });
-    steps.push(makeStep(add(Fb, mul(num(-1), Fa)), 'F(b) - F(a)'));
+    // Show the substituted values as written, before any arithmetic: (1 \cdot e^{1} - e^{1}) - (0 \cdot e^{0} - e^{0}).
+    const shown = (e) => (e.type === 'add' ? '\\left(' + toLatex(e, { explicit: true }) + '\\right)' : toLatex(e, { explicit: true }));
+    steps.push(makeStep(add(Fb, mul(num(-1), Fa)), 'F(b) - F(a)', { latex: shown(Fb) + ' - ' + shown(Fa), spans: [] }));
     let exact;
     try {
       exact = simplify(add(Fb, mul(num(-1), Fa)));
