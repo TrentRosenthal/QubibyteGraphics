@@ -107,25 +107,45 @@ export class Preview extends EventTarget {
         this.loopBtn.setAttribute('aria-pressed', String(this.loop));
       }
     });
+    // Scrub with the pointer captured: no text selection, one seek per frame,
+    // and the drag always ends on release, cancel, or lost capture.
     let dragging = false;
+    let pending = null;
+    let frame = 0;
+    const flush = () => {
+      frame = 0;
+      if (pending != null) this.seek(pending, true);
+      pending = null;
+    };
     const seekTo = (e) => {
       const r = this.scrub.getBoundingClientRect();
       const u = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
-      this.pause();
-      this.seek(u * this.duration, true);
+      pending = u * this.duration;
+      if (!frame) frame = requestAnimationFrame(flush);
+    };
+    const end = () => {
+      if (!dragging) return;
+      dragging = false;
+      if (frame) cancelAnimationFrame(frame);
+      flush();
+      this.scrub.classList.remove('is-scrubbing');
     };
     this.scrub.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
       dragging = true;
       this.scrub.setPointerCapture(e.pointerId);
+      this.scrub.classList.add('is-scrubbing');
+      this.pause();
       seekTo(e);
     });
     this.scrub.addEventListener('pointermove', (e) => {
       if (dragging) seekTo(e);
       this.showHover(e);
     });
-    this.scrub.addEventListener('pointerup', () => {
-      dragging = false;
-    });
+    this.scrub.addEventListener('pointerup', end);
+    this.scrub.addEventListener('pointercancel', end);
+    this.scrub.addEventListener('lostpointercapture', end);
     this.scrub.addEventListener('pointerleave', () => {
       const h = this.scrub.querySelector('.scrub-hover');
       if (h) h.remove();

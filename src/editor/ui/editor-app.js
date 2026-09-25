@@ -22,6 +22,11 @@ import { Timeline } from './timeline.js';
 import { ThemePanel } from './theme-panel.js';
 import { AssetsPanel, assetKind } from './assets-panel.js';
 
+/** Input kinds the editor wires automatically when a block is added. */
+const AUTO_WIRED = new Set(['state', 'matrix', 'series']);
+/** Program for a sweep plot added to a scene with no sweeping program: P(|1>) as RY turns. */
+const SWEEP_PROGRAM = 'sweepstate=0b1\na=<0.(0.1).1>\nRY 0 a';
+
 const STORE = 'qgfx.editor.v1';
 const MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '');
 
@@ -430,12 +435,69 @@ export class VisualEditor {
     if ('x' in def.defaults) {
       p.x = round(at ? at[0] : 0, 2);
       p.y = round(at ? at[1] : 0, 2);
+    } else if (at) {
+      // Blocks with nothing to draw keep their drop point for their wire-mode card.
+      p.cardX = round(at[0], 2);
+      p.cardY = round(at[1], 2);
     }
     this.doc.blocks.push({ id, type, props: p });
+    const wired = this.autoWire(id, at);
     this.selection = new Set([id]);
     this.setTab('inspector');
     this.commit('Add block');
+    if (wired.length) toast(`${wired.join(' ')} Press W to see or change wires.`);
     return id;
+  }
+
+  /**
+   * Connect a new block's quantum inputs (state, matrix, sweep series) so it
+   * draws at once: to the most recent block with a matching output, or to a
+   * new Qubi program placed beside it when the scene has none.
+   * @param {string} id
+   * @param {number[]} [at] where the block was dropped
+   * @returns {string[]} one sentence per wire made
+   */
+  autoWire(id, at) {
+    const block = this.doc.blocks.find((b) => b.id === id);
+    const notes = [];
+    for (const port of this.portsOf(block).inputs) {
+      if (!AUTO_WIRED.has(port.kind)) continue;
+      const to = `${id}.${port.name}`;
+      if (this.doc.wires.some((w) => w.to === to)) continue;
+      let from = this.findSource(port.kind, id);
+      if (!from) {
+        const [x, y] = at ?? [0, 0];
+        const source = port.kind === 'series' ? SWEEP_PROGRAM : blockDefinition('qubi').defaults.source;
+        // Stack the program above or below the new block, whichever keeps it inside the frame.
+        const qy = y > 0 ? y - 3 : y + 3;
+        const qid = this.uniqueId('qubi');
+        this.doc.blocks.push({ id: qid, type: 'qubi', props: { ...blockDefinition('qubi').defaults, source, x: round(x, 2), y: round(qy, 2) } });
+        from = `${qid}.${this.portsOf(this.doc.blocks.at(-1)).outputs.find((o) => o.kind === port.kind).name}`;
+        notes.push(`Added a Qubi program (${qid}) to feed it.`);
+      } else notes.push(`Wired its ${port.name} to ${from}.`);
+      this.doc.wires.push({ from, to });
+    }
+    return notes;
+  }
+
+  /**
+   * The output port of the most recently added block (other than `exclude`)
+   * that produces a value of this kind.
+   * @param {string} kind
+   * @param {string} exclude
+   * @returns {string|null}
+   */
+  findSource(kind, exclude) {
+    for (let i = this.doc.blocks.length - 1; i >= 0; i--) {
+      const b = this.doc.blocks[i];
+      if (b.id === exclude) continue;
+      const out = this.portsOf(b).outputs.find((o) => o.kind === kind);
+      if (!out) continue;
+      // A sweep only exists when the program actually sweeps something.
+      if (kind === 'series' && !/</.test(b.props.source ?? '')) continue;
+      return `${b.id}.${out.name}`;
+    }
+    return null;
   }
 
   deleteSelection() {
@@ -603,11 +665,33 @@ export class VisualEditor {
     this.commit('Delete keyframe');
   }
 
+  /**
+   * Where a block's wire-mode card sits when the block draws nothing: its own
+   * position when it has one, else its stored card position, else a slot
+   * down the left edge so cards never pile on top of each other.
+   * @param {any} block
+   * @returns {[number, number]}
+   */
+  cardPosition(block) {
+    const p = block.props;
+    if (typeof p.x === 'number' && typeof p.y === 'number') return [p.x, p.y];
+    if (typeof p.cardX === 'number' && typeof p.cardY === 'number') return [p.cardX, p.cardY];
+    const i = this.doc.blocks.indexOf(block);
+    return [-6.2, 3.2 - 1.4 * Math.max(0, i)];
+  }
+
   previewMove(ids, starts, dx, dy) {
     for (const id of ids) {
       const b = this.block(id);
       const s = starts.get(id);
-      if (!b || !('x' in s.props)) continue;
+      if (!b) continue;
+      if (!('x' in s.props)) {
+        // A data block (slider, expression) moves its wire-mode card.
+        const [cx, cy] = s.card ?? (s.card = this.cardPosition({ ...b, props: s.props }));
+        b.props.cardX = round(cx + dx);
+        b.props.cardY = round(cy + dy);
+        continue;
+      }
       if (this.keyMode && s.bounds) {
         if (!s.keyframes) s.keyframes = b.keyframes ? JSON.parse(JSON.stringify(b.keyframes)) : null;
         b.keyframes = s.keyframes ? JSON.parse(JSON.stringify(s.keyframes)) : undefined;

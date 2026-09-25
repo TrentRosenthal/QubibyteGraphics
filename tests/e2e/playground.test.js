@@ -232,3 +232,25 @@ test('clicking an object in the preview shows it in the inspector', { skip: skip
   assert.equal(await page.isVisible('#pick-outline'), true);
   await context.close();
 });
+
+test('the preview scrubber drags cleanly: time follows, no text is selected, and the drag ends on release', { skip: skipReason }, async () => {
+  const { page, errors, context } = await readyPage();
+  const bar = await page.locator('.scrubber').boundingBox();
+  const frameNo = async () => Number((await page.textContent('.fcur')).trim());
+  const y = bar.y + bar.height / 2;
+  await page.mouse.move(bar.x + bar.width * 0.1, y);
+  await page.mouse.down();
+  await page.mouse.move(bar.x + bar.width * 0.5, y - 250, { steps: 6 });
+  await page.mouse.move(bar.x + bar.width * 0.5, y, { steps: 6 });
+  await page.mouse.up();
+  await page.waitForTimeout(300);
+  const at = await frameNo();
+  const total = Number((await page.textContent('.frame-readout')).match(/of (\d+)/)[1]);
+  assert.ok(Math.abs(at - total / 2) <= 2, `frame ${at} of ${total}`);
+  assert.equal(await page.evaluate(() => String(window.getSelection())), '');
+  await page.mouse.move(bar.x + bar.width * 0.9, y, { steps: 5 });
+  await page.waitForTimeout(200);
+  assert.equal(await frameNo(), at, 'hovering after release does not seek');
+  assert.deepEqual(errors, []);
+  await context.close();
+});

@@ -141,3 +141,112 @@ test('a document slider drags through live overrides and commits on release', { 
   await page.waitForFunction(() => /"value": 0.9/.test(document.querySelector('.ve-code .ce-ta').value));
   await context.close();
 });
+
+test('quantum blocks dropped on their own wire themselves to a Qubi program and draw', { skip: skipReason }, async () => {
+  const { page, context, errors } = await openEditor();
+  // Start from an empty scene: select everything and delete it.
+  await page.click('.ve-frame', { position: { x: 5, y: 5 } });
+  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.press('Delete');
+  await page.waitForFunction(() => document.querySelectorAll('.tl-row').length === 0);
+  const frame = await page.locator('.ve-frame').boundingBox();
+  const types = ['amplitudes', 'probabilities', 'phaseDisks', 'dirac', 'density', 'matrix', 'bloch', 'sweepPlot'];
+  for (const [i, type] of types.entries()) {
+    const tile = page.locator(`.lib-tile[data-type=${type}]`);
+    await tile.scrollIntoViewIfNeeded();
+    await tile.dragTo(page.locator('.ve-frame'), { targetPosition: { x: frame.width * (0.25 + 0.5 * (i % 2)), y: frame.height * 0.7 } });
+    await page.waitForFunction((t) => [...document.querySelectorAll('.tl-row')].some((r) => r.dataset.id && r.dataset.id.startsWith(t.replace(/[A-Z].*$/, ''))), type);
+    await page.waitForTimeout(700);
+    const err = await page.locator('.bi-error').count();
+    const message = err ? await page.locator('.bi-error').first().innerText() : '';
+    assert.equal(err, 0, `${type} shows an error after it is dropped: ${message}`);
+    // Clear the scene again so each block is tested with nothing to wire to but what it creates.
+    await page.click('.ve-frame', { position: { x: 5, y: 5 } });
+    await page.keyboard.press('ControlOrMeta+a');
+    await page.keyboard.press('Delete');
+    await page.waitForFunction(() => document.querySelectorAll('.tl-row').length === 0);
+  }
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('a quantum block dropped next to an existing program wires to that program instead of adding one', { skip: skipReason }, async () => {
+  const { page, context } = await openEditor();
+  const programs = () => page.locator('.tl-row[data-id^=qubi], .tl-row[data-id^=prog]').count();
+  const before = await programs();
+  const frame = await page.locator('.ve-frame').boundingBox();
+  await page.locator('.lib-tile[data-type=amplitudes]').dragTo(page.locator('.ve-frame'), { targetPosition: { x: frame.width * 0.75, y: frame.height * 0.8 } });
+  await page.waitForSelector('.tl-row[data-id=amplitudes1]');
+  await page.waitForTimeout(700);
+  assert.equal(await page.locator('.bi-error').count(), 0);
+  assert.equal(await programs(), before, 'no new program was added');
+  await context.close();
+});
+
+test('in wire mode a block with nothing drawn sits where it was dropped and can be dragged', { skip: skipReason }, async () => {
+  const { page, context, errors } = await openEditor();
+  await page.keyboard.press('w');
+  await page.waitForSelector('.ve-frame.is-wiring');
+  await page.locator('.lib-tile[data-type=slider]').scrollIntoViewIfNeeded();
+  let frame = await page.locator('.ve-frame').boundingBox();
+  const drop = { x: frame.width * 0.7, y: frame.height * 0.3 };
+  await page.locator('.lib-tile[data-type=slider]').dragTo(page.locator('.ve-frame'), { targetPosition: drop });
+  await page.waitForSelector('.tl-row[data-id=slider1]');
+  await page.waitForTimeout(500);
+  frame = await page.locator('.ve-frame').boundingBox();
+  const cardOf = async () => {
+    const boxes = await page.$$eval('.ve-card.is-data', (gs) => gs.map((g) => {
+      const t = g.querySelector('.ve-card-title').textContent;
+      const r = g.querySelector('.ve-card-box').getBoundingClientRect();
+      return { t, cx: r.left + r.width / 2, cy: r.top + r.height / 2 };
+    }));
+    return boxes.find((b) => b.t.includes('slider1'));
+  };
+  const c0 = await cardOf();
+  assert.ok(c0, 'the slider has a card');
+  assert.ok(Math.abs(c0.cx - (frame.x + drop.x)) < 12 && Math.abs(c0.cy - (frame.y + drop.y)) < 12, `card at ${c0.cx},${c0.cy}, dropped at ${frame.x + drop.x},${frame.y + drop.y}`);
+  await page.mouse.move(c0.cx, c0.cy);
+  await page.mouse.down();
+  await page.mouse.move(c0.cx - 200, c0.cy + 120, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForTimeout(300);
+  const c1 = await cardOf();
+  assert.ok(Math.abs(c1.cx - (c0.cx - 200)) < 12 && Math.abs(c1.cy - (c0.cy + 120)) < 12, `card moved to ${c1.cx},${c1.cy}`);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('the timeline playhead drags from the line, the knob, the ruler, or an empty track without selecting text', { skip: skipReason }, async () => {
+  const { page, context, errors } = await openEditor();
+  const ruler = await page.locator('.tl-ruler').boundingBox();
+  const readout = () => page.locator('.tl-head .cur').innerText();
+  const selected = () => page.evaluate(() => String(window.getSelection()));
+  const drag = async (x0, y0, x1, y1) => {
+    await page.mouse.move(x0, y0);
+    await page.mouse.down();
+    // Wander off the timeline and back, as a real drag does.
+    await page.mouse.move(x1, y1 - 300, { steps: 6 });
+    await page.mouse.move(x1, y1, { steps: 6 });
+    await page.mouse.up();
+    await page.waitForTimeout(200);
+  };
+  // 1. Grab the playhead line in the middle of the tracks (it sits at 0 s).
+  const head = await page.locator('.tl-playhead').boundingBox();
+  await drag(head.x + head.width / 2, head.y + head.height * 0.6, ruler.x + ruler.width * 0.5, head.y + head.height * 0.6);
+  assert.equal(await readout(), '0:03.00', 'dragging the line moves time to the middle');
+  assert.equal(await selected(), '', 'no text was selected');
+  // 2. Grab the knob.
+  const knob = await page.locator('.tl-playhead-knob').boundingBox();
+  await drag(knob.x + knob.width / 2, knob.y + knob.height / 2, ruler.x + ruler.width * 0.25, knob.y + knob.height / 2);
+  assert.equal(await readout(), '0:01.50');
+  // 3. Start on an empty stretch of a track (the title row after its write bar ends).
+  const row = await page.locator('.tl-row[data-id=title] .tl-track').boundingBox();
+  await drag(row.x + row.width * 0.9, row.y + row.height / 2, ruler.x + ruler.width * 0.75, row.y + row.height / 2);
+  assert.equal(await readout(), '0:04.50');
+  assert.equal(await selected(), '');
+  // 4. After release, moving the mouse over the timeline no longer seeks.
+  await page.mouse.move(ruler.x + ruler.width * 0.1, row.y + row.height / 2, { steps: 5 });
+  assert.equal(await readout(), '0:04.50');
+  assert.deepEqual(errors, []);
+  await context.close();
+});

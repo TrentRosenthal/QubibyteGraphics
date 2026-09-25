@@ -13,6 +13,10 @@ import { esc } from '../../playground/ui.js';
 const FRAME_SHORT_SIDE = 9;
 const RESIZE = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
 const SNAP_PX = 6;
+/** Wire-mode card for a block with nothing drawn: width, padding, and port spacing in screen pixels. */
+const CARD_W = 148;
+const CARD_PAD = 12;
+const PORT_GAP = 18;
 
 function inverse(m) {
   const [a, b, c, d, e, f] = m;
@@ -140,13 +144,40 @@ export class Stage {
 
   /** Topmost block whose bounds contain a world point. */
   hitBlock(p, tolerance = 0) {
+    const inside = (b) => p[0] >= b.x - tolerance && p[0] <= b.x + b.w + tolerance && p[1] >= b.y - tolerance && p[1] <= b.y + b.h + tolerance;
+    // In wire mode, blocks with nothing drawn are cards on the canvas and can be picked up like any other block.
+    if (this.ed.showWires) {
+      for (let i = this.ed.doc.blocks.length - 1; i >= 0; i--) {
+        const block = this.ed.doc.blocks[i];
+        const info = this.ed.info(block.id);
+        if (info && info.bounds) continue;
+        const box = this.cardBox(block);
+        if (inside(box)) return { id: block.id, bounds: box, card: true };
+      }
+    }
     const infos = this.ed.orderedInfos();
     for (let i = infos.length - 1; i >= 0; i--) {
       const b = infos[i].bounds;
       if (!b) continue;
-      if (p[0] >= b.x - tolerance && p[0] <= b.x + b.w + tolerance && p[1] >= b.y - tolerance && p[1] <= b.y + b.h + tolerance) return infos[i];
+      if (inside(b)) return infos[i];
     }
     return null;
+  }
+
+  /**
+   * World box of the wire-mode card for a block that draws nothing (a data
+   * block such as a slider, or a block that failed to build): centered on
+   * the block's own position, or on its stored card position.
+   * @param {any} block
+   * @returns {{x: number, y: number, w: number, h: number}}
+   */
+  cardBox(block) {
+    const { inputs, outputs } = this.ed.portsOf(block);
+    const n = Math.max(inputs.length, outputs.length, 1);
+    const w = CARD_W / this.scale;
+    const h = (CARD_PAD + n * PORT_GAP) / this.scale;
+    const [cx, cy] = this.ed.cardPosition(block);
+    return { x: cx - w / 2, y: cy - h / 2, w, h };
   }
 
   onDouble(e) {
@@ -375,20 +406,14 @@ export class Stage {
       return;
     }
     const cards = [];
-    let stackY = 12;
     const pos = new Map();
     for (const block of ed.doc.blocks) {
       const info = ed.info(block.id);
       const { inputs, outputs } = ed.portsOf(block);
       const n = Math.max(inputs.length, outputs.length, 1);
-      let r;
-      if (info && info.bounds) r = this.rectOf(info.bounds);
-      else {
-        r = { left: 12, top: stackY + 18, width: 148, height: 12 + n * 18 };
-        stackY += r.height + 30;
-      }
+      const r = this.rectOf(info && info.bounds ? info.bounds : this.cardBox(block));
       const top = r.top;
-      const h = Math.max(r.height, n * 18 + 8);
+      const h = Math.max(r.height, n * PORT_GAP + 8);
       const slot = (i, count) => top + (h * (i + 1)) / (count + 1);
       const ins = inputs.map((p, i) => ({ ...p, x: r.left, y: slot(i, inputs.length) }));
       const outs = outputs.map((p, i) => ({ ...p, x: r.left + r.width, y: slot(i, outputs.length) }));
@@ -407,7 +432,7 @@ export class Stage {
     const temp = d ? `<path class="ve-wire is-temp" d="${curve(d.start[0], d.start[1], d.end[0], d.end[1])}"/>` : '';
     const svgCards = cards.map((c) => {
       const title = `${blockDefinition(c.block.type).label}`;
-      return `<g class="ve-card${c.data ? ' is-data' : ''}">
+      return `<g class="ve-card${c.data ? ' is-data' : ''}${c.data && ed.selection.has(c.block.id) ? ' is-selected' : ''}">
         <rect class="ve-card-box" x="${c.r.left}" y="${c.r.top}" width="${c.r.width}" height="${c.r.height}" rx="6"/>
         <text class="ve-card-title" x="${c.r.left + 8}" y="${c.r.top - 7}">${esc(title)}  ${esc(c.block.id)}</text>
         ${c.ins.map((p) => `<circle class="ve-port in" cx="${p.x}" cy="${p.y}" r="5" data-port="${esc(c.block.id)}.${esc(p.name)}" data-dir="in" data-kind="${esc(p.kind)}"/><text class="ve-port-label in" x="${p.x + 9}" y="${p.y + 3.5}">${esc(p.name)}</text>`).join('')}

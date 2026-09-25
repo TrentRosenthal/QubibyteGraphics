@@ -407,7 +407,7 @@ registerBlock({
 });
 
 function needState(inputs) {
-  if (!inputs.state) throw new Error('Wire a Qubi program state into this block');
+  if (!inputs.state) throw new Error('This block needs a quantum state. Press W to show wires, then drag from a Qubi program\'s state port to this block\'s state port.');
   return inputs.state;
 }
 
@@ -469,7 +469,7 @@ registerBlock({
   fields: [{ key: 'style', label: 'Style', kind: 'select', options: ['numbers', 'hinton'] }, { key: 'label', label: 'Label (TeX)', kind: 'tex' }, { key: 'size', label: 'Size', kind: 'number', min: 0.1, step: 0.05 }, ...POS],
   ports: { in: [{ name: 'unitary', kind: 'matrix' }], out: [] },
   create: (p, inputs) => {
-    if (!inputs.unitary) throw new Error('Wire a matrix into this block: a Qubi program unitary (no measurements, up to six qubits) or a Bloch sphere rho');
+    if (!inputs.unitary) throw new Error('This block needs a matrix. Press W to show wires, then drag from a Qubi program\'s unitary port (no measurements, up to six qubits) or a Bloch sphere\'s rho port.');
     if (p.style === 'hinton') return place(new HintonDiagram(inputs.unitary, { size: p.size * 10 }), p);
     return place(matrixTex(inputs.unitary, { size: p.size, prefix: p.label || undefined }), p);
   },
@@ -495,10 +495,29 @@ registerBlock({
   fields: [{ key: 'width', label: 'Width', kind: 'number', min: 1 }, { key: 'height', label: 'Height', kind: 'number', min: 1 }, ...POS],
   ports: { in: [{ name: 'sweep', kind: 'series' }], out: [] },
   create: (p, inputs) => {
-    if (!inputs.sweep) throw new Error('Wire a Qubi program with a sweep (for example a=<0..1>) into this block');
-    return place(sweepPlot(inputs.sweep, { width: p.width, height: p.height }), p);
+    if (!inputs.sweep) throw new Error('This block needs a sweep. Press W to show wires, then drag from the sweep port of a Qubi program that sweeps a value, for example a=<0.(0.1).1>.');
+    return place(sweepPlot(sweepSeries(inputs.sweep), { width: p.width, height: p.height, xTitle: sweepAxisTitle(inputs.sweep) }), p);
   },
 });
+
+/**
+ * Plot series for a Qubi sweep: the swept value on x when one variable is
+ * swept, otherwise the point index, and the probability on y.
+ * @param {{axes: string[], points: Array<{assignment: Record<string, number>, probability: number}>}|{x: number[], y: number[]}} sweep
+ * @returns {{x: number[], y: number[]}}
+ */
+export function sweepSeries(sweep) {
+  if (Array.isArray(sweep.x)) return sweep;
+  const single = sweep.axes && sweep.axes.length === 1 && sweep.points.every((pt) => typeof pt.assignment[sweep.axes[0]] === 'number');
+  return {
+    x: sweep.points.map((pt, i) => (single ? pt.assignment[sweep.axes[0]] : i)),
+    y: sweep.points.map((pt) => pt.probability),
+  };
+}
+
+function sweepAxisTitle(sweep) {
+  return sweep.axes && sweep.axes.length === 1 ? sweep.axes[0] : undefined;
+}
 
 const QUBI_NOT_VARIABLES = new Set(['LOOP', 'REPEAT', 'if', 'elseif', 'elif', 'else', 'endif', 'gate', 'function', 'fn', 'LABEL', 'ANNOTATE', 'ANN', 'ENDANNOTATE', 'ENDANN', 'and', 'or', 'xor', 'not', 'blackbox', 'encapsulate', 'arg', 'argmax', 'pi', 'e', 'true', 'false', 'deg', 'rad', 'pirad', 'sqrt', 'round', 'roundup', 'rounddown', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'len', 'length', 'count', 'tolist', 'typeof', 'listtype', 'error', 'int', 'float', 'number', 'string', 'bitstring', 'list', 'boolean', 'qubit', 'wire', 'wirelist', 'wires', 'name', 'label', 'matrix', 'sequence', 'desc', 'examples', 'color', 'category', 'qubits']);
 

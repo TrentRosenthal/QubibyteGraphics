@@ -39,7 +39,7 @@ export class Timeline {
           <div class="tl-corner"></div>
           <div class="tl-ruler" role="slider" tabindex="0" aria-label="Playhead" aria-valuemin="0"></div>
           <div class="tl-rows"></div>
-          <div class="tl-playhead" aria-hidden="true"></div>
+          <div class="tl-playhead" aria-hidden="true"><span class="tl-playhead-knob"></span></div>
         </div>
       </div>`;
     this.q = (s) => host.querySelector(s);
@@ -59,18 +59,9 @@ export class Timeline {
       if (Number.isFinite(v) && v >= 0.5) ed.setMeta({ duration: v }, { commit: true });
       else dur.value = String(ed.doc.meta.duration);
     });
-    this.ruler.addEventListener('pointerdown', (e) => {
-      this.ruler.setPointerCapture(e.pointerId);
-      const seek = (ev) => ed.seek(this.timeAt(ev.clientX), true);
-      seek(e);
-      const move = (ev) => seek(ev);
-      const up = () => {
-        this.ruler.removeEventListener('pointermove', move);
-        this.ruler.removeEventListener('pointerup', up);
-      };
-      this.ruler.addEventListener('pointermove', move);
-      this.ruler.addEventListener('pointerup', up);
-    });
+    // The ruler, the playhead, and its knob all start a scrub.
+    this.ruler.addEventListener('pointerdown', (e) => this.scrub(e));
+    this.playhead.addEventListener('pointerdown', (e) => this.scrub(e));
     this.rows.addEventListener('pointerdown', (e) => this.onDown(e));
     new ResizeObserver(() => this.render()).observe(this.rows);
   }
@@ -131,6 +122,50 @@ export class Timeline {
     r.setAttribute('aria-valuenow', ed.t.toFixed(2));
   }
 
+  /**
+   * Drag the playhead from a pointerdown anywhere on the ruler, the playhead,
+   * or an empty track. The pointer is captured so the drag follows the mouse
+   * off the timeline, text never gets selected, seeks are coalesced to one
+   * per frame, and the drag always ends (release, cancel, or lost capture).
+   * @param {PointerEvent} e
+   */
+  scrub(e) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const ed = this.ed;
+    const el = e.currentTarget && e.currentTarget.setPointerCapture ? e.currentTarget : this.ruler;
+    el.setPointerCapture(e.pointerId);
+    if (ed.playing) ed.togglePlay();
+    this.host.classList.add('is-scrubbing');
+    let pending = null;
+    let frame = 0;
+    const flush = () => {
+      frame = 0;
+      if (pending != null) ed.seek(pending, true);
+      pending = null;
+    };
+    const seek = (ev) => {
+      pending = this.timeAt(ev.clientX);
+      // Move the line at once; the scene render follows on the next frame.
+      this.playhead.style.left = `${this.ruler.offsetLeft + this.x(pending)}px`;
+      if (!frame) frame = requestAnimationFrame(flush);
+    };
+    seek(e);
+    const end = () => {
+      el.removeEventListener('pointermove', seek);
+      el.removeEventListener('pointerup', end);
+      el.removeEventListener('pointercancel', end);
+      el.removeEventListener('lostpointercapture', end);
+      if (frame) cancelAnimationFrame(frame);
+      flush();
+      this.host.classList.remove('is-scrubbing');
+    };
+    el.addEventListener('pointermove', seek);
+    el.addEventListener('pointerup', end);
+    el.addEventListener('pointercancel', end);
+    el.addEventListener('lostpointercapture', end);
+  }
+
   onDown(e) {
     const ed = this.ed;
     const row = e.target.closest('.tl-row');
@@ -146,8 +181,9 @@ export class Timeline {
     const bar = e.target.closest('[data-bar]');
     const key = e.target.closest('[data-key]');
     if (!bar && !key) {
+      // Empty track: select the block and scrub from here, like the ruler.
       ed.select([id]);
-      ed.seek(this.timeAt(e.clientX), true);
+      this.scrub(e);
       return;
     }
     e.preventDefault();
