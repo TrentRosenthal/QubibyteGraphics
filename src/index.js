@@ -9,11 +9,11 @@
 export { PROJECT } from './config.js';
 
 export { Scene, Camera, buildScene, FRAME_SHORT_SIDE } from './core/scene.js';
-export { Node, Group, PathNode, ValueTracker, direction } from './core/node.js';
+export { Node, Group, PathNode, ValueTracker, direction, worldGeometry } from './core/node.js';
 export {
   Shape, Dot, Circle, Ellipse, Arc, Sector, Rect, Polygon, Polyline, RegularPolygon, Star, Line,
   Arrow, DoubleArrow, CurvedArrow, ARROW_HEADS, Brace, braceFor, SVGPathShape, Bezier, bezierPath, Spline,
-  catmullRomPath, bSplinePath, ImageNode, VideoNode, Layer, backdrop, imageBackground,
+  catmullRomPath, bSplinePath, ImageNode, VideoNode, Layer, backdrop, imageBackground, pointsBounds,
 } from './core/shapes.js';
 export { TransformPlane, ApplyMatrix, applyMatrix, matrixPath, polar2 } from './explainers/linear.js';
 export { Epicycles, epicycleCoefficients } from './explainers/fourier.js';
@@ -31,7 +31,7 @@ export * as easing from './core/easing.js';
 export { resolveEasing, cubicBezier, spring } from './core/easing.js';
 export {
   PathBuilder, circlePath, ellipsePath, polyPath, rectPath, parseSVGPath, toSVGPath, transformPath, partialPath,
-  alignPaths, lerpAligned, pathBounds, pathLength, pointAtFraction, samplePath, flattenPath, mergePaths,
+  alignPaths, lerpAligned, pathBounds, pathLength, pointAtFraction, samplePath, flattenPath, mergePaths, mapPoints,
 } from './core/path.js';
 export { parseColor, toHex, toCSS, mix, contrast, oklchToRgb, rgbToOklch, phaseColor } from './core/color.js';
 export { Random, noise1, noise2 } from './core/random.js';
@@ -45,7 +45,7 @@ export { evaluate as evaluateQubi, diagnose as diagnoseQubi } from './qubi/index
 export * as quantumViews from './quantum/views/index.js';
 export * as quantum from './quantum/index.js';
 export { CodeBlock, highlightQubi } from './text/code.js';
-export { buildDocument, newDocument, normalizeDocument, evaluateGraph, stringifyDocument, documentToModule, moduleToDocument, ANIMATIONS as DOCUMENT_ANIMATIONS } from './editor/document.js';
+export { buildDocument, newDocument, normalizeDocument, evaluateGraph, stringifyDocument, documentToModule, moduleToDocument, blockTypes, ANIMATIONS as DOCUMENT_ANIMATIONS } from './editor/document.js';
 export { BLOCKS, registerBlock, blockDefinition, blockLibrary } from './editor/blocks.js';
 export { renderFrame, registerBoard, viewFor } from './render/canvas.js';
 export { renderSVG } from './render/svg.js';

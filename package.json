@@ -10,7 +10,8 @@
     ".": "./src/index.js",
     "./qubi": "./src/qubi/index.js",
     "./quantum": "./src/quantum/index.js",
-    "./math": "./src/math/index.js"
+    "./math": "./src/math/index.js",
+    "./three": "./src/three/index.js"
   },
   "bin": {
     "qgfx": "cli/qgfx.js"
@@ -31,13 +32,16 @@
     "test:golden": "node --test \"tests/golden/**/*.test.js\"",
     "test:export": "node --test \"tests/export/**/*.test.js\"",
     "coverage": "c8 --reporter=text-summary --reporter=text node --test \"tests/**/*.test.js\"",
-    "lint": "eslint . && node tools/lint-slop.js && node tools/lint-vocab.js",
+    "lint": "eslint . && node tools/lint-slop.js && node tools/lint-vocab.js && node tools/check-exports.js",
     "lint:slop": "node tools/lint-slop.js",
     "lint:vocab": "node tools/lint-vocab.js",
     "build": "node tools/bundle.js",
     "build:docs": "node tools/build-docs.js",
-    "gallery": "node cli/qgfx.js gallery",
-    "size": "node tools/size-budget.js"
+    "gallery": "node tools/render-gallery.js",
+    "size": "node tools/size-budget.js",
+    "serve": "node tools/serve.js",
+    "test:e2e": "QGFX_E2E=1 node --test --test-concurrency=1 \"tests/e2e/**/*.test.js\"",
+    "build:api": "node tools/build-api-index.js"
   },
   "engines": {
     "node": ">=20"

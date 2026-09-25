@@ -65,11 +65,3 @@ export function apply(m, x, y) {
   return [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
 }
 
-/**
- * Mean scale factor of a matrix (geometric mean of the axis scales).
- * @param {Mat2D} m
- * @returns {number}
- */
-export function meanScale(m) {
-  return Math.sqrt(Math.abs(m[0] * m[3] - m[1] * m[2]));
-}
