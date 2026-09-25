@@ -13,6 +13,10 @@ export const HUE_WORDS = {
   red: 25, crimson: 18, rose: 5, pink: 355, magenta: 330, fuchsia: 325, purple: 305, violet: 295, indigo: 275,
   blue: 258, sky: 235, cyan: 210, teal: 190, mint: 170, green: 145, emerald: 158, lime: 125, olive: 110,
   yellow: 98, amber: 78, gold: 85, orange: 55, coral: 38, brown: 55, sand: 80, slate: 250, gray: 250, grey: 250,
+  // Everyday color nouns people use in descriptions.
+  terracotta: 40, rust: 42, brick: 30, clay: 45, peach: 55, salmon: 30, wine: 10, burgundy: 12, cherry: 20,
+  ocean: 240, sea: 225, navy: 262, azure: 245, turquoise: 195, aqua: 200, forest: 150, sage: 140, moss: 125,
+  jade: 165, lavender: 300, plum: 320, lilac: 305, mustard: 95, honey: 82, lemon: 105, cream: 90, ochre: 75,
 };
 
 /** Mood words and their effect on lightness (L) and chroma (C). */

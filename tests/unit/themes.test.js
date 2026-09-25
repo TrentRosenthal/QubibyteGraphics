@@ -37,3 +37,12 @@ test('themes from descriptions register, export, and import', () => {
   assert.equal(back.id, 'test-mint-2');
   assert.throws(() => getTheme('nope'), /Unknown theme/);
 });
+
+test('everyday color nouns set the hue of a described theme', async () => {
+  const { themeFrom, rgbToOklch, parseColor } = await import('../../src/index.js');
+  const hueOf = (d) => rgbToOklch(parseColor(themeFrom('t', d).colors.accent)).H;
+  const near = (a, b) => Math.abs(((a - b + 540) % 360) - 180) < 25;
+  assert.ok(near(hueOf('warm terracotta paper'), 40), `terracotta ${hueOf('warm terracotta paper')}`);
+  assert.ok(near(hueOf('forest, dark'), 150));
+  assert.ok(near(hueOf('lavender pastel'), 300));
+});
