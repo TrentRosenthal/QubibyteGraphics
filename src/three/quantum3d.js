@@ -250,9 +250,21 @@ export function qSphere(nodes, opts = {}) {
     const k = maxMag > 0 ? Math.sqrt(n.magnitude / maxMag) : 1;
     g.add(new Lines3D([[[0, 0, 0], p]], { color, strokeWidth: 2.5, strokeOpacity: 0.85 }));
     g.add(new Points3D([p], { color, radius: maxDot * Math.max(0.25, k) }));
-    if (n.label != null) g.add(new Label3D(n.label, { position: p.map((v) => v * 1.18), size: opts.labelSize ?? 0.22, color: 'muted', factory: opts.labelFactory ?? null }));
+    if (n.label != null) g.add(new Label3D(n.label, { position: labelSpot(p, r), size: opts.labelSize ?? 0.22, color: 'muted', factory: opts.labelFactory ?? null }));
   }
   return g;
+}
+
+/**
+ * Where a Q-sphere label goes: outward from its point and a little further
+ * from the equator, so a point facing the camera never hides under its label.
+ * @param {number[]} p
+ * @param {number} r
+ * @returns {number[]}
+ */
+function labelSpot(p, r) {
+  const up = p[2] < -1e-6 * r ? -1 : 1;
+  return [p[0] * 1.14, p[1] * 1.14, p[2] * 1.14 + up * r * 0.13];
 }
 
 /**

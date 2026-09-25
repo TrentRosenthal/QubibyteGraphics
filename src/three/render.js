@@ -18,6 +18,7 @@ import { hull2D } from './object3d.js';
 import { ColorMix } from '../core/node.js';
 import { mix, parseColor } from '../core/color.js';
 import { hashSeed } from '../core/random.js';
+import { registerPreload } from '../core/scene.js';
 import { pathBounds, mergePaths } from '../core/path.js';
 
 let textModule = null;
@@ -41,6 +42,9 @@ export function loadLabelText() {
   }
   return textLoading;
 }
+
+// Label text (fonts and KaTeX) loads before any scene builds, so every 3D label renders on the first frame.
+registerPreload(() => loadLabelText());
 
 const labelCache = new Map();
 

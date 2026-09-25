@@ -31,3 +31,4 @@ Every rendered visual is graded against `docs/QUALITY.md` (criteria a to g, 1 to
 | 40-platonic-solids | 75 | 5 | 5 | 4 | 4 | 5 | 4 | 4 | Wikipedia Platonic solid renders: exact depth order, key/fill/rim light, and contact shadows match a raytraced look without a raytracer. |
 | 41-surface-plot | 50, 75 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Manim ThreeDScene surface demos: height-shaded surface and orbiting camera; axis lines that pass behind the surface stay faintly visible. |
 | 42-bloch-gates | 75, 100 | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Qiskit Bloch sphere plots: the trail shows each gate's rotation, which the static reference cannot; kets now typeset with KaTeX. |
+| 43-qsphere | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Qiskit plot_state_qsphere: same Hamming-weight latitudes and phase colors; labels now step away from the equator so none sits on its dot. |
