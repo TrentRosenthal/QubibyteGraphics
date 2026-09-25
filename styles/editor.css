@@ -154,7 +154,7 @@
 
 .ve-mode-hint {
   margin-right: var(--space-3);
-  color: var(--accent-text);
+  color: var(--text-faint);
   font-size: var(--text-xs);
   white-space: nowrap;
 }
@@ -180,6 +180,12 @@
   padding: var(--space-8) var(--space-6);
 }
 
+@media (max-width: 1440px) {
+  .ve-stage {
+    padding: var(--space-5) var(--space-4);
+  }
+}
+
 .ve-stage.is-drop .ve-frame {
   box-shadow: 0 0 0 var(--space-0) var(--accent);
 }
@@ -190,7 +196,7 @@
 }
 
 .ve-frame.is-wiring .preview-canvas {
-  opacity: 0.28;
+  opacity: 0.4;
 }
 
 .ve-frame.show-grid::after {
@@ -350,9 +356,10 @@
 }
 
 .ve-card-box {
-  fill: color-mix(in oklab, var(--surface) 55%, transparent);
-  stroke: var(--border-strong);
+  fill: color-mix(in oklab, var(--surface) 35%, transparent);
+  stroke: var(--text-faint);
   stroke-width: 1;
+  stroke-dasharray: 3 3;
 }
 
 .ve-card.is-data .ve-card-box {
@@ -387,9 +394,20 @@
 }
 
 .ve-port-label {
-  fill: var(--text-muted);
+  fill: var(--text);
   font-family: var(--font-code);
   font-size: var(--text-2xs);
+  paint-order: stroke;
+  stroke: var(--stage);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.ve-card-title {
+  paint-order: stroke;
+  stroke: var(--stage);
+  stroke-width: 3;
+  stroke-linejoin: round;
 }
 
 .ve-wire {
@@ -1037,6 +1055,12 @@ body.is-scrubbing * {
 .tp-colors {
   display: grid;
   gap: var(--space-1);
+}
+
+.tp-group {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
 }
 
 .tp-color {

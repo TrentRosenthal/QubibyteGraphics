@@ -209,3 +209,35 @@ Statistical sampling, CLT demos, force layouts and equality probes use `SeededRa
 ## Math: units and significant figures
 
 Units parse with SI prefixes after an exact-name lookup (so `T` is tesla and `Tm` is terametre). `degC` and `degF` carry offsets and are meant for conversion; products of offset units use the scale only. Trailing zeros without a decimal point are not significant (`1200` has 2, `1200.` has 4), the most common textbook rule.
+
+## Web: user code runs in a module worker, the canvas is transferred to it
+
+The playground and `<qubibyte-scene>` never evaluate user code on the page. `src/playground/runtime-worker.js` imports the scene from a Blob URL after `rewriteImports` turns `'qubibyte-graphics'` and relative engine paths into absolute URLs of the same `src/index.js` the worker uses, so there is one engine instance. The page transfers its preview canvas with `transferControlToOffscreen()` and drives time with requestAnimationFrame; it sends a new seek only after the previous frame is acknowledged, so slow frames are dropped rather than queued. Without OffscreenCanvas transfer (or with `?runtime=iframe`) the same `RuntimeCore` runs in an iframe with `sandbox="allow-scripts"` and posts ImageBitmaps. A build that takes longer than 20 seconds terminates the worker and a fresh canvas is transferred to a new one.
+
+## Web: syntax errors are located with a classic-script probe
+
+A module that fails to parse rejects `import()` with a SyntaxError that carries no position. The runtime then blanks the `import` and `export` keywords (keeping every other character in place), wraps the text in an async function, and loads it as a classic script in a throwaway worker, whose `error` event has `lineno` and `colno`. Runtime errors are mapped through the Blob URL frames in the stack. The probe never runs the code: it only defines the wrapper function.
+
+## Web: MP4 and WebM muxers are our own; ffmpeg.wasm is the fallback
+
+WebCodecs output goes into `src/playground/export/mp4.js` (fast-start progressive MP4, `avcC` from the encoder's `decoderConfig.description`, optional AAC with `esds`) and `webm.js` (EBML with SimpleBlocks, BlockGroups with BlockAdditions for alpha side data, Opus, SeekHead and Cues). Both are tested against native FFmpeg streams in `tests/unit/web-muxers.test.js`. When the browser has no encoder for a request (the Playwright Chromium has no H.264 encoder and no VP9 alpha), frames are rendered to PNG in the worker and encoded by ffmpeg.wasm, loaded lazily from `vendor/ffmpeg/`. The VP9 encoder in `@ffmpeg/core` 0.12.10 faults with "memory access out of bounds" from 640x360 up and at `-cpu-used` 5 or higher, so the wasm path writes VP8 (with `yuva420p` for alpha), which WebM players decode; MP4 uses x264 `veryfast`. Synthesized tones and clicks are muxed as Opus or AAC through WebCodecs, or passed to ffmpeg.wasm as WAV. Audio files attached with `scene.sound()` are left to the CLI and the export panel says so.
+
+## Web: the visual editor shows a layout view at rest
+
+At frame 0 while paused, the editor canvas renders every block at its base props, without entrances, so a document whose blocks all fade in is not an empty canvas. The sandbox builds a second scene from the document with `enter`, `exit`, and `keyframes` removed and uses it only for that view; playback, scrubbing, and export use the real scene. Once the playhead moves past frame 0, dragging a block writes a keyframe at the playhead instead of moving its base position.
+
+## Web: document additions for the editor
+
+`buildDocument(doc, { tolerant: true })` skips a block whose `create` throws and reports it in `scene.blockErrors`, so one unwired view block does not blank the canvas; strict builds are unchanged. Blocks may carry `props.zIndex` (applied by `place`) for z-order commands and `props.group` for editor grouping (selecting one member selects all; the engine ignores it). Block definitions may expose `handles(props, outputs)` returning points in the block's local frame and `onDrag(props, handle, ctx)` where `ctx.source(port)` finds the wired upstream block and `ctx.update(id, patch)` writes to it. The Bloch sphere block uses this to write `RY(theta) q` and `RZ(phi) q` lines at the top of the connected Qubi program (updating them in place on later drags) and keeps the rest of the source verbatim. `qubiVariables(source)` lists the names a program reads but never assigns; those become the Qubi block's `var:NAME` ports, because a name the program assigns itself would overwrite a wired value.
+
+## Web: the Bloch sphere block is a 2D orthographic drawing for now
+
+The 3D module is being built in parallel, so the editor's Bloch block draws the sphere with 2D paths (outline, split front and back equator, axes, state arrow, and a drop line), which also renders identically in every export path. It sits in the 3D category and can be swapped for the 3D module's sphere without changing its ports or its handle.
+
+## Web: end-to-end tests run on request
+
+`tests/e2e/*.test.js` drive the real playground in Chromium through `playwright-core` and `tools/serve.js`, and write exported files to disk for ffprobe. They run with `npm run test:e2e` (which sets `QGFX_E2E=1`) and skip with a stated reason otherwise, including when no Chromium binary is found, so `npm test` stays fast and runs on machines without a browser. UI screenshots for the quality log are a separate test gated on `QGFX_SHOTS=1`.
+
+## Web: UI tokens are checked for contrast in a unit test
+
+`tests/unit/web-tokens.test.js` parses `styles/tokens.css`, resolves `var()` and `color-mix(in oklab, ...)` with the engine's color functions and `PROJECT.brandColor`, and checks every text pair in both interface themes against WCAG AA (7:1 for primary text). It also fails if a stylesheet other than `tokens.css` contains a raw color.

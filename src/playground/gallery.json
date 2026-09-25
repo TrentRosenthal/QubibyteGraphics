@@ -335,6 +335,14 @@
       "summary": "Scenes compose: two gallery scenes play side by side, each inside its own scaled group, on one shared timeline.",
       "posterTime": 13.2,
       "thumbnail": "docs/renders/gallery/57-composition.png"
+    },
+    {
+      "file": "examples/58-palette-helper.js",
+      "name": "58-palette-helper",
+      "title": "Palette helper",
+      "summary": "A theme from a few words: the palette helper picks a background, ink, and two accents from a hue and a mood.",
+      "posterTime": 6,
+      "thumbnail": "docs/renders/gallery/58-palette-helper.png"
     }
   ]
 }

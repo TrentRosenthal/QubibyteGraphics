@@ -430,8 +430,8 @@ input[type='checkbox'].check:checked::after {
   width: var(--space-1);
   height: var(--space-2);
   border: solid var(--on-accent);
-  border-width: 0 2px 2px 0;
-  transform: translateY(-1px) rotate(45deg);
+  border-width: 0 var(--space-0) var(--space-0) 0;
+  transform: translateY(calc(-1 * var(--hairline))) rotate(45deg);
 }
 
 /* Range slider */

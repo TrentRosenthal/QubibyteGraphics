@@ -23,7 +23,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
  * @param {string} doc comment text without the delimiters
  * @returns {string}
  */
-export function firstSentence(doc) {
+function firstSentence(doc) {
   const text = doc
     .split('\n')
     .map((l) => l.replace(/^\s*\*\s?/, ''))

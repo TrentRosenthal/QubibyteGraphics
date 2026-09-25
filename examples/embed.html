@@ -30,6 +30,15 @@
   .doc h2 {
     font-size: var(--text-lg);
     font-weight: var(--weight-semibold);
+  }
+
+  .doc header,
+  .doc section {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .doc section {
     margin-top: var(--space-4);
   }
 
@@ -82,8 +91,10 @@
 <pre>&lt;script type="module" src="../src/embed/qubibyte-scene.js"&gt;&lt;/script&gt;
 &lt;qubibyte-scene src="00-first-scene.js" autoplay loop controls&gt;&lt;/qubibyte-scene&gt;</pre>
 
+  <section>
   <h2>Driving it from script</h2>
   <p>The element exposes <code>play()</code>, <code>pause()</code>, <code>seek(seconds)</code>, <code>currentTime</code>, and <code>duration</code>, and dispatches <code>ready</code>, <code>play</code>, <code>pause</code>, <code>timeupdate</code>, and <code>ended</code>. With reduced motion requested, it shows the last frame and does not autoplay.</p>
+  </section>
 
   <qubibyte-scene id="shapes" src="01-shapes.js" poster-time="5.4" theme="clean-light"></qubibyte-scene>
   <div class="row">

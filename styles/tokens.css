@@ -99,6 +99,12 @@
   --scrub-h: 28px;
   --thumb-ratio: 16 / 9;
   --popover-w: 360px;
+  --thumb-w: 96px;
+  --thumb-w-sm: 80px;
+  --control-min-w: 240px;
+  --select-max-w: 180px;
+  --pop-max-h: 264px;
+  --underline-offset: 3px;
   --library-w: 248px;
   --hairline: 1px;
 
@@ -114,6 +120,7 @@
   --dur-fast: 120ms;
   --dur-base: 180ms;
   --dur-slow: 280ms;
+  --dur-pulse: 900ms;
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);
 
@@ -255,6 +262,15 @@
   --marker-caption: #3f7d66;
   --guide: #c4553e;
   color-scheme: light;
+}
+
+@media (max-width: 1440px) {
+  :root {
+    --library-w: 208px;
+    --panel-w: 264px;
+    --code-pane-w: 34%;
+    --code-pane-min: 320px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

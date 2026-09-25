@@ -155,15 +155,38 @@ export class VisualEditor {
       const b = e.target.closest('[data-tab]');
       if (b) this.setTab(b.dataset.tab);
     });
+    // Dragging a slider sends a live override (evaluateGraph overrides in
+    // the sandbox); releasing it writes the value into the document.
+    let pending = null;
+    let sending = false;
+    const send = async () => {
+      if (sending || !pending) return;
+      sending = true;
+      const { index, value } = pending;
+      pending = null;
+      try {
+        await this.runtime.setControl(index, value);
+        this.seek(this.t);
+      } catch (err) {
+        this.setStatus(err.message);
+      } finally {
+        sending = false;
+        if (pending) send();
+      }
+    };
     q('[data-controls]').addEventListener('input', (e) => {
       const inp = e.target.closest('input[data-block]');
       if (!inp) return;
       const v = Number(inp.value);
       inp.parentElement.querySelector('.value').textContent = String(round(v, 3));
-      this.updateProps(inp.dataset.block, { value: v }, { commit: false });
+      const c = this.sceneInfo && this.sceneInfo.controls.find((x) => x.blockId === inp.dataset.block);
+      if (!c) return;
+      pending = { index: c.index, value: v };
+      send();
     });
     q('[data-controls]').addEventListener('change', (e) => {
-      if (e.target.closest('input[data-block]')) this.commit('Slider');
+      const inp = e.target.closest('input[data-block]');
+      if (inp) this.updateProps(inp.dataset.block, { value: Number(inp.value) }, { commit: true });
     });
     this.refreshPanels();
     this.scheduleBuild();

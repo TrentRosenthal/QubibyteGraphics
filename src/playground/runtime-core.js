@@ -33,7 +33,7 @@ const PACKAGE_MAP = {
 };
 
 /** Board names in the playground and the themes that draw them. */
-export const BOARD_THEMES = { whiteboard: 'whiteboard', chalkboard: 'chalkboard', paper: 'paper', blueprint: 'board-blueprint' };
+const BOARD_THEMES = { whiteboard: 'whiteboard', chalkboard: 'chalkboard', paper: 'paper', blueprint: 'board-blueprint' };
 
 const BUILD_KEYS = ['width', 'height', 'fps', 'seed'];
 

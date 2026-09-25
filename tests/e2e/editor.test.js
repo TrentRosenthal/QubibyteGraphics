@@ -86,8 +86,58 @@ test('selecting, moving, and the wire layer work on the starter document', { ski
   await page.waitForSelector('.ve-wires .ve-wire');
   assert.equal(await page.locator('.ve-wires .ve-wire').count(), 2);
   assert.ok(await page.locator('.ve-port[data-port="prog.state"]').count());
-  // The Bloch handle is exposed on the canvas.
+  // Wiring: drag from an output port to an input port.
+  const center = (sel) => page.evaluate((q) => {
+    const r = document.querySelector(q).getBoundingClientRect();
+    return { x: r.left, y: r.top, width: r.width, height: r.height };
+  }, sel);
+  await page.waitForTimeout(400);
+  const from = await center('.ve-port[data-port="prog.probabilities"]');
+  const to = await center('.ve-port[data-port="title.content"]');
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForFunction(() => document.querySelectorAll('.ve-wires .ve-wire').length === 3);
+  // The Bloch handle writes RY and RZ angles back into the wired Qubi program.
   assert.equal(await page.locator('.ve-knob').count(), 1);
+  await page.waitForTimeout(400);
+  const knob = await center('.ve-knob');
+  await page.mouse.move(knob.x + knob.width / 2, knob.y + knob.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(knob.x - 40, knob.y + 50, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForTimeout(600);
+  await page.click('.ve-toolbar [data-act=code]');
+  await page.waitForSelector('.ve-code .ce-ta');
+  const code = await page.inputValue('.ve-code .ce-ta');
+  const doc = JSON.parse(code.slice(code.indexOf('{'), code.lastIndexOf('}') + 1));
+  const src = doc.blocks.find((b) => b.id === 'prog').props.source;
+  assert.match(src, /^RY\([\d.]+\) 0\nRZ\(-?[\d.]+\) 0$/);
+  assert.notEqual(src, 'RY(0.3) 0\nRZ(0.6) 0');
   assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('a document slider drags through live overrides and commits on release', { skip: skipReason }, async () => {
+  const { page, context } = await openEditor();
+  await page.click('.ve-toolbar [data-act=code]');
+  await page.waitForSelector('.ve-code .ce-ta');
+  const code = await codeText(page);
+  const doc = JSON.parse(code.slice(code.indexOf('{'), code.lastIndexOf('}') + 1));
+  doc.blocks.find((b) => b.id === 'prog').props.source = 'RY 0 theta';
+  doc.blocks.push({ id: 's', type: 'slider', props: { label: 'theta', min: 0, max: 1, step: 0.01, value: 0.1 } });
+  doc.wires.push({ from: 's.value', to: 'prog.var:theta' });
+  await page.fill('.ve-code .ce-ta', `export default ${JSON.stringify(doc, null, 2)};\n`);
+  await page.waitForSelector('.ve-controls input[type=range]', { timeout: 10000 });
+  await page.waitForTimeout(600);
+  const before = await pixels(page.locator('.ve-frame'));
+  await page.locator('.ve-controls input[type=range]').fill('0.9');
+  await page.waitForTimeout(900);
+  const after = await pixels(page.locator('.ve-frame'));
+  let diff = 0;
+  for (let i = 0; i < before.data.length; i += 4) if (Math.abs(before.data[i] - after.data[i]) > 40) diff++;
+  assert.ok(diff > 200, `the render changed in ${diff} pixels`);
+  await page.waitForFunction(() => /"value": 0.9/.test(document.querySelector('.ve-code .ce-ta').value));
   await context.close();
 });

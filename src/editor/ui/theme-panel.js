@@ -13,6 +13,12 @@ import { contrast, toHex, parseColor } from '../../core/color.js';
 import { icon } from '../../playground/icons.js';
 import { esc, download, toast } from '../../playground/ui.js';
 
+const GROUPS = [
+  ['Surfaces and ink', ['background', 'surface', 'ink', 'muted', 'faint', 'grid']],
+  ['Accents', ['accent', 'accent2', 'positive', 'negative', 'ket0', 'ket1']],
+  ['Gates', COLOR_KEYS.filter((k) => k.startsWith('gate'))],
+];
+
 const PAIRS = [
   ['ink', 'Ink', 4.5, 7],
   ['muted', 'Muted', 4.5, 7],
@@ -61,7 +67,7 @@ export class ThemePanel {
       </section>
       <section class="tp-section">
         <h3 class="section-title">Colors</h3>
-        <div class="tp-colors">${COLOR_KEYS.map((k) => `<div class="tp-color"><input type="color" value="${hexOf(t.colors[k])}" data-color="${k}" aria-label="${k} color"><span class="tp-name">${k}</span><input class="input mono tp-hex" data-hex="${k}" value="${esc(hexOf(t.colors[k]))}" aria-label="${k} hex"></div>`).join('')}</div>
+        ${GROUPS.map(([label, keys]) => `<div class="tp-group"><span class="bf-label">${label}</span><div class="tp-colors">${keys.map((k) => `<div class="tp-color"><input type="color" value="${hexOf(t.colors[k])}" data-color="${k}" aria-label="${k} color"><span class="tp-name">${k}</span><input class="input mono tp-hex" data-hex="${k}" value="${esc(hexOf(t.colors[k]))}" aria-label="${k} hex"></div>`).join('')}</div></div>`).join('')}
       </section>
       <section class="tp-section">
         <h3 class="section-title">Contrast on background</h3>
