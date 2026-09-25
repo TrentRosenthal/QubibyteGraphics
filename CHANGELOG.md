@@ -7,6 +7,8 @@ First release.
 ### Engine
 - Scene graph with per-property timelines: exact sampling at any time, deterministic and resumable renders.
 - Shapes, arrows (straight and bent), braces, splines, images, video nodes, and layers.
+- `scene.include` composes scenes: another scene's build runs in its own group on the same timeline.
+- `placeLabels` puts labels beside their anchors without covering each other, obstacles, or the frame edge.
 - Animations: create, write, fade, grow, transform (with matching by key or TeX token), indicate, flash, circumscribe, move along a path, rotate, updaters, lag and succession.
 - Text and TeX typeset to outlines (TTF parser and KaTeX layout, vendored), with font fallback for Greek and math symbols; code blocks with Qubi highlighting.
 - Plots and coordinate systems: axes, number lines, complex and polar planes, adaptive function sampling, parametric and implicit curves, contours, vector fields, streamlines, heatmaps, Riemann sums, bar charts, histograms. Tick labels draw on a halo above plots.
@@ -31,4 +33,4 @@ First release.
 
 ### Output
 - `qgfx` CLI: MP4, HEVC, WebM with alpha, AV1, ProRes, MKV, GIF, APNG, WebP, image sequences, PDF, animated SVG, Lottie, SRT captions, and audio; chunked renders that resume.
-- 41 graded gallery examples, theme sheets, golden-image tests, and a static documentation site.
+- 42 graded gallery examples, theme sheets, golden-image tests, and a static documentation site.
