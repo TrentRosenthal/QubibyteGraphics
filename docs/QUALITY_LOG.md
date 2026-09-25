@@ -17,3 +17,6 @@ Every rendered visual is graded against `docs/QUALITY.md` (criteria a to g, 1 to
 | 07-phase-portrait | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | 3Blue1Brown, differential equations ch. 1 pendulum field: same field, streamlines, and spiral; the reference colors arrows by speed on a continuous scale, ours fades short arrows. |
 | 08-roots-of-unity | 100 | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Standard textbook roots-of-unity figure: the rotation by omega is animated, which the static reference cannot show. |
 | 09-taylor-series | 100 | 4 | 5 | 5 | 4 | 5 | 4 | 4 | 3Blue1Brown, Taylor series: same growing partial sums; tick labels now sit on a background halo above the curves, as in the reference. |
+| 10-central-limit | 50, 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | 3Blue1Brown, "But what is the Central Limit Theorem?": exact dice distributions converge on a live bell curve; the reference animates sampling, ours morphs exact distributions. |
+| 15-gradient-descent | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Distill "Why Momentum Really Works": same zigzag in a narrow valley; heatmap cells no longer show seams at 1080p, a faint cell texture remains visible up close. |
+| 16-eigenvectors | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | 3Blue1Brown, Essence of Linear Algebra ch. 14: eigenvectors stay on dashed spans while others turn; the reference also labels the stretch factors on the vectors. |

@@ -5,7 +5,7 @@
  * @module core/plots
  */
 
-import { Node, Group } from './node.js';
+import { Node, Group, ColorMix } from './node.js';
 import { PathBuilder, polyPath, emptyPath, mergePaths, rectPath, circlePath } from './path.js';
 import { catmullRomPath } from './shapes.js';
 
@@ -999,7 +999,11 @@ export class Heatmap extends Group {
       }
       const x0 = s.xMin + i * dx;
       const y0 = s.yMin + j * dy;
-      this.add(new DataPolyline([[x0, y0], [x0 + dx, y0], [x0 + dx, y0 + dy], [x0, y0 + dy]], { type: 'heatCell', smooth: false, closed: true, stroke: null, fill: color, fillOpacity: 0.08 + 0.88 * alpha, meta: { solidFill: true } }));
+      // Opaque cells mixed toward the background, grown slightly past their edges so neighbors overlap without seams.
+      const ex = i < nx - 1 ? dx * 0.04 : 0;
+      const ey = j < ny - 1 ? dy * 0.04 : 0;
+      const fill = new ColorMix('background', color, 0.08 + 0.88 * alpha);
+      this.add(new DataPolyline([[x0, y0], [x0 + dx + ex, y0], [x0 + dx + ex, y0 + dy + ey], [x0, y0 + dy + ey]], { type: 'heatCell', smooth: false, closed: true, stroke: null, fill, meta: { solidFill: true } }));
     }
   }
 }
