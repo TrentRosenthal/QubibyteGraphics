@@ -284,6 +284,9 @@ export class PhaseDisks extends AmplitudeView {
       const cy = -(Math.floor(i / cols) - (rows - 1) / 2) * (2 * this.r + gap + 0.32);
       this.add(new PhaseDisk(this, i, cx, cy));
       const t = new Tex(`${basisLabel(i, n)}`, { size: 0.2, color: 'muted' });
+      // Long bitstrings shrink to their slot so neighbors never run together.
+      const slot = (2 * this.r + gap) * 0.78;
+      if (t.width > slot) t.scale(slot / t.width);
       t.moveTo([cx, cy - this.r - 0.18]);
       this.add(t);
     }

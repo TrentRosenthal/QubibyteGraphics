@@ -295,17 +295,25 @@ export class Create extends Animation {
     const times = stagger(leaves.length, s, this.duration, this.lagRatio);
     leaves.forEach((leaf, i) => {
       const [a, b] = times[i];
-      drawLeaf(leaf, a, b, this.ease, this.outlineWidth);
+      drawLeaf(leaf, a, b, this.ease, this.outlineWidth, s);
     });
     return s + this.duration;
   }
 }
 
-function drawLeaf(leaf, a, b, ease, outlineWidth) {
+function drawLeaf(leaf, a, b, ease, outlineWidth, start = a) {
   const fill = leaf._cur.fill;
   const stroke = leaf._cur.stroke;
   const fillOpacity = leaf._cur.fillOpacity;
+  const opacity = leaf._cur.opacity;
   const d = b - a;
+  // A staggered leaf is hidden from the animation's start, not only from its own.
+  if (start < a) {
+    if (stroke != null || fill != null) {
+      leaf.tween('draw', start, start, 0, linear);
+      if (fill != null) leaf.tween('fillOpacity', start, start, 0, linear);
+    } else leaf.tween('opacity', start, start, 0, linear);
+  }
   if (stroke != null && fill == null) {
     leaf.tween('draw', a, b, 1, ease, null, 0);
     return;
@@ -330,7 +338,7 @@ function drawLeaf(leaf, a, b, ease, outlineWidth) {
     leaf.tween('strokeOpacity', b, b, 1, linear);
     return;
   }
-  leaf.tween('opacity', a, b, leaf._cur.opacity, ease, null, 0);
+  leaf.tween('opacity', a, b, opacity, ease, null, 0);
 }
 
 /**
