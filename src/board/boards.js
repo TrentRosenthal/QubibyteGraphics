@@ -37,6 +37,12 @@ function state(ctx, view) {
   return s;
 }
 
+function polyLength(pts) {
+  let L = 0;
+  for (let i = 1; i < pts.length; i++) L += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+  return L;
+}
+
 function toPx(view, x, y) {
   const [a, b, c, d, e, f] = view.matrix;
   return [a * x + c * y + e, b * x + d * y + f];
@@ -638,11 +644,20 @@ const blueprint = {
     if (item.stroke) {
       const hs = strokesPx(view, handStrokes(item.path, item.seed, HAND_STYLES.drafting));
       const w = Math.max(1.6, item.strokeWidth * 0.75) * px;
-      const pieces = item.meta.noOvershoot ? hs.map((h) => h.pts) : cornerSplit(hs).map((p) => extendPx(p, 7 * px));
+      // Lettering keeps its strokes as written; only construction lines overshoot their corners.
+      const pieces = item.meta.noOvershoot || item.meta.handwriting ? hs.map((h) => h.pts) : cornerSplit(hs).map((p) => extendPx(p, 7 * px));
       ctx.fillStyle = toCSS(item.stroke, 0.12);
       for (const p of pieces) drawRibbon(ctx, p, w * 2.4);
       ctx.fillStyle = toCSS(item.stroke, 0.94);
-      for (const p of pieces) drawRibbon(ctx, p, w, { caps: false });
+      // Flat ends suit ruled lines; a stroke only a few pen widths long is a dot, drawn as one.
+      for (const p of pieces) {
+        if (polyLength(p) < w * 6) {
+          const c = p[Math.floor(p.length / 2)];
+          ctx.beginPath();
+          ctx.arc(c.x, c.y, w * 1.05, 0, Math.PI * 2);
+          ctx.fill();
+        } else drawRibbon(ctx, p, w, { caps: false });
+      }
       trackTip(s, item, hs);
     }
     ctx.restore();

@@ -38,3 +38,4 @@ Every rendered visual is graded against `docs/QUALITY.md` (criteria a to g, 1 to
 | 24-teleportation | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Qiskit textbook teleportation: deferred-measurement corrections, the group box now starts after the state preparation, and the closing line states the teleported probability. |
 | 25-bernstein-vazirani | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Qiskit textbook Bernstein-Vazirani: the single bar at the secret is the whole point; sixteen labels sit a little small. |
 | 26-phase-estimation | 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Qiskit textbook QPE: controlled phases then the inverse QFT inside one group box; the result bar reads 011 on the counting register. |
+| 31-blueprint-construction | 100 | 4 | 5 | 4 | 5 | 5 | 4 | 4 | Drafting-style construction sheets (Byrne's Euclid for the idea, blueprint for the look): construction lines overshoot at corners, lettering no longer does, and periods draw as dots. |
