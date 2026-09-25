@@ -276,9 +276,12 @@ export function marchingSquares(F, xr, yr, nx, ny, level = 0) {
   const dx = (x1 - x0) / nx;
   const dy = (y1 - y0) / ny;
   const v = new Float64Array((nx + 1) * (ny + 1));
+  const xs = Array.from({ length: nx + 1 }, (_, i) => x0 + i * dx);
+  const ys = Array.from({ length: ny + 1 }, (_, j) => y0 + j * dy);
   for (let j = 0; j <= ny; j++) for (let i = 0; i <= nx; i++) {
-    const z = F(x0 + i * dx, y0 + j * dy) - level;
-    v[j * (nx + 1) + i] = Number.isFinite(z) ? z : NaN;
+    const z = F(xs[i], ys[j]) - level;
+    // Values exactly on the level are nudged so contours never pass through grid vertices.
+    v[j * (nx + 1) + i] = Number.isFinite(z) ? (z === 0 ? 1e-12 : z) : NaN;
   }
   const at = (i, j) => v[j * (nx + 1) + i];
   const segs = [];
@@ -295,10 +298,10 @@ export function marchingSquares(F, xr, yr, nx, ny, level = 0) {
       const c = at(i + 1, j + 1);
       const d = at(i, j + 1);
       if ([a, b, c, d].some(Number.isNaN)) continue;
-      const xa = x0 + i * dx;
-      const ya = y0 + j * dy;
-      const xb = xa + dx;
-      const yb = ya + dy;
+      const xa = xs[i];
+      const ya = ys[j];
+      const xb = xs[i + 1];
+      const yb = ys[j + 1];
       const idx = (a > 0 ? 1 : 0) | (b > 0 ? 2 : 0) | (c > 0 ? 4 : 0) | (d > 0 ? 8 : 0);
       if (idx === 0 || idx === 15) continue;
       const eB = () => interp(xa, ya, a, xb, ya, b);
