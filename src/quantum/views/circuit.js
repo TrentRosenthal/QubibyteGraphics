@@ -13,7 +13,7 @@ import { PathBuilder, polyPath, circlePath, rectPath, mergePaths } from '../../c
 import { Tex } from '../../text/nodes.js';
 import { GATE_INFO } from '../../qubi/ir.js';
 import { schedule as scheduleCircuit, formatAngle } from '../../qubi/index.js';
-import { AnimationGroup, Create, FadeIn, lagStart } from '../../core/animations.js';
+import { AnimationGroup, Create, FadeIn, lagStart, Reveal } from '../../core/animations.js';
 import { linear } from '../../core/easing.js';
 
 const CATEGORY_TOKEN = {
@@ -57,7 +57,7 @@ export function angleTexFor(radians, unit, decimals) {
         const d = den / g;
         const sign = n < 0 ? '-' : '';
         const top = Math.abs(n) === 1 ? '\\pi' : `${Math.abs(n)}\\pi`;
-        return d === 1 ? `${sign}${top}` : `${sign}\\tfrac{${top}}{${d}}`;
+        return d === 1 ? `${sign}${top}` : `${sign}${top}/${d}`;
       }
     }
   }
@@ -487,7 +487,7 @@ export class CircuitDiagram extends Group {
     const rest = this.children.filter((n) => !this.wires.includes(n) && n !== this.classicalWire && !cols.flat().includes(n));
     const colAnims = cols.map((nodes) => new AnimationGroup(nodes.map((n) => (n.type === 'tex' ? new FadeIn(n) : new Create(n))), { duration: 0.5 }));
     const labels = rest.length ? [new AnimationGroup(rest.map((n) => new FadeIn(n)), { duration: 0.6 })] : [];
-    return lagStart([wireAnim, ...colAnims, ...labels], { lagRatio: 0.35, duration: opts.duration ?? Math.min(6, 1.2 + cols.length * 0.35) });
+    return new Reveal(this, lagStart([wireAnim, ...colAnims, ...labels], { lagRatio: 0.35, duration: opts.duration ?? Math.min(6, 1.2 + cols.length * 0.35) }));
   }
 }
 

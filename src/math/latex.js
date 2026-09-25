@@ -37,7 +37,7 @@ function clean(s) {
 }
 
 function symLatex(name) {
-  const m = /^([A-Za-z]+)(?:_\{?([A-Za-z0-9]+)\}?)?('*)$/.exec(name);
+  const m = /^([A-Za-z]+)(?:_\{?([A-Za-z0-9]+)\}?)?('*)(?:\(([^)]*)\))?$/.exec(name);
   if (!m) return '\\mathit{' + name + '}';
   let base = m[1];
   if (GREEK.has(base)) base = '\\' + base;
@@ -45,6 +45,7 @@ function symLatex(name) {
   let out = base;
   if (m[2]) out += '_{' + m[2] + '}';
   if (m[3]) out += m[3];
+  if (m[4] !== undefined) out += '(' + m[4] + ')';
   return out;
 }
 
@@ -129,6 +130,8 @@ class Printer {
     let terms = e.args;
     // Two-term sums read better with the positive term first: 1 - x^2.
     if (terms.length === 2 && negated(terms[0]) && !negated(terms[1]) && terms[1].type !== 'sym') terms = [terms[1], terms[0]];
+    // Complex numbers read real part first: 1 - 2i.
+    if (terms.length === 2 && terms[1].type === 'num' && isImaginaryTerm(terms[0])) terms = [terms[1], terms[0]];
     terms.forEach((t, i) => {
       if (i === 0) {
         out = t.type === 'eq' ? paren(this.print(t)) : this.print(t);
@@ -173,7 +176,7 @@ class Printer {
       sign = '-';
       coeff = coeff.neg();
     }
-    const numParts = numer.map((f, i) => this.factor(f, i === 0 && coeff.n === 1n));
+    const numParts = numer.map((f, i) => this.factor(f, i === 0 && coeff.n === 1n && sign === ''));
     const denParts = denom.map((d) => (d.orig ? this.wrap(d.orig, this.power(d.node)) : this.factor(d.node, true)));
     const cn = coeff.n;
     const cd = coeff.d;
@@ -264,6 +267,8 @@ class Printer {
       }
       case 'ln': return '\\ln' + this.fnArg(a, false);
       case 'pm': return this.print(a) + ' \\pm ' + (e.args[1].type === 'add' ? paren(this.print(e.args[1])) : this.print(e.args[1]));
+      case 'laplace': return '\\mathcal{L}\\left\\{' + this.print(a) + '\\right\\}';
+      case 'ilaplace': return '\\mathcal{L}^{-1}\\left\\{' + this.print(a) + '\\right\\}';
       case 'binom': return '\\binom{' + this.print(a) + '}{' + this.print(e.args[1]) + '}';
       default: return (FN_LATEX[e.name] || '\\operatorname{' + e.name + '}') + this.fnArg(a, true);
     }
@@ -307,6 +312,12 @@ function flattenMul(args) {
   };
   visit(args, true);
   return hadCoeff ? [num(coeff), ...out] : out;
+}
+
+function isImaginaryTerm(t) {
+  const isI = (f) => f.type === 'const' && f.name === 'i';
+  if (isI(t)) return true;
+  return t.type === 'mul' && t.args.some(isI) && t.args.every((f) => isI(f) || f.type === 'num' || (f.type === 'pow' && f.args[0].type === 'num'));
 }
 
 // A sum whose rational coefficients share a denominator d > 1 (x/2 + 1/2).

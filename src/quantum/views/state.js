@@ -9,7 +9,7 @@
 import { Node, Group, PathNode } from '../../core/node.js';
 import { PathBuilder, rectPath, circlePath, polyPath, emptyPath } from '../../core/path.js';
 import { Tex } from '../../text/nodes.js';
-import { phaseColor, toHex } from '../../core/color.js';
+import { phaseColor, toHex, rgbToOklch } from '../../core/color.js';
 import { pushPathItem } from '../../core/sampler.js';
 import { describeState } from '../state.js';
 import { diracTerms, formatDirac, exactForm } from '../notation.js';
@@ -114,7 +114,7 @@ export class AmplitudeBars extends AmplitudeView {
       const size = Math.min(0.3, this.slot * 0.42 / Math.max(1, n * 0.42));
       for (let i = 0; i < N; i++) {
         const t = new Tex(`\\lvert ${basisLabel(i, n)}\\rangle`, { size, color: 'muted' });
-        t.moveTo([this.xOf(i), -this.h / 2 - 0.3]);
+        t.moveTo([this.xOf(i), -this.h / 2 - 0.22]);
         this.labels.push(t);
         this.add(t);
       }
@@ -140,6 +140,19 @@ export class AmplitudeBars extends AmplitudeView {
   baseY() {
     return this.mode === 'signed' ? 0 : -this.h / 2;
   }
+}
+
+/**
+ * Phase hue on an even OKLCH ring whose zero is the theme accent's hue, so a
+ * real positive amplitude always shows in the accent color.
+ * @param {number} phase
+ * @param {any} c sampler context
+ * @returns {string}
+ */
+export function phaseFill(phase, c) {
+  const acc = c.color('accent');
+  const { L, C, H } = rgbToOklch(acc);
+  return toHex(phaseColor(phase, { L: Math.min(0.8, Math.max(0.55, L)), C: Math.max(0.07, Math.min(0.11, C)), offset: H }));
 }
 
 class AmpBar extends Node {
@@ -183,10 +196,11 @@ class AmpBar extends Node {
     const { re, phase } = this.value();
     let fill;
     if (o.highlight.has(this.i)) fill = 'accent2';
-    else if (o.mode === 'phase') fill = toHex(phaseColor(phase, { L: c.theme.dark ? 0.74 : 0.6, C: 0.085 }));
-    else if (o.mode === 'signed' && re < -1e-9) fill = 'accent2';
+    else if (o.mode === 'phase') fill = phaseFill(phase, c);
     else fill = 'accent';
-    pushPathItem(this, this.resolvedGeometry(), c, { fillColor: fill });
+    // Negative amplitudes keep their color and read as negative by position; a lighter tone separates them.
+    const alpha = o.mode === 'signed' && re < -1e-9 && !o.highlight.has(this.i) ? 0.6 : 1;
+    pushPathItem(this, this.resolvedGeometry(), { ...c, opacity: c.opacity * alpha }, { fillColor: fill });
   }
 }
 
@@ -345,6 +359,7 @@ export function diracLatex(state, opts = {}) {
       const ket = `\\lvert ${t.label}\\rangle`;
       if (ph === '1') return (i ? '+ ' : '') + ket;
       if (ph === '-1') return `- ${ket}`;
+      if (ph.startsWith('-')) return `- ${ph.slice(1)}${ket}`;
       return `${i ? '+ ' : ''}${ph}${ket}`;
     });
   } else {

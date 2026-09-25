@@ -209,6 +209,7 @@ export class TextBase extends Group {
    * @returns {string|null}
    */
   strokeFont(theme) {
+    if (this.explicitFont) return null;
     const fam = theme.type.text;
     return typeof fam === 'string' && fam.startsWith('hershey:') ? fam.slice(8) : null;
   }
@@ -324,6 +325,8 @@ export class Text extends TextBase {
     super('text', props);
     this.content = String(content);
     this.size = resolveSize(props.size, BASE.type.scale.body);
+    /** An explicit font is kept under every theme; the default follows the theme's text family. */
+    this.explicitFont = props.font != null;
     this.opts = {
       font: props.font ?? 'Inter',
       style: normalizeWeight(props.weight),
@@ -339,7 +342,7 @@ export class Text extends TextBase {
 
   themePath(glyph, theme) {
     const fam = theme.type.text;
-    if (!fam || fam === this.opts.font || fam.startsWith('hershey:') || !hasFont(fam, 'regular')) return null;
+    if (this.explicitFont || !fam || fam === this.opts.font || fam.startsWith('hershey:') || !hasFont(fam, 'regular')) return null;
     let alt = this.altLayouts.get(fam);
     if (alt === undefined) {
       const lay = layoutText(this.content, { ...this.opts, font: fam, style: 'regular', size: this.size });

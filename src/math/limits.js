@@ -220,6 +220,8 @@ function limitOfPow(node, ctx) {
     if (Math.abs(bv - 1) < 1e-12) return INDET('1^inf');
     if (bv > 1) return le.s > 0 ? inf(1) : fin(num(0));
     if (bv >= 0 && bv < 1) return le.s > 0 ? fin(num(0)) : inf(1);
+    if (bv > -1 && bv < 0) return le.s > 0 ? fin(num(0)) : DNE;
+    if (Math.abs(bv + 1) < 1e-12) return BOUNDED;
     return DNE;
   }
   if (lb.k === 'inf' && le.k === 'fin') {
@@ -260,6 +262,7 @@ function limitOfFn(node, ctx) {
       case 'sin': case 'cos': return BOUNDED;
       case 'floor': case 'ceil': return inf(s);
       case 'sign': return fin(num(s));
+      case 'factorial': return s > 0 ? inf(1) : DNE;
       default: return DNE;
     }
   }

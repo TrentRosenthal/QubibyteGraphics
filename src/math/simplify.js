@@ -120,7 +120,7 @@ function compareTerms(a, b) {
 
 function factorClass(f) {
   if (f.type === 'num') return 0;
-  if (f.type === 'const') return 1;
+  if (f.type === 'const') return f.name === 'i' ? 1.6 : 1;
   if (f.type === 'pow' && f.args[0].type === 'num') return 1.5;
   if (f.type === 'sym') return 2;
   if (f.type === 'pow' && f.args[0].type === 'sym') return 2;
@@ -140,6 +140,9 @@ function compareFactors(a, b) {
   if (ca !== cb) return ca - cb;
   const na = factorName(a);
   const nb = factorName(b);
+  const la = na.toLowerCase();
+  const lb = nb.toLowerCase();
+  if (la !== lb) return la < lb ? -1 : 1;
   if (na !== nb) return na < nb ? -1 : 1;
   const ka = key(a);
   const kb = key(b);

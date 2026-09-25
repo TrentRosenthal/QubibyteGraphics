@@ -76,17 +76,58 @@ export function stagger(n, t0, total, lagRatio) {
   return out;
 }
 
+/**
+ * Make sure a node is part of the scene and visible from t0. A node inside a
+ * group that is not in the scene yet brings its top ancestor in (so the
+ * group's transform applies); siblings stay as they are.
+ */
 function ensureAdded(scene, node, t0) {
-  if (node.scene === scene) {
-    if (node.parent === scene.root && !node.valueAt('visible', t0)) {
-      node.tween('visible', t0, t0, true, linear);
+  if (node.scene !== scene) {
+    let top = node;
+    while (top.parent) top = top.parent;
+    if (top !== scene.root) {
+      const saved = scene.clock;
+      scene.clock = t0;
+      scene.add(top);
+      scene.clock = saved;
     }
-    return;
   }
-  const saved = scene.clock;
-  scene.clock = t0;
-  scene.add(node);
-  scene.clock = saved;
+  for (let n = node; n && n !== scene.root; n = n.parent) {
+    if (!n.valueAt('visible', t0)) n.tween('visible', t0, t0, true, linear);
+  }
+}
+
+/**
+ * Wrap an animation that reveals the children of a group one by one: the
+ * group joins the scene at the start with every child hidden, and the inner
+ * animation shows each child when it starts.
+ */
+export class Reveal extends Animation {
+  /** @param {import('./node.js').Node} group @param {Animation} inner */
+  constructor(group, inner) {
+    super({});
+    this.group = group;
+    this.inner = inner;
+  }
+
+  applyDefaults(playOpts, scene) {
+    this.inner.applyDefaults(playOpts, scene);
+    this.duration = this.inner.duration;
+    this.delay = this.inner.delay;
+    this.ease = this.inner.ease;
+    this.lagRatio = 0;
+  }
+
+  schedule(scene, t0) {
+    const g = this.group;
+    if (g.scene !== scene) {
+      for (const d of g.children) d._init.visible = false;
+      ensureAdded(scene, g, t0);
+    } else {
+      for (const d of g.children) if (d.valueAt('visible', t0)) d.tween('visible', t0, t0, false, linear);
+    }
+    return this.inner.schedule(scene, t0);
+  }
 }
 
 function hide(node, t) {

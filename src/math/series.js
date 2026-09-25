@@ -9,7 +9,7 @@
  */
 import { Rational } from './rational.js';
 import {
-  num, sym, constant, add, mul, pow, fn, eq, deriv, sumNode, listNode, key, substitute, MathError,
+  num, sym, constant, add, mul, pow, fn, eq, deriv, sumNode, listNode, key, substitute, withArgs, MathError,
 } from './expr.js';
 import { simplify, splitCoeff } from './simplify.js';
 import { ensureExpr, varName } from './parse.js';
@@ -128,7 +128,7 @@ function termValue(term, n) {
   const walkNode = (e) => {
     if (e.type === 'fn' && e.name === 'binom') return num(binomialCoefficient(e.args[0].value, n));
     if (e.type === 'sym' && e.name === 'n') return num(n);
-    return e.args ? { ...e, args: e.args.map(walkNode) } : e;
+    return e.args ? withArgs(e, e.args.map(walkNode)) : e;
   };
   return simplify(walkNode(term));
 }

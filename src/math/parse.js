@@ -8,7 +8,7 @@
 import { Rational } from './rational.js';
 import {
   num, sym, constant, add, mul, pow, fn, eq, neg, div, integral, deriv, limitNode, sumNode,
-  substitute, toExpr, FUNCTIONS,
+  substitute, toExpr, withArgs, FUNCTIONS,
 } from './expr.js';
 import { GREEK_NAMES } from './latex.js';
 
@@ -636,7 +636,7 @@ function bindIndex(body, v) {
     if (n.type === 'const' && n.name === v) return sym(v);
     if (!n.args) return n;
     const args = n.args.map(walk);
-    return args.every((a, k) => a === n.args[k]) ? n : { ...n, args };
+    return withArgs(n, args);
   };
   return walk(body);
 }
