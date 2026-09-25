@@ -6,7 +6,7 @@ This is the language as Qubibyte defines it and the ground truth for this projec
 
 `N` (single wire) | `all` | `visible` | `max` | `visiblemax` | `A..B` | `A..max` | `A..visiblemax` | `A.S.E` (stepped, step S may be negative or a variable) | `A.S.max` | `A.S.visiblemax` | `(a,b,c)` parallel list | `[a,b]` joint register for controlled gates.
 
-Examples: `H visible`; `X (0..2)`; `H (0.2.max)`; `CX [0,1]`; `H (0, visiblemax, sqrt(4))`. Even wires: `0.2.max` or `0.2.visiblemax`. Odd wires: `1.2.max` or `1.2.visiblemax`. LSB = qubit 0, which is the rightmost bit in `0b...` literals and basis kets.
+Examples: `H visible`; `X (0..2)`; `X 1,3,5` (the same as `X (1,3,5)` for gates without angles or controls); `H (0.2.max)`; `CX [0,1]`; `H (0, visiblemax, sqrt(4))`. Even wires: `0.2.max` or `0.2.visiblemax`. Odd wires: `1.2.max` or `1.2.visiblemax`. LSB = qubit 0, which is the rightmost bit in `0b...` literals and basis kets.
 
 ## Gates
 

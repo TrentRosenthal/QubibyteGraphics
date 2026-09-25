@@ -85,3 +85,31 @@ test('an explicit wire beyond the default grows all and max', () => {
   assert.equal(c.ops.filter((o) => o.name === 'H').length, 11);
   assert.deepEqual(c.ops.at(-1).targets, [10]);
 });
+
+test('a gate without angles takes comma-separated wires like a list: X 1,3,5 is X (1,3,5)', () => {
+  assert.deepEqual(targetsOf('X 1,3,5'), targetsOf('X (1,3,5)'));
+  assert.deepEqual(targetsOf('X 1, 3, 5'), targetsOf('X (1,3,5)'));
+  assert.deepEqual(targetsOf('MEASURE 0,2'), targetsOf('MEASURE (0,2)'));
+  // The program from the bug report: 14 wires, one H layer and 100 rounds of 70 gates.
+  const src = `H (0,1,2,3,4,5,6,7,8,9,10,11,12,13)
+LOOP 100 {
+\tX 1,3,5,8,10,12
+\tCZ [0,1,2,3,4,5,6,7,8,9,10,11,12,13]
+\tX 1,3,5,8,10,12
+\tH (0,1,2,3,4,5,6,7,8,9,10,11,12,13)
+\tX (0,1,2,3,4,5,6,7,8,9,10,11,12,13)
+\tCZ [0,1,2,3,4,5,6,7,8,9,10,11,12,13]
+\tX (0,1,2,3,4,5,6,7,8,9,10,11,12,13)
+\tH (0,1,2,3,4,5,6,7,8,9,10,11,12,13)
+}`;
+  const c = ev(src);
+  assert.equal(c.numQubits, 14);
+  assert.equal(c.ops.length, 14 + 100 * 70);
+  assert.deepEqual(c.ops.slice(14, 20).map((o) => [o.name, o.targets[0]]), [['X', 1], ['X', 3], ['X', 5], ['X', 8], ['X', 10], ['X', 12]]);
+});
+
+test('comma wires do not change angles or controlled gates', () => {
+  rejects('H 0 0.5', /H takes no angle/);
+  rejects('RX 1,3,5', /RX takes 1 angle/);
+  rejects('CX 0,1', /bracket register/);
+});

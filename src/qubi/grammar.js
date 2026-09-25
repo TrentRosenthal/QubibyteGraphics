@@ -507,13 +507,22 @@ class Parser {
     }
     if (!wires && !this.atStmtEnd() && !this.isOp(',')) wires = this.parseWireExpr();
     const trailing = [];
+    let commaAfterWires = false;
     if (!this.atStmtEnd()) {
-      if (this.isOp(',')) this.next();
+      if (this.isOp(',')) {
+        this.next();
+        commaAfterWires = true;
+      }
       trailing.push(this.parseExpr());
       while (this.isOp(',')) {
         this.next();
         trailing.push(this.parseExpr());
       }
+    }
+    // A gate without angles or controls reads comma-separated values as more wires: X 1,3,5 is X (1,3,5).
+    // A space-separated value (H 0 0.5) stays an angle, so it is still reported as one.
+    if (info && info.params === 0 && !info.controlled && commaAfterWires && wires && wires.type !== 'Register' && !angles) {
+      wires = { type: 'List', items: [wires, ...trailing.splice(0)], pos: wires.pos, text: this.textFrom(start).slice(name.length).trim() };
     }
     const node = { type: 'Call', name, nameExpr, angles, args, wires, trailing, pos: this.pos(start), text: this.textFrom(start) };
     if (info) this.checkNativeForm(node, start);
