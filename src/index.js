@@ -38,6 +38,7 @@ export { sampleFrame } from './core/sampler.js';
 export { getTheme, registerTheme, listThemes, exportTheme, importTheme } from './themes/index.js';
 export { renderFrame, registerBoard, viewFor } from './render/canvas.js';
 export { renderSVG } from './render/svg.js';
+export * from './board/index.js';
 
 export { FORMATS, PRESETS, RESOLUTIONS, parseResolution } from './export/formats.js';
 export { toSRT } from './export/srt.js';

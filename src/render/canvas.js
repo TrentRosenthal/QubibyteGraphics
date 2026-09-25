@@ -9,11 +9,14 @@ import { tracePath } from '../core/path.js';
 import { toCSS, parseColor, mix } from '../core/color.js';
 import { createCanvas } from '../core/platform.js';
 import { Random } from '../core/random.js';
+import { drawErased, eraseState } from '../board/erase.js';
 
 /**
  * Board renderers register here (see src/board). Each provides
- * drawBackground(ctx, frame, view) and drawItem(ctx, item, frame, view).
- * @type {Record<string, {drawBackground: Function, drawItem: Function, drawOverlay?: Function}>}
+ * drawBackground(ctx, frame, view), drawItem(ctx, item, frame, view),
+ * drawItemTo(target, item, frame, view) for scratch rendering, and
+ * optionally drawOverlay and a `composite` operation for scratch layers.
+ * @type {Record<string, {drawBackground: Function, drawItem: Function, drawItemTo: Function, drawOverlay?: Function, composite?: string}>}
  */
 export const BOARD_RENDERERS = {};
 
@@ -81,7 +84,10 @@ export function renderFrame(ctx, frame, opts = {}) {
   }
   for (const item of frame.items) {
     if (item.kind === 'image') drawImageItem(ctx, item, view, opts.assets, frame);
-    else if (board && !item.meta.noBoard) board.drawItem(ctx, item, frame, view);
+    else if (item.meta.erase && eraseState(item, frame.t)) {
+      const useBoard = board && !item.meta.noBoard;
+      drawErased(ctx, item, frame, view, (c) => (useBoard ? board.drawItemTo(c, item, frame, view) : drawPathItem(c, item, view, theme.effects.glow)), { smudge: !!useBoard, composite: useBoard ? board.composite : undefined });
+    } else if (board && !item.meta.noBoard) board.drawItem(ctx, item, frame, view);
     else drawPathItem(ctx, item, view, theme.effects.glow);
   }
   if (board && board.drawOverlay) board.drawOverlay(ctx, frame, view);
