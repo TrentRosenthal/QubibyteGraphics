@@ -9,9 +9,9 @@ import { circlePath } from '../../src/core/path.js';
 async function scene() {
   return Q.buildScene(async (s) => {
     const c = new Q.Circle({ radius: 1, fill: 'accent', stroke: null });
+    s.add(new Q.Rect({ width: 2, height: 1, x: -3, stroke: 'ink', dash: [0.1, 0.1] }));
     await s.play(Q.fadeIn(c), { duration: 0.5 });
     await s.play(c.animate.shift([2, 0]), { duration: 0.5 });
-    s.add(new Q.Rect({ width: 2, height: 1, x: -3, stroke: 'ink', dash: [0.1, 0.1] }));
   }, { width: 320, height: 180, fps: 10 });
 }
 
