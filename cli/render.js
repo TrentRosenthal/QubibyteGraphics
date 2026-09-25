@@ -6,6 +6,7 @@
  * Chunks can render in parallel worker threads.
  */
 
+import '../src/text/setup.js';
 import { createCanvas, loadImage } from '@napi-rs/canvas';
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';

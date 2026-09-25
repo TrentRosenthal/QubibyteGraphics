@@ -220,6 +220,9 @@ async function executeColumns(scene, circuit, diagram, bars, narration, opts, on
     if (group && !told.has(group.id)) {
       told.add(group.id);
       line = describeGroup(group);
+    } else if (!group && ops.length > 1 && ops.every((o) => o.name === 'MEASURE')) {
+      const qs = ops.flatMap((o) => o.targets).map((q) => `q${q}`);
+      line = `Measuring ${qs.slice(0, -1).join(', ')} and ${qs[qs.length - 1]} collapses the state to one outcome.`;
     } else if (!group) line = describeOp(ops[0]);
     if (line) await narration.say(line, 1);
     const anims = [];
@@ -259,11 +262,27 @@ export function staysReal(circuit) {
   return true;
 }
 
+/**
+ * Whether some intermediate state has a negative real amplitude, which is
+ * the only case where signed bars add information over magnitudes.
+ * @param {import('../qubi/ir.js').Circuit} circuit
+ * @returns {boolean}
+ */
+export function goesNegative(circuit) {
+  const sim = new StatevectorSimulator(circuit.numQubits, { seed: 1 });
+  for (const op of circuit.ops) {
+    if (op.kind !== 'gate') continue;
+    sim.applyOp(op);
+    if (sim.re.some((v) => v < -1e-9)) return true;
+  }
+  return false;
+}
+
 async function genericStory(scene, circuit, diagram, narration, opts) {
   const n = circuit.numQubits;
   let bars = null;
   if (n <= (opts.maxQubitsForBars ?? 6)) {
-    bars = new AmplitudeBars(n, null, { mode: staysReal(circuit) ? 'signed' : 'phase', width: Math.min(LAYOUT.state.w + 3, 1.1 * 2 ** n), height: LAYOUT.state.h });
+    bars = new AmplitudeBars(n, null, { mode: staysReal(circuit) && goesNegative(circuit) ? 'signed' : 'phase', width: Math.min(LAYOUT.state.w + 3, 1.1 * 2 ** n), height: LAYOUT.state.h });
     bars.moveTo([0, LAYOUT.state.y]);
     await scene.play(fadeIn(bars, { shift: 'up' }), { duration: 0.6 });
   }
@@ -271,8 +290,14 @@ async function genericStory(scene, circuit, diagram, narration, opts) {
   const probs = sim.probabilities();
   let best = 0;
   for (let i = 1; i < probs.length; i++) if (probs[i] > probs[best]) best = i;
-  await narration.say(`The most likely outcome is ${best.toString(2).padStart(n, '0')}, with probability ${(probs[best] * 100).toFixed(1)} percent.`);
-  if (bars) await scene.play(indicate(bars.bars[best], { scale: 1.08 }));
+  const top = [];
+  for (let i = 0; i < probs.length; i++) if (Math.abs(probs[i] - probs[best]) < 1e-9) top.push(i);
+  const bits = (i) => i.toString(2).padStart(n, '0');
+  const pct = (p) => `${+(p * 100).toFixed(1)} percent`;
+  if (top.length === 1) await narration.say(`The most likely outcome is ${bits(best)}, with probability ${pct(probs[best])}.`);
+  else if (top.length <= 4) await narration.say(`Outcomes ${top.slice(0, -1).map(bits).join(', ')} and ${bits(top[top.length - 1])} are equally likely, ${pct(probs[best])} each.`);
+  else await narration.say(`${top.length} outcomes are equally likely, ${pct(probs[best])} each.`);
+  if (bars) await scene.play(...top.slice(0, 4).map((i) => indicate(bars.bars[i], { scale: 1.08 })));
 }
 
 async function groverStory(scene, circuit, diagram, narration, opts) {

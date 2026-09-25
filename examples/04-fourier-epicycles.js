@@ -1,5 +1,5 @@
 import { Text, Tex, fadeIn, write, texToPaths, pathBounds, transformPath } from '../src/index.js';
-import { Epicycles } from '../src/explainers/fourier.js';
+import { Epicycles } from '../src/index.js';
 
 export const config = { theme: 'qubibyte', posterTime: 7.2 };
 

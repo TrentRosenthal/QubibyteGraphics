@@ -196,7 +196,8 @@ class AmpBar extends Node {
     const { re, phase } = this.value();
     let fill;
     if (o.highlight.has(this.i)) fill = 'accent2';
-    else if (o.mode === 'phase') fill = phaseFill(phase, c);
+    // A real positive amplitude shows in the exact accent rather than its ring approximation.
+    else if (o.mode === 'phase' && Math.abs(phase) > 1e-6) fill = phaseFill(phase, c);
     else fill = 'accent';
     // Negative amplitudes keep their color and read as negative by position; a lighter tone separates them.
     const alpha = o.mode === 'signed' && re < -1e-9 && !o.highlight.has(this.i) ? 0.6 : 1;

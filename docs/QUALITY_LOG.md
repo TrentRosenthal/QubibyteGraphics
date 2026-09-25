@@ -8,3 +8,7 @@ Every rendered visual is graded against `docs/QUALITY.md` (criteria a to g, 1 to
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 17-linear-transformation | 50, 75 | 4 | 5 | 4 | 4 | 5 | 4 | 4 | 3Blue1Brown, Essence of Linear Algebra ch. 3: grid, basis colors, and unit square match the convention; the reference labels axis ticks, ours leaves the grid unnumbered. |
 | 04-fourier-epicycles | 50, 75 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | 3Blue1Brown, "But what is a Fourier series?": trail, arms, and faint circles read the same; the reference fades the trail tail, ours keeps it at full strength. |
+| 20-grover-explainer | 50, 75, 100 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | Qiskit textbook Grover chapter: same bars-plus-geometry pairing; our circuit gets small at 35 operations, the reference splits oracle and diffuser into separate figures. |
+| 21-qft-explainer | 75 | 4 | 4 | 4 | 4 | 5 | 4 | 4 | 3Blue1Brown-style phase wheels next to the Qiskit QFT figure: fractions read exactly; the two-line narration sits close to the Dirac line. |
+| 22-bell-state | 75, 100 | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Quirk and the Qiskit Bell example: magnitude bars, meters, and the classical wire are clearer than Quirk's; the reference shows measured counts, ours shows the pre-measurement state. |
+| 23-ghz-state | 100 | 4 | 5 | 4 | 4 | 5 | 4 | 4 | Qiskit GHZ figure: same ladder; tie narration now names both outcomes. |
